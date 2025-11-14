@@ -1,8 +1,9 @@
 {
   "name": "kitsune",
   "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "tsup",
     "test": "vitest run",
     "lint": "biome check",
     "format": "biome check --write"
@@ -11,12 +12,26 @@
   "author": "@tr-yasuda",
   "license": "MIT",
   "packageManager": "pnpm@10.20.0",
-  "dependencies": {},
   "devDependencies": {
     "@biomejs/biome": "2.3.5",
     "@tsconfig/node22": "^22.0.3",
     "@types/node": "^24.10.1",
+    "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "vitest": "^4.0.9"
-  }
+  },
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ]
 }

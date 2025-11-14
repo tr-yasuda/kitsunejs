@@ -8,7 +8,16 @@
     "lint": "biome check",
     "format": "biome check --write"
   },
-  "keywords": [],
+  "keywords": [
+    "result",
+    "option",
+    "rust",
+    "typescript",
+    "error-handling",
+    "functional-programming",
+    "type-safe",
+    "monads"
+  ],
   "author": "@tr-yasuda",
   "license": "MIT",
   "packageManager": "pnpm@10.20.0",

@@ -6,7 +6,7 @@ Rust-inspired `Result` and `Option` types for TypeScript, enabling type-safe err
 
 - 🦀 **Rust-like API**: Familiar `Result<T, E>` and `Option<T>` types with methods like `map`, `andThen`, `unwrap`, etc.
 - 🔒 **Type-safe**: Full TypeScript support with proper type inference and narrowing
-- 🌳 Tree-shakeable: Fully ESM-ready with optional CJS support
+- 🌳 **Tree-shakeable**: Fully ESM-ready with optional CJS support
 - 📦 **Zero dependencies**: Lightweight and self-contained
 - ⚡ **Async-ready**: Built-in support for `Promise` with `Result.tryAsync`
 
@@ -271,6 +271,14 @@ const firstSome = Option.any([
 ]);
 console.log(firstSome.unwrap()); // 42
 ```
+
+## Documentation
+
+For more detailed information, please refer to the following documentation:
+
+- **[API Reference](./docs/api-reference.md)** - Complete list of all methods with detailed explanations and examples
+- **[Rust Comparison](./docs/rust-comparison.md)** - Comparison table between Rust's `Result`/`Option` and kitsune
+- **[Recipes](./docs/recipes.md)** - Practical usage patterns and best practices for common scenarios
 
 ## API Reference
 

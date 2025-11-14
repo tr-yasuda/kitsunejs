@@ -21,7 +21,7 @@
 
 **Solution**:
 ```typescript
-import { Result } from 'kitsune';
+import { Result } from 'kitsunejs';
 
 type User = {
   id: number;
@@ -108,7 +108,7 @@ function processUser(input: unknown): Result<void, AppError> {
 
 **Solution**:
 ```typescript
-import { Option } from 'kitsune';
+import { Option } from 'kitsunejs';
 
 type User = {
   id: number;
@@ -306,7 +306,7 @@ console.log(adults); // [{ id: 1, name: 'Alice', age: 25 }, { id: 3, name: 'Char
 
 **Solution**:
 ```typescript
-import { Result } from 'kitsune';
+import { Result } from 'kitsunejs';
 
 type ValidationError = { field: string; message: string };
 type UserInput = { name: string; age: string; email: string };
@@ -395,7 +395,7 @@ if (dataResult.isOk()) {
 
 **Solution**:
 ```typescript
-import { Option } from 'kitsune';
+import { Option } from 'kitsunejs';
 
 type Config = {
   apiKey: string;
@@ -529,7 +529,7 @@ if (userResult.isOk()) {
 **Solution**:
 ```typescript
 import { z } from 'zod';
-import { Result } from 'kitsune';
+import { Result } from 'kitsunejs';
 
 const userSchema = z.object({
   name: z.string(),
@@ -564,7 +564,7 @@ if (userResult.isOk()) {
 **Solution**:
 ```typescript
 import express from 'express';
-import { Result } from 'kitsune';
+import { Result } from 'kitsunejs';
 
 const app = express();
 

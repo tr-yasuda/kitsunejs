@@ -2,12 +2,12 @@
 
 ## Overview
 
-This document shows the correspondence between Rust's `Result<T, E>` / `Option<T>` and kitsune.
-It explains method correspondences and key differences to help Rust developers smoothly start using kitsune.
+This document shows the correspondence between Rust's `Result<T, E>` / `Option<T>` and kitsunejs.
+It explains method correspondences and key differences to help Rust developers smoothly start using kitsunejs.
 
 ## Basic Philosophy
 
-kitsune faithfully reproduces Rust's Result/Option API as much as possible, but differs in the following ways:
+kitsunejs faithfully reproduces Rust's Result/Option API as much as possible, but differs in the following ways:
 
 - **Adjustments for TypeScript's type system**: Leverages TypeScript's type inference and type guards
 - **Functionality tailored to JavaScript ecosystem**: Promise integration, null/undefined conversion, etc.
@@ -15,7 +15,7 @@ kitsune faithfully reproduces Rust's Result/Option API as much as possible, but 
 
 ## Result<T, E> Correspondence Table
 
-| Rust                 | kitsune                             | Notes                                                                              |
+| Rust                 | kitsunejs                           | Notes                                                                              |
 |----------------------|-------------------------------------|------------------------------------------------------------------------------------|
 | `Ok(value)`          | `Result.ok(value)`                  | Function call to static method                                                     |
 | `Err(error)`         | `Result.err(error)`                 | Function call to static method                                                     |
@@ -33,53 +33,53 @@ kitsune faithfully reproduces Rust's Result/Option API as much as possible, but 
 | `and_then(fn)`       | `andThen(fn)`                       | Also known as flatMap                                                              |
 | `or_else(fn)`        | `orElse(fn)`                        |                                                                                    |
 | `ok()`               | `toOption()`                        | Different method name. Error information is discarded and converted to `Option<T>` |
-| -                    | `Result.fromNullable(value, error)` | kitsune-specific. Integration with JavaScript/TypeScript null/undefined            |
-| -                    | `Result.try(fn)`                    | kitsune-specific. Integration with JavaScript exception handling                   |
-| -                    | `Result.tryAsync(fn)`               | kitsune-specific. Integration with Promises                                        |
-| -                    | `Result.all(results)`               | kitsune-specific. Not in Rust std, but common in ecosystem (e.g., itertools)       |
-| -                    | `Result.any(results)`               | kitsune-specific. Not in Rust std, but common fallback pattern in ecosystem        |
+| -                    | `Result.fromNullable(value, error)` | kitsunejs-specific. Integration with JavaScript/TypeScript null/undefined          |
+| -                    | `Result.try(fn)`                    | kitsunejs-specific. Integration with JavaScript exception handling                 |
+| -                    | `Result.tryAsync(fn)`               | kitsunejs-specific. Integration with Promises                                      |
+| -                    | `Result.all(results)`               | kitsunejs-specific. Not in Rust std, but common in ecosystem (e.g., itertools)     |
+| -                    | `Result.any(results)`               | kitsunejs-specific. Not in Rust std, but common fallback pattern in ecosystem      |
 
 ## Option<T> Correspondence Table
 
-| Rust                 | kitsune                      | Notes                                                                                         |
-|----------------------|------------------------------|-----------------------------------------------------------------------------------------------|
-| `Some(value)`        | `Option.some(value)`         | Function call to static method                                                                |
-| `None`               | `Option.none()`              | Value to function call                                                                        |
-| `is_some()`          | `isSome()`                   |                                                                                               |
-| `is_none()`          | `isNone()`                   |                                                                                               |
-| `unwrap()`           | `unwrap()`                   | Throws UnwrapError                                                                            |
-| `expect(msg)`        | `expect(msg)`                | Throws UnwrapError                                                                            |
-| `unwrap_or(default)` | `unwrapOr(default)`          |                                                                                               |
-| `unwrap_or_else(fn)` | `unwrapOrElse(fn)`           |                                                                                               |
-| `map(fn)`            | `map(fn)`                    |                                                                                               |
-| `and(optb)`          | `and(other)`                 |                                                                                               |
-| `or(optb)`           | `or(other)`                  |                                                                                               |
-| `and_then(fn)`       | `andThen(fn)`                | Also known as flatMap                                                                         |
-| `filter(predicate)`  | `filter(predicate)`          |                                                                                               |
-| `ok_or(err)`         | `toResult(error)`            | Different method name. Some → Ok, None → Err                                                  |
-| -                    | `Option.fromNullable(value)` | kitsune-specific. Integration with JavaScript/TypeScript null/undefined                       |
-| -                    | `Option.all(options)`        | kitsune-specific. Not in Rust std, but common in ecosystem                                    |
-| -                    | `Option.any(options)`        | kitsune-specific. Common in priority-based fallback patterns like env vars → config → default |
+| Rust                 | kitsunejs                    | Notes                                                                                           |
+|----------------------|------------------------------|-------------------------------------------------------------------------------------------------|
+| `Some(value)`        | `Option.some(value)`         | Function call to static method                                                                  |
+| `None`               | `Option.none()`              | Value to function call                                                                          |
+| `is_some()`          | `isSome()`                   |                                                                                                 |
+| `is_none()`          | `isNone()`                   |                                                                                                 |
+| `unwrap()`           | `unwrap()`                   | Throws UnwrapError                                                                              |
+| `expect(msg)`        | `expect(msg)`                | Throws UnwrapError                                                                              |
+| `unwrap_or(default)` | `unwrapOr(default)`          |                                                                                                 |
+| `unwrap_or_else(fn)` | `unwrapOrElse(fn)`           |                                                                                                 |
+| `map(fn)`            | `map(fn)`                    |                                                                                                 |
+| `and(optb)`          | `and(other)`                 |                                                                                                 |
+| `or(optb)`           | `or(other)`                  |                                                                                                 |
+| `and_then(fn)`       | `andThen(fn)`                | Also known as flatMap                                                                           |
+| `filter(predicate)`  | `filter(predicate)`          |                                                                                                 |
+| `ok_or(err)`         | `toResult(error)`            | Different method name. Some → Ok, None → Err                                                    |
+| -                    | `Option.fromNullable(value)` | kitsunejs-specific. Integration with JavaScript/TypeScript null/undefined                       |
+| -                    | `Option.all(options)`        | kitsunejs-specific. Not in Rust std, but common in ecosystem                                    |
+| -                    | `Option.any(options)`        | kitsunejs-specific. Common in priority-based fallback patterns like env vars → config → default |
 
 ## Key Differences
 
 ### 1. Naming Convention
 
 - **Rust**: `snake_case` (e.g., `unwrap_or`, `and_then`)
-- **kitsune**: `camelCase` (e.g., `unwrapOr`, `andThen`)
+- **kitsunejs**: `camelCase` (e.g., `unwrapOr`, `andThen`)
 
 This follows JavaScript/TypeScript coding conventions.
 
 ### 2. Constructors
 
 - **Rust**: `Ok(value)`, `Some(value)` are called directly as functions, `None` is used as a value
-- **kitsune**: `Result.ok(value)`, `Option.some(value)`, `Option.none()` are called as static methods
+- **kitsunejs**: `Result.ok(value)`, `Option.some(value)`, `Option.none()` are called as static methods
 
 TypeScript adopts a design that explicitly groups constructors using namespaces.
 
 ### 3. JavaScript-Specific Features
 
-kitsune has unique features tailored to the JavaScript/TypeScript ecosystem:
+kitsunejs has unique features tailored to the JavaScript/TypeScript ecosystem:
 
 #### `Result.try` / `Result.tryAsync`
 Converts JavaScript exception handling to Result.
@@ -143,7 +143,7 @@ fn main() {
 }
 ```
 
-### kitsune Code
+### kitsunejs Code
 
 ```typescript
 function divide(a: number, b: number): Result<number, string> {
@@ -183,4 +183,4 @@ main();
 5. **Pattern matching**: `match` → `if`/`else` with type guards
 6. **Naming convention**: `ok_or` → `toResult`, `and_then` → `andThen`
 
-By using kitsune, you can achieve a functional programming style similar to Rust in TypeScript.
+By using kitsunejs, you can achieve a functional programming style similar to Rust in TypeScript.

@@ -1,4 +1,4 @@
-# kitsune
+# kitsunejs
 
 Rust-inspired `Result` and `Option` types for TypeScript, enabling type-safe error handling and null safety.
 
@@ -16,13 +16,13 @@ Rust-inspired `Result` and `Option` types for TypeScript, enabling type-safe err
 
 ```bash
 # npm
-npm install kitsune
+npm install kitsunejs
 
 # pnpm
-pnpm add kitsune
+pnpm add kitsunejs
 
 # yarn
-yarn add kitsune
+yarn add kitsunejs
 ```
 
 ## Usage
@@ -34,7 +34,7 @@ The `Result<T, E>` type represents either success (`Ok<T>`) or failure (`Err<E>`
 #### Basic Usage
 
 ```typescript
-import { Result } from 'kitsune';
+import { Result } from 'kitsunejs';
 
 // Creating Results
 const success = Result.ok(42);
@@ -53,7 +53,7 @@ if (failure.isErr()) {
 #### Error Handling with try/tryAsync
 
 ```typescript
-import { Result } from 'kitsune';
+import { Result } from 'kitsunejs';
 
 // Sync: Convert exceptions to Result
 const result = Result.try(() => {
@@ -95,7 +95,7 @@ main();
 #### Chaining Operations
 
 ```typescript
-import { Result } from 'kitsune';
+import { Result } from 'kitsunejs';
 
 type User = {
   name: string;
@@ -132,7 +132,7 @@ const age = findUser(1)
 #### Combining Multiple Results
 
 ```typescript
-import { Result } from 'kitsune';
+import { Result } from 'kitsunejs';
 
 const results = [
   Result.ok(1),
@@ -170,7 +170,7 @@ The `Option<T>` type represents an optional value: either `Some<T>` or `None`.
 #### Basic Usage
 
 ```typescript
-import { Option } from 'kitsune';
+import { Option } from 'kitsunejs';
 
 // Creating Options
 const some = Option.some(42);
@@ -200,7 +200,7 @@ console.log(config); // 'default-api-key'
 #### Chaining Operations
 
 ```typescript
-import { Option } from 'kitsune';
+import { Option } from 'kitsunejs';
 
 // Transform values with map
 const doubled = Option.some(10)
@@ -236,7 +236,7 @@ console.log(result); // 85
 #### Converting Between Result and Option
 
 ```typescript
-import { Result, Option } from 'kitsune';
+import { Result, Option } from 'kitsunejs';
 
 // Option to Result
 const option = Option.some(42);
@@ -256,7 +256,7 @@ console.log(noneFromErr.isNone()); // true
 #### Combining Multiple Options
 
 ```typescript
-import { Option } from 'kitsune';
+import { Option } from 'kitsunejs';
 
 const options = [
   Option.some(1),

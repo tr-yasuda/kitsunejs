@@ -133,6 +133,50 @@ export abstract class Result<T, E> {
       return Result.err<T, E>(error as E);
     }
   }
+
+  /**
+   * Combines multiple Results into a single Result.
+   * Returns Ok containing an array of all values if all Results are Ok.
+   * Returns the first Err if any Result is Err.
+   * Returns Ok([]) for an empty array.
+   */
+  static all<T, E>(results: readonly Result<T, E>[]): Result<T[], E> {
+    const values: T[] = [];
+
+    for (const r of results) {
+      if (r.isErr()) {
+        // 型パラメータ T は配列版 (T[]) に変わるが、Err インスタンス自体はそのまま再利用して問題ない
+        return r as unknown as Result<T[], E>;
+      }
+      values.push(r.unwrap());
+    }
+
+    return Result.ok<T[], E>(values);
+  }
+
+  /**
+   * Returns the first Ok result from an array of Results.
+   * If all Results are Err, returns Err containing an array of all errors.
+   * Returns Err([]) for an empty array.
+   */
+  static any<T, E>(results: readonly Result<T, E>[]): Result<T, E[]> {
+    const errors: E[] = [];
+
+    for (const r of results) {
+      if (r.isOk()) {
+        // 型パラメータ E は配列版 (E[]) に変わるが、Ok インスタンス自体はそのまま再利用して問題ない
+        return r as unknown as Result<T, E[]>;
+      }
+      // r は Err 側なので、unwrapOrElse のコールバックから error を取り出して蓄積する
+      // 戻り値 T は使わないため、適当な値を返している
+      r.unwrapOrElse((e) => {
+        errors.push(e);
+        return undefined as never;
+      });
+    }
+
+    return Result.err<T, E[]>(errors);
+  }
 }
 
 /**

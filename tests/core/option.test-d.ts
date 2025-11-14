@@ -66,5 +66,43 @@ describe("Option type tests", () => {
     // expect のメッセージは string のみ受け付ける
     // @ts-expect-error - message must be string
     noneForUnwrap.expect(123);
+
+    // --- Option.all / Option.any ---
+
+    // Option.all: すべて Some → Some<T[]>
+    const allSome = [Option.some(1), Option.some(2), Option.some(3)];
+    const allCombined = Option.all(allSome);
+    expectTypeOf(allCombined).toEqualTypeOf<Option<number[]>>();
+
+    // Option.all: None がある場合
+    const allWithNone = [Option.some(1), Option.none<number>(), Option.some(3)];
+    const allCombinedWithNone = Option.all(allWithNone);
+    expectTypeOf(allCombinedWithNone).toEqualTypeOf<Option<number[]>>();
+
+    // Option.all: readonly 配列
+    const readonlyOptions: readonly Option<number>[] = [
+      Option.some(1),
+      Option.some(2),
+    ];
+    const allFromReadonly = Option.all(readonlyOptions);
+    expectTypeOf(allFromReadonly).toEqualTypeOf<Option<number[]>>();
+
+    // Option.any: 最初の Some を返す
+    const anySome = [Option.none<number>(), Option.some(42), Option.some(100)];
+    const anyCombined = Option.any(anySome);
+    expectTypeOf(anyCombined).toEqualTypeOf<Option<number>>();
+
+    // Option.any: すべて None → None
+    const anyAllNone = [Option.none<number>(), Option.none<number>()];
+    const anyAllNoneCombined = Option.any(anyAllNone);
+    expectTypeOf(anyAllNoneCombined).toEqualTypeOf<Option<number>>();
+
+    // Option.any: readonly 配列
+    const readonlyAnyOptions: readonly Option<number>[] = [
+      Option.none(),
+      Option.some(42),
+    ];
+    const anyFromReadonly = Option.any(readonlyAnyOptions);
+    expectTypeOf(anyFromReadonly).toEqualTypeOf<Option<number>>();
   });
 });

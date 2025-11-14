@@ -418,4 +418,151 @@ describe("Result", () => {
       expect(result.unwrap()).toBe("7");
     });
   });
+
+  describe("Result.all()", () => {
+    test("すべて Ok の場合: Ok<T[]> を返す", () => {
+      const results = [Result.ok(1), Result.ok(2), Result.ok(3)];
+      const combined = Result.all(results);
+      expect(combined.isOk()).toBe(true);
+      expect(combined.unwrap()).toEqual([1, 2, 3]);
+    });
+
+    test("1つでも Err がある場合: 最初の Err を返す", () => {
+      const results = [
+        Result.ok(1),
+        Result.err<number, string>("error1"),
+        Result.err<number, string>("error2"),
+      ];
+      const combined = Result.all(results);
+      expect(combined.isErr()).toBe(true);
+
+      let errorValue: string | null = null;
+      combined.orElse((e) => {
+        errorValue = e;
+        return Result.err(e);
+      });
+      expect(errorValue).toBe("error1");
+    });
+
+    test("最初が Err の場合: すぐに Err を返す", () => {
+      const results = [
+        Result.err<number, string>("first error"),
+        Result.ok(1),
+        Result.ok(2),
+      ];
+      const combined = Result.all(results);
+      expect(combined.isErr()).toBe(true);
+
+      let errorValue: string | null = null;
+      combined.orElse((e) => {
+        errorValue = e;
+        return Result.err(e);
+      });
+      expect(errorValue).toBe("first error");
+    });
+
+    test("空配列の場合: Ok([]) を返す", () => {
+      const results: Result<number, string>[] = [];
+      const combined = Result.all(results);
+      expect(combined.isOk()).toBe(true);
+      expect(combined.unwrap()).toEqual([]);
+    });
+
+    test("readonly 配列を受け取れる", () => {
+      const results: readonly Result<number, string>[] = [
+        Result.ok(1),
+        Result.ok(2),
+      ];
+      const combined = Result.all(results);
+      expect(combined.isOk()).toBe(true);
+      expect(combined.unwrap()).toEqual([1, 2]);
+    });
+
+    test("異なる型の値を扱える", () => {
+      const results = [Result.ok("hello"), Result.ok("world")];
+      const combined = Result.all(results);
+      expect(combined.isOk()).toBe(true);
+      expect(combined.unwrap()).toEqual(["hello", "world"]);
+    });
+  });
+
+  describe("Result.any()", () => {
+    test("1つでも Ok がある場合: 最初の Ok を返す", () => {
+      const results = [
+        Result.err<number, string>("error1"),
+        Result.ok(42),
+        Result.ok(100),
+      ];
+      const combined = Result.any(results);
+      expect(combined.isOk()).toBe(true);
+      expect(combined.unwrap()).toBe(42);
+    });
+
+    test("最初が Ok の場合: すぐに Ok を返す", () => {
+      const results = [
+        Result.ok(1),
+        Result.err<number, string>("error"),
+        Result.ok(2),
+      ];
+      const combined = Result.any(results);
+      expect(combined.isOk()).toBe(true);
+      expect(combined.unwrap()).toBe(1);
+    });
+
+    test("すべて Err の場合: Err<E[]> を返す", () => {
+      const results = [
+        Result.err<number, string>("error1"),
+        Result.err<number, string>("error2"),
+        Result.err<number, string>("error3"),
+      ];
+      const combined = Result.any(results);
+      expect(combined.isErr()).toBe(true);
+
+      let errorValues: string[] | null = null;
+      combined.orElse((errors) => {
+        errorValues = errors;
+        return Result.err(errors);
+      });
+      expect(errorValues).toEqual(["error1", "error2", "error3"]);
+    });
+
+    test("空配列の場合: Err([]) を返す", () => {
+      const results: Result<number, string>[] = [];
+      const combined = Result.any(results);
+      expect(combined.isErr()).toBe(true);
+
+      let errorValues: string[] | null = null;
+      combined.orElse((errors) => {
+        errorValues = errors;
+        return Result.err(errors);
+      });
+      expect(errorValues).toEqual([]);
+    });
+
+    test("readonly 配列を受け取れる", () => {
+      const results: readonly Result<number, string>[] = [
+        Result.err("error"),
+        Result.ok(42),
+      ];
+      const combined = Result.any(results);
+      expect(combined.isOk()).toBe(true);
+      expect(combined.unwrap()).toBe(42);
+    });
+
+    test("異なる型のエラーを扱える", () => {
+      const results = [
+        Result.err<number, string>("error1"),
+        Result.err<number, string>("error2"),
+      ];
+      const combined = Result.any(results);
+      expect(combined.isErr()).toBe(true);
+
+      let errorValues: string[] | null = null;
+      combined.orElse((errors) => {
+        errorValues = errors;
+        return Result.err(errors);
+      });
+      expect(errorValues).toEqual(["error1", "error2"]);
+    });
+  });
 });

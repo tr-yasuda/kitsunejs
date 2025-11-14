@@ -94,6 +94,38 @@ export abstract class Option<T> {
     }
     return Option.some(value);
   }
+
+  /**
+   * Combines multiple Options into a single Option.
+   * Returns Some containing an array of all values if all Options are Some.
+   * Returns None if any Option is None.
+   * Returns Some([]) for an empty array.
+   */
+  static all<T>(options: readonly Option<T>[]): Option<T[]> {
+    const values: T[] = [];
+
+    for (const o of options) {
+      if (o.isNone()) {
+        return Option.none<T[]>();
+      }
+      values.push(o.unwrap());
+    }
+
+    return Option.some(values);
+  }
+
+  /**
+   * Returns the first Some option from an array of Options.
+   * If all Options are None, returns None.
+   */
+  static any<T>(options: readonly Option<T>[]): Option<T> {
+    for (const o of options) {
+      if (o.isSome()) {
+        return o;
+      }
+    }
+    return Option.none<T>();
+  }
 }
 
 /**

@@ -77,5 +77,54 @@ describe("Result type tests", () => {
     expectTypeOf(tryAsyncResult).toEqualTypeOf<
       Promise<Result<number, Error>>
     >();
+
+    // --- Result.all / Result.any ---
+
+    // Result.all: すべて Ok → Ok<T[]>
+    const allOk = [Result.ok(1), Result.ok(2), Result.ok(3)];
+    const allCombined = Result.all(allOk);
+    expectTypeOf(allCombined).toEqualTypeOf<Result<number[], never>>();
+
+    // Result.all: Err がある場合
+    const allWithErr = [
+      Result.ok(1),
+      Result.err<number, string>("error"),
+      Result.ok(3),
+    ];
+    const allCombinedWithErr = Result.all(allWithErr);
+    expectTypeOf(allCombinedWithErr).toEqualTypeOf<Result<number[], string>>();
+
+    // Result.all: readonly 配列
+    const readonlyResults: readonly Result<number, string>[] = [
+      Result.ok(1),
+      Result.ok(2),
+    ];
+    const allFromReadonly = Result.all(readonlyResults);
+    expectTypeOf(allFromReadonly).toEqualTypeOf<Result<number[], string>>();
+
+    // Result.any: 最初の Ok を返す
+    const anyOk = [
+      Result.err<number, string>("error1"),
+      Result.ok(42),
+      Result.ok(100),
+    ];
+    const anyCombined = Result.any(anyOk);
+    expectTypeOf(anyCombined).toEqualTypeOf<Result<number, string[]>>();
+
+    // Result.any: すべて Err → Err<E[]>
+    const anyAllErr = [
+      Result.err<number, string>("error1"),
+      Result.err<number, string>("error2"),
+    ];
+    const anyAllErrCombined = Result.any(anyAllErr);
+    expectTypeOf(anyAllErrCombined).toEqualTypeOf<Result<number, string[]>>();
+
+    // Result.any: readonly 配列
+    const readonlyAnyResults: readonly Result<number, string>[] = [
+      Result.err("error"),
+      Result.ok(42),
+    ];
+    const anyFromReadonly = Result.any(readonlyAnyResults);
+    expectTypeOf(anyFromReadonly).toEqualTypeOf<Result<number, string[]>>();
   });
 });

@@ -346,4 +346,102 @@ describe("Option", () => {
       expect(backToOption.isNone()).toBe(true);
     });
   });
+
+  describe("Option.all()", () => {
+    test("すべて Some の場合: Some<T[]> を返す", () => {
+      const options = [Option.some(1), Option.some(2), Option.some(3)];
+      const combined = Option.all(options);
+      expect(combined.isSome()).toBe(true);
+      expect(combined.unwrap()).toEqual([1, 2, 3]);
+    });
+
+    test("1つでも None がある場合: None を返す", () => {
+      const options = [Option.some(1), Option.none<number>(), Option.some(3)];
+      const combined = Option.all(options);
+      expect(combined.isNone()).toBe(true);
+    });
+
+    test("最初が None の場合: すぐに None を返す", () => {
+      const options = [Option.none<number>(), Option.some(1), Option.some(2)];
+      const combined = Option.all(options);
+      expect(combined.isNone()).toBe(true);
+    });
+
+    test("空配列の場合: Some([]) を返す", () => {
+      const options: Option<number>[] = [];
+      const combined = Option.all(options);
+      expect(combined.isSome()).toBe(true);
+      expect(combined.unwrap()).toEqual([]);
+    });
+
+    test("readonly 配列を受け取れる", () => {
+      const options: readonly Option<number>[] = [
+        Option.some(1),
+        Option.some(2),
+      ];
+      const combined = Option.all(options);
+      expect(combined.isSome()).toBe(true);
+      expect(combined.unwrap()).toEqual([1, 2]);
+    });
+
+    test("異なる型の値を扱える", () => {
+      const options = [Option.some("hello"), Option.some("world")];
+      const combined = Option.all(options);
+      expect(combined.isSome()).toBe(true);
+      expect(combined.unwrap()).toEqual(["hello", "world"]);
+    });
+  });
+
+  describe("Option.any()", () => {
+    test("1つでも Some がある場合: 最初の Some を返す", () => {
+      const options = [
+        Option.none<number>(),
+        Option.some(42),
+        Option.some(100),
+      ];
+      const combined = Option.any(options);
+      expect(combined.isSome()).toBe(true);
+      expect(combined.unwrap()).toBe(42);
+    });
+
+    test("最初が Some の場合: すぐに Some を返す", () => {
+      const options = [Option.some(1), Option.none<number>(), Option.some(2)];
+      const combined = Option.any(options);
+      expect(combined.isSome()).toBe(true);
+      expect(combined.unwrap()).toBe(1);
+    });
+
+    test("すべて None の場合: None を返す", () => {
+      const options = [
+        Option.none<number>(),
+        Option.none<number>(),
+        Option.none<number>(),
+      ];
+      const combined = Option.any(options);
+      expect(combined.isNone()).toBe(true);
+    });
+
+    test("空配列の場合: None を返す", () => {
+      const options: Option<number>[] = [];
+      const combined = Option.any(options);
+      expect(combined.isNone()).toBe(true);
+    });
+
+    test("readonly 配列を受け取れる", () => {
+      const options: readonly Option<number>[] = [
+        Option.none(),
+        Option.some(42),
+      ];
+      const combined = Option.any(options);
+      expect(combined.isSome()).toBe(true);
+      expect(combined.unwrap()).toBe(42);
+    });
+
+    test("異なる型の値を扱える", () => {
+      const options = [Option.some("first"), Option.some("second")];
+      const combined = Option.any(options);
+      expect(combined.isSome()).toBe(true);
+      expect(combined.unwrap()).toBe("first");
+    });
+  });
 });

@@ -6,7 +6,7 @@ Rust-inspired `Result` and `Option` types for TypeScript, enabling type-safe err
 
 - 🦀 **Rust-like API**: Familiar `Result<T, E>` and `Option<T>` types with methods like `map`, `andThen`, `unwrap`, etc.
 - 🔒 **Type-safe**: Full TypeScript support with proper type inference and narrowing
-- 🌳 **Tree-shakeable**: Optimized for modern bundlers with ESM/CJS dual support
+- 🌳 Tree-shakeable: Fully ESM-ready with optional CJS support
 - 📦 **Zero dependencies**: Lightweight and self-contained
 - ⚡ **Async-ready**: Built-in support for `Promise` with `Result.tryAsync`
 
@@ -70,16 +70,21 @@ async function fetchUser(id: number): Promise<Result<User, Error>> {
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
-    return response.json();
+    return (await response.json()) as User;
   });
 }
 
-const userResult = await fetchUser(1);
-if (userResult.isOk()) {
-  console.log('User:', userResult.unwrap());
-} else {
-  console.error('Error:', userResult.unwrapOr({ id: 0, name: 'Unknown' }));
+async function main() {
+  const userResult = await fetchUser(1);
+
+  if (userResult.isOk()) {
+    console.log('User:', userResult.unwrap());
+  } else {
+    console.error('Error:', userResult.unwrapOr({ id: 0, name: 'Unknown' }));
+  }
 }
+
+main();
 ```
 
 #### Chaining Operations
@@ -134,13 +139,23 @@ const results = [
 const allOk = Result.all(results);
 console.log(allOk.unwrap()); // [1, 2, 3]
 
-// Get the first Ok, or last Err if all fail
+// Get the first Ok, or Err<E[]> if all fail
 const firstOk = Result.any([
   Result.err('error1'),
   Result.ok(42),
   Result.err('error2'),
 ]);
 console.log(firstOk.unwrap()); // 42
+
+// All Err case returns Err<E[]>
+const allErr = Result.any([
+  Result.err('error1'),
+  Result.err('error2'),
+  Result.err('error3'),
+]);
+if (allErr.isErr()) {
+  console.log(allErr.unwrapOrElse((errors) => errors)); // ['error1', 'error2', 'error3']
+}
 ```
 
 ### Option Type
@@ -276,7 +291,8 @@ For a complete list of methods and detailed documentation, please refer to the s
 - `Result.ok(value)`, `Result.err(error)` - Constructors
 - `Result.fromNullable(value, error)` - Convert nullable to Result
 - `Result.try(fn)`, `Result.tryAsync(fn)` - Exception handling
-- `Result.all(results)`, `Result.any(results)` - Combine multiple Results
+- `Result.all(results)` - All must be `Ok` to return `Ok<T[]>`, otherwise returns the first `Err`
+- `Result.any(results)` - Returns the first `Ok`, or `Err<E[]>` containing all errors if none succeed
 
 ### Option<T> Methods
 
@@ -293,7 +309,8 @@ For a complete list of methods and detailed documentation, please refer to the s
 
 - `Option.some(value)`, `Option.none()` - Constructors
 - `Option.fromNullable(value)` - Convert nullable to Option
-- `Option.all(options)`, `Option.any(options)` - Combine multiple Options
+- `Option.all(options)` - All must be `Some` to return `Some<T[]>`, otherwise returns `None`
+- `Option.any(options)` - Returns the first `Some`, or `None` if all are `None`
 
 ## License
 

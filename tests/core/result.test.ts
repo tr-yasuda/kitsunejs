@@ -73,6 +73,18 @@ describe("Result", () => {
     });
   });
 
+  describe("unwrapErr()", () => {
+    test("Err の場合: エラー値を返す", () => {
+      const result = Result.err("error message");
+      expect(result.unwrapErr()).toBe("error message");
+    });
+
+    test("Ok の場合: 例外を投げる", () => {
+      const result = Result.ok(42);
+      expect(() => result.unwrapErr()).toThrow(UnwrapError);
+    });
+  });
+
   describe("unwrapOr()", () => {
     test("Ok の場合: 元の値を返す", () => {
       const result = Result.ok(42);

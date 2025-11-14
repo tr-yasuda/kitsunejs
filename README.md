@@ -12,6 +12,8 @@ Rust-inspired `Result` and `Option` types for TypeScript, enabling type-safe err
 
 ## Installation
 
+> ⚠️ This package is currently under development (v0.0.0) and not yet published to npm.
+
 ```bash
 # npm
 npm install kitsune
@@ -80,7 +82,10 @@ async function main() {
   if (userResult.isOk()) {
     console.log('User:', userResult.unwrap());
   } else {
-    console.error('Error:', userResult.unwrapOr({ id: 0, name: 'Unknown' }));
+    console.error('Failed to fetch user:', userResult.unwrapErr());
+    // Provide fallback value
+    const defaultUser = { id: 0, name: 'Unknown' };
+    console.log('Using default user:', defaultUser);
   }
 }
 
@@ -280,14 +285,15 @@ For more detailed information, please refer to the following documentation:
 - **[Rust Comparison](./docs/rust-comparison.md)** - Comparison table between Rust's `Result`/`Option` and kitsune
 - **[Recipes](./docs/recipes.md)** - Practical usage patterns and best practices for common scenarios
 
-## API Reference
+## Quick API Reference
 
-For a complete list of methods and detailed documentation, please refer to the source code or generated type definitions.
+Below is a quick reference of available methods. For detailed documentation with examples, see [API Reference](./docs/api-reference.md).
 
 ### Result<T, E> Methods
 
 - `isOk()`, `isErr()` - Type guards
 - `unwrap()`, `expect(message)` - Extract values (throws on error)
+- `unwrapErr()` - Extract error value (throws on Ok)
 - `unwrapOr(defaultValue)`, `unwrapOrElse(fn)` - Safe extraction with fallback
 - `map(fn)`, `mapErr(fn)` - Transform values
 - `and(other)`, `or(other)` - Combine Results

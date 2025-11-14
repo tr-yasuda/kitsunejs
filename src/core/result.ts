@@ -34,6 +34,12 @@ export abstract class Result<T, E> {
   abstract expect(message: string): T;
 
   /**
+   * Returns the contained Err value.
+   * Throws an UnwrapError if the value is Ok.
+   */
+  abstract unwrapErr(): E;
+
+  /**
    * Returns the contained Ok value or a provided default.
    */
   abstract unwrapOr(defaultValue: T): T;
@@ -207,6 +213,10 @@ export class Ok<T, E = never> extends Result<T, E> {
     return this.value;
   }
 
+  unwrapErr(): never {
+    throw new UnwrapError("Called unwrapErr on an Ok value");
+  }
+
   unwrapOr(_defaultValue: T): T {
     return this.value;
   }
@@ -272,6 +282,10 @@ export class Err<T = never, E = unknown> extends Result<T, E> {
 
   expect(message: string): never {
     throw new UnwrapError(message);
+  }
+
+  unwrapErr(): E {
+    return this.error;
   }
 
   unwrapOr(defaultValue: T): T {

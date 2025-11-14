@@ -28,6 +28,7 @@ describe("Result type tests", () => {
 
     if (maybeResult.isErr()) {
       expectTypeOf(maybeResult).toEqualTypeOf<Err<number, string>>();
+      expectTypeOf(maybeResult.unwrapErr()).toEqualTypeOf<string>();
     }
 
     // --- map / mapErr / andThen ---

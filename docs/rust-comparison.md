@@ -23,6 +23,7 @@ kitsune faithfully reproduces Rust's Result/Option API as much as possible, but 
 | `is_err()`           | `isErr()`                           |                                                                                    |
 | `unwrap()`           | `unwrap()`                          | Throws UnwrapError                                                                 |
 | `expect(msg)`        | `expect(msg)`                       | Throws UnwrapError                                                                 |
+| `unwrap_err()`       | `unwrapErr()`                       | Throws UnwrapError if called on Ok                                                 |
 | `unwrap_or(default)` | `unwrapOr(default)`                 |                                                                                    |
 | `unwrap_or_else(fn)` | `unwrapOrElse(fn)`                  |                                                                                    |
 | `map(fn)`            | `map(fn)`                           |                                                                                    |

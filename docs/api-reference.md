@@ -304,6 +304,28 @@ const err = Result.err('error');
 // err.expect('Expected valid result'); // UnwrapError: Expected valid result
 ```
 
+##### `unwrapErr(): E`
+
+Extracts the `Err` value. Throws `UnwrapError` if the value is `Ok`.
+
+**Returns**: `E` - Error value if Err
+
+**Throws**: `UnwrapError` - If Ok
+
+**⚠️ Usage Warning**:
+- Use this method sparingly as it may throw exceptions
+- Useful for error logging or when you need to inspect the actual error
+- If you only need to provide a fallback, prefer `unwrapOr` / `unwrapOrElse`
+
+**Example**:
+```typescript
+const err = Result.err('Something went wrong');
+console.log(err.unwrapErr()); // 'Something went wrong'
+
+const ok = Result.ok(42);
+// ok.unwrapErr(); // UnwrapError: Called unwrapErr on an Ok value
+```
+
 ##### `unwrapOr(defaultValue: T): T`
 
 Extracts the `Ok` value. Returns the specified default value if `Err`.

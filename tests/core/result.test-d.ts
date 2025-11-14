@@ -3,21 +3,21 @@ import { Option } from "@/core/option.js";
 import { type Err, type Ok, Result } from "@/core/result.js";
 
 describe("Result type tests", () => {
-  test("型の挙動", () => {
-    // --- 基本的な型推論 ---
+  test("type behavior", () => {
+    // --- Basic type inference ---
 
     const okNumber = Result.ok(42);
     expectTypeOf(okNumber).toEqualTypeOf<Result<number, never>>();
 
-    // 型推論によりエラー型が string になることを確認
+    // Verify error type becomes string through inference
     const errString = Result.err("error");
     expectTypeOf(errString).toEqualTypeOf<Result<never, string>>();
 
-    // 明示的ジェネリクス
+    // Explicit generics
     const okExplicit = Result.ok<number, string>(42);
     expectTypeOf(okExplicit).toEqualTypeOf<Result<number, string>>();
 
-    // --- isOk / isErr によるナローイング ---
+    // --- Narrowing with isOk / isErr ---
 
     const maybeResult: Result<number, string> = Result.ok(42);
 
@@ -81,12 +81,12 @@ describe("Result type tests", () => {
 
     // --- Result.all / Result.any ---
 
-    // Result.all: すべて Ok → Ok<T[]>
+    // Result.all: all Ok → Ok<T[]>
     const allOk = [Result.ok(1), Result.ok(2), Result.ok(3)];
     const allCombined = Result.all(allOk);
     expectTypeOf(allCombined).toEqualTypeOf<Result<number[], never>>();
 
-    // Result.all: Err がある場合
+    // Result.all: contains Err
     const allWithErr = [
       Result.ok(1),
       Result.err<number, string>("error"),
@@ -95,7 +95,7 @@ describe("Result type tests", () => {
     const allCombinedWithErr = Result.all(allWithErr);
     expectTypeOf(allCombinedWithErr).toEqualTypeOf<Result<number[], string>>();
 
-    // Result.all: readonly 配列
+    // Result.all: readonly array
     const readonlyResults: readonly Result<number, string>[] = [
       Result.ok(1),
       Result.ok(2),
@@ -103,7 +103,7 @@ describe("Result type tests", () => {
     const allFromReadonly = Result.all(readonlyResults);
     expectTypeOf(allFromReadonly).toEqualTypeOf<Result<number[], string>>();
 
-    // Result.any: 最初の Ok を返す
+    // Result.any: returns first Ok
     const anyOk = [
       Result.err<number, string>("error1"),
       Result.ok(42),
@@ -112,7 +112,7 @@ describe("Result type tests", () => {
     const anyCombined = Result.any(anyOk);
     expectTypeOf(anyCombined).toEqualTypeOf<Result<number, string[]>>();
 
-    // Result.any: すべて Err → Err<E[]>
+    // Result.any: all Err → Err<E[]>
     const anyAllErr = [
       Result.err<number, string>("error1"),
       Result.err<number, string>("error2"),
@@ -120,7 +120,7 @@ describe("Result type tests", () => {
     const anyAllErrCombined = Result.any(anyAllErr);
     expectTypeOf(anyAllErrCombined).toEqualTypeOf<Result<number, string[]>>();
 
-    // Result.any: readonly 配列
+    // Result.any: readonly array
     const readonlyAnyResults: readonly Result<number, string>[] = [
       Result.err("error"),
       Result.ok(42),

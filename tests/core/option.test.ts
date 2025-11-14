@@ -4,70 +4,70 @@ import { None, Option, Some } from "@/core/option.js";
 
 describe("Option", () => {
   describe("Option.some()", () => {
-    test("基本的な値の生成", () => {
+    test("creates a basic value", () => {
       const option = Option.some(42);
       expect(option).toBeInstanceOf(Some);
       expect(option.tag).toBe("Some");
     });
 
-    test("isSome() が true を返す", () => {
+    test("isSome() returns true", () => {
       const option = Option.some(42);
       expect(option.isSome()).toBe(true);
     });
 
-    test("isNone() が false を返す", () => {
+    test("isNone() returns false", () => {
       const option = Option.some(42);
       expect(option.isNone()).toBe(false);
     });
 
-    test("unwrap() で値を取得できる", () => {
+    test("unwrap() retrieves the value", () => {
       const option = Option.some(42);
       expect(option.unwrap()).toBe(42);
     });
   });
 
   describe("Option.none()", () => {
-    test("None の生成", () => {
+    test("creates None", () => {
       const option = Option.none();
       expect(option).toBeInstanceOf(None);
       expect(option.tag).toBe("None");
     });
 
-    test("isSome() が false を返す", () => {
+    test("isSome() returns false", () => {
       const option = Option.none();
       expect(option.isSome()).toBe(false);
     });
 
-    test("isNone() が true を返す", () => {
+    test("isNone() returns true", () => {
       const option = Option.none();
       expect(option.isNone()).toBe(true);
     });
 
-    test("unwrap() で例外が発生する", () => {
+    test("unwrap() throws an exception", () => {
       const option = Option.none();
       expect(() => option.unwrap()).toThrow(UnwrapError);
     });
   });
 
   describe("unwrap()", () => {
-    test("Some の場合: 値を返す", () => {
+    test("Some case: returns the value", () => {
       const option = Option.some(42);
       expect(option.unwrap()).toBe(42);
     });
 
-    test("None の場合: 例外を投げる", () => {
+    test("None case: throws an exception", () => {
       const option = Option.none();
       expect(() => option.unwrap()).toThrow(UnwrapError);
     });
   });
 
   describe("expect()", () => {
-    test("Some の場合: 値を返す", () => {
+    test("Some case: returns the value", () => {
       const option = Option.some(42);
       expect(option.expect("custom message")).toBe(42);
     });
 
-    test("None の場合: カスタムメッセージで例外を投げる", () => {
+    test("None case: throws an exception with custom message", () => {
       const option = Option.none();
       expect(() => option.expect("custom message")).toThrow(UnwrapError);
       expect(() => option.expect("custom message")).toThrow("custom message");
@@ -75,44 +75,44 @@ describe("Option", () => {
   });
 
   describe("unwrapOr()", () => {
-    test("Some の場合: 元の値を返す", () => {
+    test("Some case: returns the original value", () => {
       const option = Option.some(42);
       expect(option.unwrapOr(0)).toBe(42);
     });
 
-    test("None の場合: デフォルト値を返す", () => {
+    test("None case: returns the default value", () => {
       const option = Option.none<number>();
       expect(option.unwrapOr(0)).toBe(0);
     });
   });
 
   describe("unwrapOrElse()", () => {
-    test("Some の場合: 元の値を返す", () => {
+    test("Some case: returns the original value", () => {
       const option = Option.some(42);
       expect(option.unwrapOrElse(() => 0)).toBe(42);
     });
 
-    test("None の場合: 関数の結果を返す", () => {
+    test("None case: returns the function result", () => {
       const option = Option.none<number>();
       expect(option.unwrapOrElse(() => 100)).toBe(100);
     });
   });
 
   describe("map()", () => {
-    test("Some の場合: map が適用される", () => {
+    test("Some case: map is applied", () => {
       const option = Option.some(42);
       const mapped = option.map((value) => value * 2);
       expect(mapped.isSome()).toBe(true);
       expect(mapped.unwrap()).toBe(84);
     });
 
-    test("None の場合: map がスキップされる", () => {
+    test("None case: map is skipped", () => {
       const option = Option.none<number>();
       const mapped = option.map((value) => value * 2);
       expect(mapped.isNone()).toBe(true);
     });
 
-    test("型変換が正しく動作する", () => {
+    test("type conversion works correctly", () => {
       const option = Option.some(42);
       const mapped = option.map((value) => value.toString());
       expect(mapped.unwrap()).toBe("42");
@@ -120,21 +120,21 @@ describe("Option", () => {
   });
 
   describe("and()", () => {
-    test("Some.and(other): other を返す", () => {
+    test("Some.and(other): returns other", () => {
       const option1 = Option.some(42);
       const option2 = Option.some("hello");
       const combined = option1.and(option2);
       expect(combined.unwrap()).toBe("hello");
     });
 
-    test("None.and(other): None を返す", () => {
+    test("None.and(other): returns None", () => {
       const option1 = Option.none<number>();
       const option2 = Option.some("hello");
       const combined = option1.and(option2);
       expect(combined.isNone()).toBe(true);
     });
 
-    test("Some.and(None): None を返す", () => {
+    test("Some.and(None): returns None", () => {
       const option1 = Option.some(42);
       const option2 = Option.none<string>();
       const combined = option1.and(option2);
@@ -143,21 +143,21 @@ describe("Option", () => {
   });
 
   describe("or()", () => {
-    test("Some.or(other): self を返す", () => {
+    test("Some.or(other): returns self", () => {
       const option1 = Option.some(42);
       const option2 = Option.some(100);
       const combined = option1.or(option2);
       expect(combined.unwrap()).toBe(42);
     });
 
-    test("None.or(other): other を返す", () => {
+    test("None.or(other): returns other", () => {
       const option1 = Option.none<number>();
       const option2 = Option.some(100);
       const combined = option1.or(option2);
       expect(combined.unwrap()).toBe(100);
     });
 
-    test("None.or(None): None を返す", () => {
+    test("None.or(None): returns None", () => {
       const option1 = Option.none<number>();
       const option2 = Option.none<number>();
       const combined = option1.or(option2);
@@ -166,25 +166,25 @@ describe("Option", () => {
   });
 
   describe("andThen()", () => {
-    test("Some.andThen(fn): fn の結果を返す", () => {
+    test("Some.andThen(fn): returns fn result", () => {
       const option = Option.some(42);
       const chained = option.andThen((value) => Option.some(value * 2));
       expect(chained.unwrap()).toBe(84);
     });
 
-    test("None.andThen(fn): None を返す", () => {
+    test("None.andThen(fn): returns None", () => {
       const option = Option.none<number>();
       const chained = option.andThen((value) => Option.some(value * 2));
       expect(chained.isNone()).toBe(true);
     });
 
-    test("Some.andThen(fn) で None を返す", () => {
+    test("Some.andThen(fn) returns None", () => {
       const option = Option.some(42);
       const chained = option.andThen((_value) => Option.none<number>());
       expect(chained.isNone()).toBe(true);
     });
 
-    test("型変換チェーン (number → string → boolean)", () => {
+    test("type conversion chain (number → string → boolean)", () => {
       const option = Option.some(42);
       const chained = option
         .andThen((n) => Option.some(n.toString())) // number → string
@@ -194,26 +194,26 @@ describe("Option", () => {
   });
 
   describe("filter()", () => {
-    test("Some で predicate が true: Some を返す", () => {
+    test("Some with predicate true: returns Some", () => {
       const option = Option.some(42);
       const filtered = option.filter((value) => value > 0);
       expect(filtered.isSome()).toBe(true);
       expect(filtered.unwrap()).toBe(42);
     });
 
-    test("Some で predicate が false: None を返す", () => {
+    test("Some with predicate false: returns None", () => {
       const option = Option.some(42);
       const filtered = option.filter((value) => value < 0);
       expect(filtered.isNone()).toBe(true);
     });
 
-    test("None: None を返す", () => {
+    test("None: returns None", () => {
       const option = Option.none<number>();
       const filtered = option.filter((value) => value > 0);
       expect(filtered.isNone()).toBe(true);
     });
 
-    test("複雑な条件でフィルタリング", () => {
+    test("filtering with complex condition", () => {
       const option = Option.some("hello");
       const filtered = option.filter((value) => value.length > 3);
       expect(filtered.isSome()).toBe(true);
@@ -222,20 +222,20 @@ describe("Option", () => {
   });
 
   describe("toResult()", () => {
-    test("Some → Ok への変換", () => {
+    test("Some → Ok conversion", () => {
       const option = Option.some(42);
       const result = option.toResult("error");
       expect(result.isOk()).toBe(true);
       expect(result.unwrap()).toBe(42);
     });
 
-    test("None → Err への変換", () => {
+    test("None → Err conversion", () => {
       const option = Option.none<number>();
       const result = option.toResult("error");
       expect(result.isErr()).toBe(true);
     });
 
-    test("エラーメッセージが保存される", () => {
+    test("error message is preserved", () => {
       const option = Option.none<number>();
       const result = option.toResult("custom error");
 
@@ -260,19 +260,19 @@ describe("Option", () => {
       expect(option.isNone()).toBe(true);
     });
 
-    test("値 → Some", () => {
+    test("value → Some", () => {
       const option = Option.fromNullable(42);
       expect(option.isSome()).toBe(true);
       expect(option.unwrap()).toBe(42);
     });
 
-    test("0 → Some (falsy だが null/undefined ではない)", () => {
+    test("0 → Some (falsy but not null/undefined)", () => {
       const option = Option.fromNullable(0);
       expect(option.isSome()).toBe(true);
       expect(option.unwrap()).toBe(0);
     });
 
-    test("空文字列 → Some", () => {
+    test("empty string → Some", () => {
       const option = Option.fromNullable("");
       expect(option.isSome()).toBe(true);
       expect(option.unwrap()).toBe("");
@@ -285,20 +285,20 @@ describe("Option", () => {
     });
   });
 
-  describe("エッジケース", () => {
-    test("Some(null) は有効", () => {
+  describe("edge cases", () => {
+    test("Some(null) is valid", () => {
       const option = Option.some(null);
       expect(option.isSome()).toBe(true);
       expect(option.unwrap()).toBe(null);
     });
 
-    test("Some(undefined) は有効", () => {
+    test("Some(undefined) is valid", () => {
       const option = Option.some(undefined);
       expect(option.isSome()).toBe(true);
       expect(option.unwrap()).toBe(undefined);
     });
 
-    test("複数の map を連鎖できる", () => {
+    test("can chain multiple maps", () => {
       const option = Option.some(2)
         .map((x) => x * 3)
         .map((x) => x + 1)
@@ -306,7 +306,7 @@ describe("Option", () => {
       expect(option.unwrap()).toBe("7");
     });
 
-    test("複数の andThen を連鎖できる", () => {
+    test("can chain multiple andThens", () => {
       const option = Option.some(2)
         .andThen((x) => Option.some(x * 3))
         .andThen((x) => Option.some(x + 1))
@@ -314,7 +314,7 @@ describe("Option", () => {
       expect(option.unwrap()).toBe("7");
     });
 
-    test("map と filter を連鎖できる", () => {
+    test("can chain map and filter", () => {
       const option = Option.some(5)
         .map((x) => x * 2)
         .filter((x) => x > 8)
@@ -322,7 +322,7 @@ describe("Option", () => {
       expect(option.unwrap()).toBe("10");
     });
 
-    test("filter で None になった後の連鎖", () => {
+    test("chaining after filter returns None", () => {
       const option = Option.some(5)
         .filter((x) => x > 10)
         .map((x) => x * 2);
@@ -330,7 +330,7 @@ describe("Option", () => {
     });
   });
 
-  describe("Result との相互変換", () => {
+  describe("interconversion with Result", () => {
     test("Some → Result → Option", () => {
       const option = Option.some(42);
       const result = option.toResult("error");
@@ -348,33 +348,33 @@ describe("Option", () => {
   });
 
   describe("Option.all()", () => {
-    test("すべて Some の場合: Some<T[]> を返す", () => {
+    test("all Some: returns Some<T[]>", () => {
       const options = [Option.some(1), Option.some(2), Option.some(3)];
       const combined = Option.all(options);
       expect(combined.isSome()).toBe(true);
       expect(combined.unwrap()).toEqual([1, 2, 3]);
     });
 
-    test("1つでも None がある場合: None を返す", () => {
+    test("contains at least one None: returns None", () => {
       const options = [Option.some(1), Option.none<number>(), Option.some(3)];
       const combined = Option.all(options);
       expect(combined.isNone()).toBe(true);
     });
 
-    test("最初が None の場合: すぐに None を返す", () => {
+    test("first is None: returns None immediately", () => {
       const options = [Option.none<number>(), Option.some(1), Option.some(2)];
       const combined = Option.all(options);
       expect(combined.isNone()).toBe(true);
     });
 
-    test("空配列の場合: Some([]) を返す", () => {
+    test("empty array: returns Some([])", () => {
       const options: Option<number>[] = [];
       const combined = Option.all(options);
       expect(combined.isSome()).toBe(true);
       expect(combined.unwrap()).toEqual([]);
     });
 
-    test("readonly 配列を受け取れる", () => {
+    test("accepts readonly array", () => {
       const options: readonly Option<number>[] = [
         Option.some(1),
         Option.some(2),
@@ -384,7 +384,7 @@ describe("Option", () => {
       expect(combined.unwrap()).toEqual([1, 2]);
     });
 
-    test("異なる型の値を扱える", () => {
+    test("can handle different types", () => {
       const options = [Option.some("hello"), Option.some("world")];
       const combined = Option.all(options);
       expect(combined.isSome()).toBe(true);
@@ -393,7 +393,7 @@ describe("Option", () => {
   });
 
   describe("Option.any()", () => {
-    test("1つでも Some がある場合: 最初の Some を返す", () => {
+    test("contains at least one Some: returns first Some", () => {
       const options = [
         Option.none<number>(),
         Option.some(42),
@@ -404,14 +404,14 @@ describe("Option", () => {
       expect(combined.unwrap()).toBe(42);
     });
 
-    test("最初が Some の場合: すぐに Some を返す", () => {
+    test("first is Some: returns Some immediately", () => {
       const options = [Option.some(1), Option.none<number>(), Option.some(2)];
       const combined = Option.any(options);
       expect(combined.isSome()).toBe(true);
       expect(combined.unwrap()).toBe(1);
     });
 
-    test("すべて None の場合: None を返す", () => {
+    test("all None: returns None", () => {
       const options = [
         Option.none<number>(),
         Option.none<number>(),
@@ -421,13 +421,13 @@ describe("Option", () => {
       expect(combined.isNone()).toBe(true);
     });
 
-    test("空配列の場合: None を返す", () => {
+    test("empty array: returns None", () => {
       const options: Option<number>[] = [];
       const combined = Option.any(options);
       expect(combined.isNone()).toBe(true);
     });
 
-    test("readonly 配列を受け取れる", () => {
+    test("accepts readonly array", () => {
       const options: readonly Option<number>[] = [
         Option.none(),
         Option.some(42),
@@ -437,7 +437,7 @@ describe("Option", () => {
       expect(combined.unwrap()).toBe(42);
     });
 
-    test("異なる型の値を扱える", () => {
+    test("can handle different types", () => {
       const options = [Option.some("first"), Option.some("second")];
       const combined = Option.any(options);
       expect(combined.isSome()).toBe(true);

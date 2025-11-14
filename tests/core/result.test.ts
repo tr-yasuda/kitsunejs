@@ -4,126 +4,126 @@ import { Err, Ok, Result } from "@/core/result.js";
 
 describe("Result", () => {
   describe("Result.ok()", () => {
-    test("基本的な値の生成", () => {
+    test("creates a basic value", () => {
       const result = Result.ok(42);
       expect(result).toBeInstanceOf(Ok);
       expect(result.tag).toBe("Ok");
     });
 
-    test("isOk() が true を返す", () => {
+    test("isOk() returns true", () => {
       const result = Result.ok(42);
       expect(result.isOk()).toBe(true);
     });
 
-    test("isErr() が false を返す", () => {
+    test("isErr() returns false", () => {
       const result = Result.ok(42);
       expect(result.isErr()).toBe(false);
     });
 
-    test("unwrap() で値を取得できる", () => {
+    test("unwrap() retrieves the value", () => {
       const result = Result.ok(42);
       expect(result.unwrap()).toBe(42);
     });
   });
 
   describe("Result.err()", () => {
-    test("基本的なエラーの生成", () => {
+    test("creates a basic error", () => {
       const result = Result.err("error");
       expect(result).toBeInstanceOf(Err);
       expect(result.tag).toBe("Err");
     });
 
-    test("isOk() が false を返す", () => {
+    test("isOk() returns false", () => {
       const result = Result.err("error");
       expect(result.isOk()).toBe(false);
     });
 
-    test("isErr() が true を返す", () => {
+    test("isErr() returns true", () => {
       const result = Result.err("error");
       expect(result.isErr()).toBe(true);
     });
 
-    test("unwrap() で例外が発生する", () => {
+    test("unwrap() throws an exception", () => {
       const result = Result.err("error");
       expect(() => result.unwrap()).toThrow(UnwrapError);
     });
   });
 
   describe("unwrap()", () => {
-    test("Ok の場合: 値を返す", () => {
+    test("Ok case: returns the value", () => {
       const result = Result.ok(42);
       expect(result.unwrap()).toBe(42);
     });
 
-    test("Err の場合: 例外を投げる", () => {
+    test("Err case: throws an exception", () => {
       const result = Result.err("error");
       expect(() => result.unwrap()).toThrow(UnwrapError);
     });
   });
 
   describe("expect()", () => {
-    test("Ok の場合: 値を返す", () => {
+    test("Ok case: returns the value", () => {
       const result = Result.ok(42);
       expect(result.expect("custom message")).toBe(42);
     });
 
-    test("Err の場合: カスタムメッセージで例外を投げる", () => {
+    test("Err case: throws an exception with custom message", () => {
       const result = Result.err("error");
       expect(() => result.expect("custom message")).toThrow(UnwrapError);
     });
   });
 
   describe("unwrapErr()", () => {
-    test("Err の場合: エラー値を返す", () => {
+    test("Err case: returns the error value", () => {
       const result = Result.err("error message");
       expect(result.unwrapErr()).toBe("error message");
     });
 
-    test("Ok の場合: 例外を投げる", () => {
+    test("Ok case: throws an exception", () => {
       const result = Result.ok(42);
       expect(() => result.unwrapErr()).toThrow(UnwrapError);
     });
   });
 
   describe("unwrapOr()", () => {
-    test("Ok の場合: 元の値を返す", () => {
+    test("Ok case: returns the original value", () => {
       const result = Result.ok(42);
       expect(result.unwrapOr(0)).toBe(42);
     });
 
-    test("Err の場合: デフォルト値を返す", () => {
+    test("Err case: returns the default value", () => {
       const result = Result.err<number, string>("error");
       expect(result.unwrapOr(0)).toBe(0);
     });
   });
 
   describe("unwrapOrElse()", () => {
-    test("Ok の場合: 元の値を返す", () => {
+    test("Ok case: returns the original value", () => {
       const result = Result.ok(42);
       expect(result.unwrapOrElse((_error) => 0)).toBe(42);
     });
 
-    test("Err の場合: 関数の結果を返す", () => {
+    test("Err case: returns the function result", () => {
       const result = Result.err<number, string>("error");
       expect(result.unwrapOrElse((error) => error.length)).toBe(5);
     });
   });
 
   describe("map()", () => {
-    test("Ok の場合: map が適用される", () => {
+    test("Ok case: map is applied", () => {
       const result = Result.ok(42);
       const mapped = result.map((value) => value * 2);
       expect(mapped.isOk()).toBe(true);
       expect(mapped.unwrap()).toBe(84);
     });
 
-    test("Err の場合: map がスキップされる", () => {
+    test("Err case: map is skipped", () => {
       const result = Result.err<number, string>("error");
       const mapped = result.map((value) => value * 2);
       expect(mapped.isErr()).toBe(true);
     });
 
-    test("型変換が正しく動作する", () => {
+    test("type conversion works correctly", () => {
       const result = Result.ok(42);
       const mapped = result.map((value) => value.toString());
       expect(mapped.unwrap()).toBe("42");
@@ -131,14 +131,14 @@ describe("Result", () => {
   });
 
   describe("mapErr()", () => {
-    test("Ok の場合: mapErr がスキップされる", () => {
+    test("Ok case: mapErr is skipped", () => {
       const result = Result.ok<number, string>(42);
       const mapped = result.mapErr((error) => error.length);
       expect(mapped.isOk()).toBe(true);
       expect(mapped.unwrap()).toBe(42);
     });
 
-    test("Err の場合: mapErr が適用され、型変換が正しく動作する", () => {
+    test("Err case: mapErr is applied and type conversion works correctly", () => {
       const result = Result.err<number, string>("error");
       const mapped = result.mapErr((error) => error.length);
       expect(mapped.isErr()).toBe(true);
@@ -148,14 +148,14 @@ describe("Result", () => {
   });
 
   describe("and()", () => {
-    test("Ok.and(other): other を返す", () => {
+    test("Ok.and(other): returns other", () => {
       const result1 = Result.ok(42);
       const result2 = Result.ok("hello");
       const combined = result1.and(result2);
       expect(combined.unwrap()).toBe("hello");
     });
 
-    test("Err.and(other): self を返す", () => {
+    test("Err.and(other): returns self", () => {
       const result1 = Result.err("error1");
       const result2 = Result.ok("hello");
       const combined = result1.and(result2);
@@ -164,7 +164,7 @@ describe("Result", () => {
       expect(errorValue).toBe("error1");
     });
 
-    test("Ok.and(Err): Err を返す", () => {
+    test("Ok.and(Err): returns Err", () => {
       const result1 = Result.ok<number, string>(42);
       const result2 = Result.err("error2");
       const combined = result1.and<string>(result2);
@@ -175,21 +175,21 @@ describe("Result", () => {
   });
 
   describe("or()", () => {
-    test("Ok.or(other): self を返す", () => {
+    test("Ok.or(other): returns self", () => {
       const result1 = Result.ok(42);
       const result2 = Result.ok(100);
       const combined = result1.or(result2);
       expect(combined.unwrap()).toBe(42);
     });
 
-    test("Err.or(other): other を返す", () => {
+    test("Err.or(other): returns other", () => {
       const result1 = Result.err<number, string>("error1");
       const result2 = Result.ok(100);
       const combined = result1.or(result2);
       expect(combined.unwrap()).toBe(100);
     });
 
-    test("Err.or(Err): 後者の Err を返す", () => {
+    test("Err.or(Err): returns the second Err", () => {
       const result1 = Result.err<string, string>("error1");
       const result2 = Result.err<string, string>("error2");
       const combined = result1.or(result2);
@@ -200,25 +200,25 @@ describe("Result", () => {
   });
 
   describe("andThen()", () => {
-    test("Ok.andThen(fn): fn の結果を返す", () => {
+    test("Ok.andThen(fn): returns fn result", () => {
       const result = Result.ok(42);
       const chained = result.andThen((value) => Result.ok(value * 2));
       expect(chained.unwrap()).toBe(84);
     });
 
-    test("Err.andThen(fn): self を返す", () => {
+    test("Err.andThen(fn): returns self", () => {
       const result = Result.err<number, string>("error");
       const chained = result.andThen((value) => Result.ok(value * 2));
       expect(chained.isErr()).toBe(true);
     });
 
-    test("Ok.andThen(fn) で Err を返す", () => {
+    test("Ok.andThen(fn) returns Err", () => {
       const result = Result.ok<number, string>(42);
       const chained = result.andThen((_value) => Result.err("new error"));
       expect(chained.isErr()).toBe(true);
     });
 
-    test("型変換チェーン (number → string → boolean)", () => {
+    test("type conversion chain (number → string → boolean)", () => {
       const result = Result.ok<number, string>(42);
       const chained = result
         .andThen((n) => Result.ok(n.toString())) // number → string
@@ -228,19 +228,19 @@ describe("Result", () => {
   });
 
   describe("orElse()", () => {
-    test("Ok.orElse(fn): self を返す", () => {
+    test("Ok.orElse(fn): returns self", () => {
       const result = Result.ok<number, string>(42);
       const recovered = result.orElse((_error) => Result.ok(0));
       expect(recovered.unwrap()).toBe(42);
     });
 
-    test("Err.orElse(fn): fn の結果を返す", () => {
+    test("Err.orElse(fn): returns fn result", () => {
       const result = Result.err<number, string>("error");
       const recovered = result.orElse((_error) => Result.ok(0));
       expect(recovered.unwrap()).toBe(0);
     });
 
-    test("Err.orElse(fn) で別の Err を返す", () => {
+    test("Err.orElse(fn) returns another Err", () => {
       const result = Result.err<number, string>("error1");
       const recovered = result.orElse((_error) => Result.err("error2"));
       expect(recovered.isErr()).toBe(true);
@@ -248,14 +248,14 @@ describe("Result", () => {
   });
 
   describe("toOption()", () => {
-    test("Ok → Some への変換", () => {
+    test("Ok → Some conversion", () => {
       const result = Result.ok(42);
       const option = result.toOption();
       expect(option.isSome()).toBe(true);
       expect(option.unwrap()).toBe(42);
     });
 
-    test("Err → None への変換", () => {
+    test("Err → None conversion", () => {
       const result = Result.err("error");
       const option = result.toOption();
       expect(option.isNone()).toBe(true);
@@ -273,19 +273,19 @@ describe("Result", () => {
       expect(result.isErr()).toBe(true);
     });
 
-    test("値 → Ok", () => {
+    test("value → Ok", () => {
       const result = Result.fromNullable(42, "error");
       expect(result.isOk()).toBe(true);
       expect(result.unwrap()).toBe(42);
     });
 
-    test("0 → Ok (falsy だが null/undefined ではない)", () => {
+    test("0 → Ok (falsy but not null/undefined)", () => {
       const result = Result.fromNullable(0, "error");
       expect(result.isOk()).toBe(true);
       expect(result.unwrap()).toBe(0);
     });
 
-    test("空文字列 → Ok", () => {
+    test("empty string → Ok", () => {
       const result = Result.fromNullable("", "error");
       expect(result.isOk()).toBe(true);
       expect(result.unwrap()).toBe("");
@@ -293,20 +293,20 @@ describe("Result", () => {
   });
 
   describe("Result.try()", () => {
-    test("正常実行 → Ok", () => {
+    test("successful execution → Ok", () => {
       const result = Result.try(() => 42);
       expect(result.isOk()).toBe(true);
       expect(result.unwrap()).toBe(42);
     });
 
-    test("例外発生 → Err", () => {
+    test("exception thrown → Err", () => {
       const result = Result.try(() => {
         throw new Error("test error");
       });
       expect(result.isErr()).toBe(true);
     });
 
-    test("例外をキャッチして Error として Err に保持する", () => {
+    test("catches exception and holds it as Error in Err", () => {
       const result = Result.try<number, Error>(() => {
         throw new Error("test error");
       });
@@ -320,19 +320,19 @@ describe("Result", () => {
       }
     });
 
-    test("falsy な値（0）を返しても Ok になる", () => {
+    test("falsy value (0) still becomes Ok", () => {
       const result = Result.try(() => 0);
       expect(result.isOk()).toBe(true);
       expect(result.unwrap()).toBe(0);
     });
 
-    test("falsy な値（空文字列）を返しても Ok になる", () => {
+    test("falsy value (empty string) still becomes Ok", () => {
       const result = Result.try(() => "");
       expect(result.isOk()).toBe(true);
       expect(result.unwrap()).toBe("");
     });
 
-    test("falsy な値（false）を返しても Ok になる", () => {
+    test("falsy value (false) still becomes Ok", () => {
       const result = Result.try(() => false);
       expect(result.isOk()).toBe(true);
       expect(result.unwrap()).toBe(false);
@@ -340,20 +340,20 @@ describe("Result", () => {
   });
 
   describe("Result.tryAsync()", () => {
-    test("Promise が resolve → Ok", async () => {
+    test("Promise resolves → Ok", async () => {
       const result = await Result.tryAsync(async () => 42);
       expect(result.isOk()).toBe(true);
       expect(result.unwrap()).toBe(42);
     });
 
-    test("Promise が reject → Err", async () => {
+    test("Promise rejects → Err", async () => {
       const result = await Result.tryAsync(async () => {
         throw new Error("test error");
       });
       expect(result.isErr()).toBe(true);
     });
 
-    test("Promise が reject → Err（エラー内容を確認）", async () => {
+    test("Promise rejects → Err (verify error content)", async () => {
       const result = await Result.tryAsync<number, Error>(async () => {
         throw new Error("async test error");
       });
@@ -368,7 +368,7 @@ describe("Result", () => {
       }
     });
 
-    test("非同期処理が正しく動作する", async () => {
+    test("async operation works correctly", async () => {
       const result = await Result.tryAsync(async () => {
         await new Promise((resolve) => setTimeout(resolve, 10));
         return "success";
@@ -377,44 +377,44 @@ describe("Result", () => {
       expect(result.unwrap()).toBe("success");
     });
 
-    test("falsy な値（0）を返しても Ok になる", async () => {
+    test("falsy value (0) still becomes Ok", async () => {
       const result = await Result.tryAsync(async () => 0);
       expect(result.isOk()).toBe(true);
       expect(result.unwrap()).toBe(0);
     });
 
-    test("falsy な値（空文字列）を返しても Ok になる", async () => {
+    test("falsy value (empty string) still becomes Ok", async () => {
       const result = await Result.tryAsync(async () => "");
       expect(result.isOk()).toBe(true);
       expect(result.unwrap()).toBe("");
     });
 
-    test("falsy な値（false）を返しても Ok になる", async () => {
+    test("falsy value (false) still becomes Ok", async () => {
       const result = await Result.tryAsync(async () => false);
       expect(result.isOk()).toBe(true);
       expect(result.unwrap()).toBe(false);
     });
   });
 
-  describe("エッジケース", () => {
-    test("Ok(null) は有効", () => {
+  describe("edge cases", () => {
+    test("Ok(null) is valid", () => {
       const result = Result.ok(null);
       expect(result.isOk()).toBe(true);
       expect(result.unwrap()).toBe(null);
     });
 
-    test("Ok(undefined) は有効", () => {
+    test("Ok(undefined) is valid", () => {
       const result = Result.ok(undefined);
       expect(result.isOk()).toBe(true);
       expect(result.unwrap()).toBe(undefined);
     });
 
-    test("Err(null) は有効", () => {
+    test("Err(null) is valid", () => {
       const result = Result.err(null);
       expect(result.isErr()).toBe(true);
     });
 
-    test("複数の map を連鎖できる", () => {
+    test("can chain multiple maps", () => {
       const result = Result.ok(2)
         .map((x) => x * 3)
         .map((x) => x + 1)
@@ -422,7 +422,7 @@ describe("Result", () => {
       expect(result.unwrap()).toBe("7");
     });
 
-    test("複数の andThen を連鎖できる", () => {
+    test("can chain multiple andThens", () => {
       const result = Result.ok(2)
         .andThen((x) => Result.ok(x * 3))
         .andThen((x) => Result.ok(x + 1))
@@ -432,14 +432,14 @@ describe("Result", () => {
   });
 
   describe("Result.all()", () => {
-    test("すべて Ok の場合: Ok<T[]> を返す", () => {
+    test("all Ok: returns Ok<T[]>", () => {
       const results = [Result.ok(1), Result.ok(2), Result.ok(3)];
       const combined = Result.all(results);
       expect(combined.isOk()).toBe(true);
       expect(combined.unwrap()).toEqual([1, 2, 3]);
     });
 
-    test("1つでも Err がある場合: 最初の Err を返す", () => {
+    test("contains at least one Err: returns first Err", () => {
       const results = [
         Result.ok(1),
         Result.err<number, string>("error1"),
@@ -456,7 +456,7 @@ describe("Result", () => {
       expect(errorValue).toBe("error1");
     });
 
-    test("最初が Err の場合: すぐに Err を返す", () => {
+    test("first is Err: returns Err immediately", () => {
       const results = [
         Result.err<number, string>("first error"),
         Result.ok(1),
@@ -473,14 +473,14 @@ describe("Result", () => {
       expect(errorValue).toBe("first error");
     });
 
-    test("空配列の場合: Ok([]) を返す", () => {
+    test("empty array: returns Ok([])", () => {
       const results: Result<number, string>[] = [];
       const combined = Result.all(results);
       expect(combined.isOk()).toBe(true);
       expect(combined.unwrap()).toEqual([]);
     });
 
-    test("readonly 配列を受け取れる", () => {
+    test("accepts readonly array", () => {
       const results: readonly Result<number, string>[] = [
         Result.ok(1),
         Result.ok(2),
@@ -490,7 +490,7 @@ describe("Result", () => {
       expect(combined.unwrap()).toEqual([1, 2]);
     });
 
-    test("異なる型の値を扱える", () => {
+    test("can handle different types", () => {
       const results = [Result.ok("hello"), Result.ok("world")];
       const combined = Result.all(results);
       expect(combined.isOk()).toBe(true);
@@ -499,7 +499,7 @@ describe("Result", () => {
   });
 
   describe("Result.any()", () => {
-    test("1つでも Ok がある場合: 最初の Ok を返す", () => {
+    test("contains at least one Ok: returns first Ok", () => {
       const results = [
         Result.err<number, string>("error1"),
         Result.ok(42),
@@ -510,7 +510,7 @@ describe("Result", () => {
       expect(combined.unwrap()).toBe(42);
     });
 
-    test("最初が Ok の場合: すぐに Ok を返す", () => {
+    test("first is Ok: returns Ok immediately", () => {
       const results = [
         Result.ok(1),
         Result.err<number, string>("error"),
@@ -521,7 +521,7 @@ describe("Result", () => {
       expect(combined.unwrap()).toBe(1);
     });
 
-    test("すべて Err の場合: Err<E[]> を返す", () => {
+    test("all Err: returns Err<E[]>", () => {
       const results = [
         Result.err<number, string>("error1"),
         Result.err<number, string>("error2"),
@@ -538,7 +538,7 @@ describe("Result", () => {
       expect(errorValues).toEqual(["error1", "error2", "error3"]);
     });
 
-    test("空配列の場合: Err([]) を返す", () => {
+    test("empty array: returns Err([])", () => {
       const results: Result<number, string>[] = [];
       const combined = Result.any(results);
       expect(combined.isErr()).toBe(true);
@@ -551,7 +551,7 @@ describe("Result", () => {
       expect(errorValues).toEqual([]);
     });
 
-    test("readonly 配列を受け取れる", () => {
+    test("accepts readonly array", () => {
       const results: readonly Result<number, string>[] = [
         Result.err("error"),
         Result.ok(42),
@@ -561,7 +561,7 @@ describe("Result", () => {
       expect(combined.unwrap()).toBe(42);
     });
 
-    test("異なる型のエラーを扱える", () => {
+    test("can handle different error types", () => {
       const results = [
         Result.err<number, string>("error1"),
         Result.err<number, string>("error2"),

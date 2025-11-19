@@ -53,7 +53,7 @@ type Result<T, E> = {
 ```
 
 **Rationale**:
-- **Consistency**: Using a single keyword for all type definitions reduces a cognitive load
+- **Consistency**: Using a single keyword for all type definitions reduces cognitive load
 - **Flexibility**: `type` can represent union types, primitives, and complex types
 - **Functional alignment**: Aligns with the functional programming approach of the library
 
@@ -543,7 +543,7 @@ pnpm lint && pnpm type-check && pnpm test && pnpm build
 
 ## Summary
 
-The following these style guidelines ensure:
+Following these style guidelines ensures:
 
 - **Consistency**: Code looks uniform across the project
 - **Maintainability**: Easier to understand and modify

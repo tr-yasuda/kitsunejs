@@ -285,6 +285,15 @@ For more detailed information, please refer to the following documentation:
 - **[Rust Comparison](./docs/rust-comparison.md)** - Comparison table between Rust's `Result`/`Option` and kitsune
 - **[Recipes](./docs/recipes.md)** - Practical usage patterns and best practices for common scenarios
 
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](./CONTRIBUTING.md) for details on:
+
+- How to set up your development environment
+- Our coding standards and [Style Guide](./STYLE_GUIDE.md)
+- How to submit pull requests
+- Our commit message conventions
+
 ## Quick API Reference
 
 Below is a quick reference of available methods. For detailed documentation with examples, see [API Reference](./docs/api-reference.md).

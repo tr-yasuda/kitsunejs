@@ -1,0 +1,35 @@
+name: lint
+
+on:
+  pull_request:
+    branches:
+      - master
+    types:
+      - opened
+      - synchronize
+      - reopened
+    paths-ignore:
+      - 'docs/**'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        name: install pnpm
+        with:
+          package_json_file: package.json
+          run_install: false
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - name: install devDependencies
+        run: pnpm install
+      - name: type-check
+        run: pnpm type-check
+      - name: lint
+        run: pnpm lint
+
+

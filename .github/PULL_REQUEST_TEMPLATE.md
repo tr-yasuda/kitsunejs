@@ -16,8 +16,8 @@
 
 ## Checklist
 <!-- Please check if your PR fulfills the following requirements -->
-- [ ] I have read the [contributing guidelines](../CONTRIBUTING.md)
-- [ ] My code follows the [style guidelines](../STYLE_GUIDE.md) of this project (Run `pnpm lint`)
+- [ ] I have read the [contributing guidelines](/CONTRIBUTING.md)
+- [ ] My code follows the [style guidelines](/STYLE_GUIDE.md) of this project (Run `pnpm lint`)
 - [ ] I have performed a self-review of my own code
 - [ ] I have added tests that prove my fix is effective or that my feature works
 - [ ] New and existing unit tests pass locally with my changes (Run `pnpm test`)

@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "type-check": "tsc --noEmit",
     "build": "tsup",
     "test": "vitest run",
     "lint": "biome check",

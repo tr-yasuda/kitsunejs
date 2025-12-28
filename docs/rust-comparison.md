@@ -167,7 +167,7 @@ function main() {
   if (result.isOk()) {
     console.log(`Result: ${result.unwrap()}`);
   } else {
-    console.error(`Error: ${result.unwrapOrElse((e) => e)}`);
+    console.error(`Error: ${result.unwrapErr()}`);
   }
 }
 

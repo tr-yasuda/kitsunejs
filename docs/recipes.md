@@ -53,7 +53,7 @@ async function main() {
   if (userResult.isOk()) {
     console.log('User:', userResult.unwrap());
   } else {
-    const error = userResult.unwrapOrElse((err) => err);
+    const error = userResult.unwrapErr();
     console.error(`Error ${error.status}: ${error.message}`);
   }
 }
@@ -189,7 +189,7 @@ async function main() {
   if (result.isOk()) {
     console.log('Data:', result.unwrap());
   } else {
-    console.error('Failed to load data:', result.unwrapOrElse((e) => e.message));
+    console.error('Failed to load data:', result.unwrapErr().message);
   }
 }
 ```
@@ -264,7 +264,7 @@ const result = validateEmail('user@example.com')
 if (result.isOk()) {
   console.log('Valid email:', result.unwrap());
 } else {
-  console.error('Validation failed:', result.unwrapOrElse((e) => e));
+  console.error('Validation failed:', result.unwrapErr());
 }
 ```
 
@@ -383,7 +383,7 @@ const dataResult = await fetchFromMultipleServers('/users/123');
 if (dataResult.isOk()) {
   console.log('Data loaded:', dataResult.unwrap());
 } else {
-  console.error('All servers failed:', dataResult.unwrapOrElse((errors) => errors));
+  console.error('All servers failed:', dataResult.unwrapErr());
 }
 ```
 
@@ -550,7 +550,7 @@ const userResult = parseUser(input);
 if (userResult.isOk()) {
   console.log('Valid user:', userResult.unwrap());
 } else {
-  const error = userResult.unwrapOrElse((e) => e);
+  const error = userResult.unwrapErr();
   console.error('Validation errors:', error.errors);
 }
 ```
@@ -585,7 +585,7 @@ app.get('/users/:id', async (req, res) => {
   if (result.isOk()) {
     res.json(result.unwrap());
   } else {
-    const error = result.unwrapOrElse((err) => err);
+    const error = result.unwrapErr();
     res.status(error.status).json({ error: error.message });
   }
 });

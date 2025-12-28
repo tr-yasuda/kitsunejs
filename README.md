@@ -159,7 +159,7 @@ const allErr = Result.any([
   Result.err('error3'),
 ]);
 if (allErr.isErr()) {
-  console.log(allErr.unwrapOrElse((errors) => errors)); // ['error1', 'error2', 'error3']
+  console.log(allErr.unwrapErr()); // ['error1', 'error2', 'error3']
 }
 ```
 

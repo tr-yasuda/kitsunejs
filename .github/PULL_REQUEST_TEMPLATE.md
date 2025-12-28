@@ -1,27 +1,18 @@
 ## Description
-<!-- Please include a summary of the change and which issue is fixed. Please also include relevant motivation and context. -->
-
-## Related Issue
-<!-- Please link to the issue here: e.g. Closes #123 -->
-- Closes #
+<!-- 変更内容の説明 -->
 
 ## Type of Change
-<!-- Please check the options that are relevant to your changes -->
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] Refactoring (no functional changes, no api changes)
-- [ ] Documentation update
-- [ ] Other (please specify):
+- [ ] feat: 新機能
+- [ ] fix: バグ修正
+- [ ] refactor: リファクタリング
+- [ ] docs: ドキュメント更新
+- [ ] test: テスト追加・更新
+- [ ] chore: その他
 
 ## Checklist
-<!-- Please check if your PR fulfills the following requirements -->
-- [ ] I have read the [contributing guidelines](/CONTRIBUTING.md)
-- [ ] My code follows the [style guidelines](/STYLE_GUIDE.md) of this project (Run `pnpm lint`)
-- [ ] I have performed a self-review of my own code
-- [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] New and existing unit tests pass locally with my changes (Run `pnpm test`)
-- [ ] I have updated the documentation accordingly (if applicable)
-
-## Screenshots (if applicable)
-<!-- If your changes affect the UI or visual output, please add screenshots here -->
+- [ ] コードは STYLE_GUIDE.md に準拠している
+- [ ] テストを追加・更新した
+- [ ] ドキュメントを更新した(該当する場合)
+- [ ] pnpm lint が通る
+- [ ] pnpm type-check が通る
+- [ ] pnpm test が通る

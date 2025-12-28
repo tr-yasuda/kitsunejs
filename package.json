@@ -1,11 +1,13 @@
 {
   "name": "kitsunejs",
   "version": "0.0.0",
+  "description": "Rust-inspired Result and Option types for TypeScript, enabling type-safe error handling and null safety",
   "type": "module",
   "scripts": {
     "type-check": "tsc --noEmit",
     "build": "tsup",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "lint": "biome check",
     "format": "biome check --write"
   },
@@ -21,14 +23,29 @@
   ],
   "author": "@tr-yasuda",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tr-yasuda/kitsunejs.git"
+  },
+  "homepage": "https://github.com/tr-yasuda/kitsunejs",
+  "bugs": {
+    "url": "https://github.com/tr-yasuda/kitsunejs/issues"
+  },
   "packageManager": "pnpm@10.20.0",
+  "publishConfig": {
+    "provenance": true
+  },
   "devDependencies": {
     "@biomejs/biome": "2.3.5",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
     "@tsconfig/node22": "^22.0.3",
     "@types/node": "^24.10.1",
+    "@vitest/coverage-v8": "^4.0.16",
+    "semantic-release": "^24.2.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.9"
+    "vitest": "^4.0.16"
   },
   "main": "dist/index.cjs",
   "module": "dist/index.js",

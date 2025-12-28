@@ -212,7 +212,7 @@ const allErrors = [
 
 const errors = Result.any(allErrors);
 if (errors.isErr()) {
-  console.log(errors.unwrapOrElse((e) => e)); // ['error1', 'error2', 'error3']
+  console.log(errors.unwrapErr()); // ['error1', 'error2', 'error3']
 }
 ```
 
@@ -401,7 +401,7 @@ Applies a function to transform the `Err` value. Returns the `Ok` unchanged if `
 ```typescript
 const result = Result.err('error');
 const mapped = result.mapErr((e) => `Wrapped: ${e}`);
-console.log(mapped.unwrapOrElse((e) => e)); // 'Wrapped: error'
+console.log(mapped.unwrapErr()); // 'Wrapped: error'
 
 const ok = Result.ok(42);
 const mappedOk = ok.mapErr((e) => `Wrapped: ${e}`);
@@ -942,5 +942,5 @@ console.log(ok.unwrap()); // 42
 const none = Option.none<number>();
 const err = none.toResult('No value');
 console.log(err.isErr()); // true
-console.log(err.unwrapOrElse((e) => e)); // 'No value'
+console.log(err.unwrapErr()); // 'No value'
 ```

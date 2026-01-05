@@ -25,9 +25,9 @@ jobs:
           node-version: 22
           registry-url: https://registry.npmjs.org
 
-      # provenance を strict にしたいなら env の方が副作用少ない
-      - name: Configure npm for provenance
-        run: npm config set provenance true
+      - name: Upgrade npm for Trusted Publishing (OIDC)
+        run: |
+          npm i -g npm@latest
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4

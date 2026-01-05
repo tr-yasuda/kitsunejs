@@ -25,7 +25,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tr-yasuda/kitsunejs.git"
+    "url": "git+https://github.com/tr-yasuda/kitsunejs.git"
   },
   "homepage": "https://github.com/tr-yasuda/kitsunejs",
   "bugs": {

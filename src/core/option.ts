@@ -18,6 +18,17 @@ export abstract class Option<T> {
   abstract isNone(): this is None<T>;
 
   /**
+   * Returns true if the option is Some and the predicate returns true for the contained value.
+   * This is a type guard that narrows the type to Some<T>.
+   */
+  abstract isSomeAnd(predicate: (value: T) => boolean): this is Some<T>;
+
+  /**
+   * Returns true if the option is None, otherwise returns the predicate result for the contained Some value.
+   */
+  abstract isNoneOr(predicate: (value: T) => boolean): boolean;
+
+  /**
    * Returns the contained Some value.
    * Throws an UnwrapError if the value is None.
    */
@@ -45,6 +56,16 @@ export abstract class Option<T> {
   abstract map<U>(fn: (value: T) => U): Option<U>;
 
   /**
+   * Maps an Option<T> to U by applying a function to a contained Some value, or returns the provided default if None.
+   */
+  abstract mapOr<U>(defaultValue: U, fn: (value: T) => U): U;
+
+  /**
+   * Maps an Option<T> to U by applying a function to a contained Some value, or computes a default if None.
+   */
+  abstract mapOrElse<U>(defaultFn: () => U, fn: (value: T) => U): U;
+
+  /**
    * Returns None if the option is None, otherwise returns other.
    */
   abstract and<U>(other: Option<U>): Option<U>;
@@ -69,6 +90,11 @@ export abstract class Option<T> {
    * Converts from Option<T> to Result<T, E>.
    */
   abstract toResult<E>(error: E): ResultType<T, E>;
+
+  /**
+   * Converts from Option<T> to Result<T, E> by computing the error from a function.
+   */
+  abstract toResultElse<E>(fn: () => E): ResultType<T, E>;
 
   /**
    * Creates a Some variant containing the given value.
@@ -146,6 +172,14 @@ export class Some<T> extends Option<T> {
     return false;
   }
 
+  isSomeAnd(predicate: (value: T) => boolean): this is Some<T> {
+    return predicate(this.value);
+  }
+
+  isNoneOr(predicate: (value: T) => boolean): boolean {
+    return predicate(this.value);
+  }
+
   unwrap(): T {
     return this.value;
   }
@@ -164,6 +198,14 @@ export class Some<T> extends Option<T> {
 
   map<U>(fn: (value: T) => U): Option<U> {
     return new Some(fn(this.value));
+  }
+
+  mapOr<U>(_defaultValue: U, fn: (value: T) => U): U {
+    return fn(this.value);
+  }
+
+  mapOrElse<U>(_defaultFn: () => U, fn: (value: T) => U): U {
+    return fn(this.value);
   }
 
   and<U>(other: Option<U>): Option<U> {
@@ -185,6 +227,10 @@ export class Some<T> extends Option<T> {
   toResult<E>(_error: E): ResultType<T, E> {
     return Result.ok(this.value);
   }
+
+  toResultElse<E>(_fn: () => E): ResultType<T, E> {
+    return Result.ok(this.value);
+  }
 }
 
 /**
@@ -198,6 +244,14 @@ export class None<T = never> extends Option<T> {
   }
 
   isNone(): this is None<T> {
+    return true;
+  }
+
+  isSomeAnd(_predicate: (value: T) => boolean): this is Some<T> {
+    return false;
+  }
+
+  isNoneOr(_predicate: (value: T) => boolean): boolean {
     return true;
   }
 
@@ -221,6 +275,14 @@ export class None<T = never> extends Option<T> {
     return Option.none<U>();
   }
 
+  mapOr<U>(defaultValue: U, _fn: (value: T) => U): U {
+    return defaultValue;
+  }
+
+  mapOrElse<U>(defaultFn: () => U, _fn: (value: T) => U): U {
+    return defaultFn();
+  }
+
   and<U>(_other: Option<U>): Option<U> {
     return Option.none<U>();
   }
@@ -239,5 +301,9 @@ export class None<T = never> extends Option<T> {
 
   toResult<E>(error: E): ResultType<T, E> {
     return Result.err(error);
+  }
+
+  toResultElse<E>(fn: () => E): ResultType<T, E> {
+    return Result.err(fn());
   }
 }

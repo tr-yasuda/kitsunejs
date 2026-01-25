@@ -47,16 +47,21 @@ kitsunejs faithfully reproduces Rust's Result/Option API as much as possible, bu
 | `None`               | `Option.none()`              | Value to function call                                                                          |
 | `is_some()`          | `isSome()`                   |                                                                                                 |
 | `is_none()`          | `isNone()`                   |                                                                                                 |
+| `is_some_and(f)`     | `isSomeAnd(predicate)`       | Predicate is only evaluated for `Some`                                                          |
+| `is_none_or(f)`      | `isNoneOr(predicate)`        | Predicate is only evaluated for `Some`                                                          |
 | `unwrap()`           | `unwrap()`                   | Throws UnwrapError                                                                              |
 | `expect(msg)`        | `expect(msg)`                | Throws UnwrapError                                                                              |
 | `unwrap_or(default)` | `unwrapOr(default)`          |                                                                                                 |
 | `unwrap_or_else(fn)` | `unwrapOrElse(fn)`           |                                                                                                 |
 | `map(fn)`            | `map(fn)`                    |                                                                                                 |
+| `map_or(default, f)` | `mapOr(defaultValue, fn)`    |                                                                                                 |
+| `map_or_else(default, f)` | `mapOrElse(defaultFn, fn)`   |                                                                                                 |
 | `and(optb)`          | `and(other)`                 |                                                                                                 |
 | `or(optb)`           | `or(other)`                  |                                                                                                 |
 | `and_then(fn)`       | `andThen(fn)`                | Also known as flatMap                                                                           |
 | `filter(predicate)`  | `filter(predicate)`          |                                                                                                 |
 | `ok_or(err)`         | `toResult(error)`            | Different method name. Some → Ok, None → Err                                                    |
+| `ok_or_else(fn)`     | `toResultElse(fn)`           | Different method name. Some → Ok, None → Err (computed lazily)                                  |
 | -                    | `Option.fromNullable(value)` | kitsunejs-specific. Integration with JavaScript/TypeScript null/undefined                       |
 | -                    | `Option.all(options)`        | kitsunejs-specific. Not in Rust std, but common in ecosystem                                    |
 | -                    | `Option.any(options)`        | kitsunejs-specific. Common in priority-based fallback patterns like env vars → config → default |

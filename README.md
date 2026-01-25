@@ -322,14 +322,14 @@ Below is a quick reference of available methods. For detailed documentation with
 
 ### Option<T> Methods
 
-- `isSome()`, `isNone()` - Type guards
+- `isSome()`, `isNone()`, `isSomeAnd(predicate)`, `isNoneOr(predicate)` - Type guards / conditional checks
 - `unwrap()`, `expect(message)` - Extract values (throws on None)
 - `unwrapOr(defaultValue)`, `unwrapOrElse(fn)` - Safe extraction with fallback
-- `map(fn)` - Transform values
+- `map(fn)`, `mapOr(defaultValue, fn)`, `mapOrElse(defaultFn, fn)` - Transform values
 - `and(other)`, `or(other)` - Combine Options
 - `andThen(fn)` - Chain operations
 - `filter(predicate)` - Filter values
-- `toResult(error)` - Convert to Result
+- `toResult(error)`, `toResultElse(fn)` - Convert to Result
 
 ### Option Static Methods
 

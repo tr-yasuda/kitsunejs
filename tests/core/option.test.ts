@@ -49,6 +49,60 @@ describe("Option", () => {
     });
   });
 
+  describe("isSomeAnd()", () => {
+    test("Some: returns predicate result and calls predicate", () => {
+      const option = Option.some(42);
+      let calledWith: number | null = null;
+
+      const result = option.isSomeAnd((value) => {
+        calledWith = value;
+        return value > 0;
+      });
+
+      expect(result).toBe(true);
+      expect(calledWith).toBe(42);
+    });
+
+    test("Some: predicate false returns false", () => {
+      const option = Option.some(42);
+      expect(option.isSomeAnd((value) => value < 0)).toBe(false);
+    });
+
+    test("None: returns false and does not call predicate", () => {
+      const option = Option.none<number>();
+      let called = 0;
+
+      const result = option.isSomeAnd((_value) => {
+        called += 1;
+        return true;
+      });
+
+      expect(result).toBe(false);
+      expect(called).toBe(0);
+    });
+  });
+
+  describe("isNoneOr()", () => {
+    test("None: returns true and does not call predicate", () => {
+      const option = Option.none<number>();
+      let called = 0;
+
+      const result = option.isNoneOr((_value) => {
+        called += 1;
+        return false;
+      });
+
+      expect(result).toBe(true);
+      expect(called).toBe(0);
+    });
+
+    test("Some: returns predicate result", () => {
+      const option = Option.some(42);
+      expect(option.isNoneOr((value) => value < 0)).toBe(false);
+      expect(option.isNoneOr((value) => value > 0)).toBe(true);
+    });
+  });
+
   describe("unwrap()", () => {
     test("Some case: returns the value", () => {
       const option = Option.some(42);
@@ -116,6 +170,62 @@ describe("Option", () => {
       const option = Option.some(42);
       const mapped = option.map((value) => value.toString());
       expect(mapped.unwrap()).toBe("42");
+    });
+  });
+
+  describe("mapOr()", () => {
+    test("Some case: returns mapped value", () => {
+      const option = Option.some(21);
+      const result = option.mapOr(0, (value) => value * 2);
+      expect(result).toBe(42);
+    });
+
+    test("None case: returns default value without calling fn", () => {
+      const option = Option.none<number>();
+      const result = option.mapOr(42, (_value) => {
+        throw new Error("mapOr fn should not be called for None");
+      });
+      expect(result).toBe(42);
+    });
+  });
+
+  describe("mapOrElse()", () => {
+    test("Some case: returns mapped value without calling defaultFn", () => {
+      const option = Option.some(21);
+      const result = option.mapOrElse(
+        () => {
+          throw new Error("mapOrElse defaultFn should not be called for Some");
+        },
+        (value) => value * 2,
+      );
+      expect(result).toBe(42);
+    });
+
+    test("None case: returns defaultFn result without calling fn", () => {
+      const option = Option.none<number>();
+      const result = option.mapOrElse(
+        () => 42,
+        (_value) => {
+          throw new Error("mapOrElse fn should not be called for None");
+        },
+      );
+      expect(result).toBe(42);
+    });
+
+    test("None case: defaultFn is called exactly once", () => {
+      const option = Option.none<number>();
+      let called = 0;
+
+      const result = option.mapOrElse(
+        () => {
+          called += 1;
+          return 42;
+        },
+        (_value) => 0,
+      );
+
+      expect(result).toBe(42);
+      expect(called).toBe(1);
     });
   });
 
@@ -403,6 +513,38 @@ describe("Option", () => {
       });
 
       expect(marker).toBe(-1);
+    });
+  });
+
+  describe("toResultElse()", () => {
+    test("Some → Ok conversion without calling error fn", () => {
+      const option = Option.some(42);
+      const result = option.toResultElse(() => {
+        throw new Error("toResultElse fn should not be called for Some");
+      });
+      expect(result.isOk()).toBe(true);
+      expect(result.unwrap()).toBe(42);
+    });
+
+    test("None → Err conversion", () => {
+      const option = Option.none<number>();
+      const result = option.toResultElse(() => "error");
+      expect(result.isErr()).toBe(true);
+      expect(result.unwrapErr()).toBe("error");
+    });
+
+    test("None case: error fn is called exactly once", () => {
+      const option = Option.none<number>();
+      let called = 0;
+
+      const result = option.toResultElse(() => {
+        called += 1;
+        return "error";
+      });
+
+      expect(result.isErr()).toBe(true);
+      expect(result.unwrapErr()).toBe("error");
+      expect(called).toBe(1);
     });
   });
 

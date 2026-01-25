@@ -1,5 +1,6 @@
 import { describe, expectTypeOf, test } from "vitest";
 import { type None, Option, type Some } from "@/core/option.js";
+import type { Result as ResultType } from "@/core/result.js";
 
 describe("Option type tests", () => {
   test("type behavior", () => {
@@ -36,11 +37,33 @@ describe("Option type tests", () => {
       expectTypeOf(maybeNumber).toEqualTypeOf<None<number>>();
     }
 
+    // --- Narrowing with isSomeAnd / isNoneOr ---
+
+    if (maybeNumber.isSomeAnd((n) => n > 0)) {
+      // Verify it becomes Some<number> within this block
+      expectTypeOf(maybeNumber).toEqualTypeOf<Some<number>>();
+      expectTypeOf(maybeNumber.unwrap()).toEqualTypeOf<number>();
+    }
+
+    const noneOrResult = maybeNumber.isNoneOr((n) => n > 0);
+    expectTypeOf(noneOrResult).toEqualTypeOf<boolean>();
+
     // --- Type transformations with map / andThen / filter ---
 
     // map: number → string
     const mapped = Option.some(42).map((v) => v.toString());
     expectTypeOf(mapped).toEqualTypeOf<Option<string>>();
+
+    // mapOr: Option<number> → string
+    const mappedOr = Option.some(42).mapOr("default", (v) => v.toString());
+    expectTypeOf(mappedOr).toEqualTypeOf<string>();
+
+    // mapOrElse: Option<number> → string
+    const mappedOrElse = Option.some(42).mapOrElse(
+      () => "default",
+      (v) => v.toString(),
+    );
+    expectTypeOf(mappedOrElse).toEqualTypeOf<string>();
 
     // andThen: number → string → boolean
     const chained = Option.some(42)
@@ -62,6 +85,21 @@ describe("Option type tests", () => {
     const noneForUnwrap = Option.none<number>();
     expectTypeOf(noneForUnwrap.unwrapOr(0)).toEqualTypeOf<number>();
     expectTypeOf(noneForUnwrap.unwrapOrElse(() => 0)).toEqualTypeOf<number>();
+
+    // --- toResultElse ---
+
+    const resultFromSome = Option.some(42).toResultElse(() => "error");
+    expectTypeOf(resultFromSome).toEqualTypeOf<ResultType<number, string>>();
+
+    const resultFromNone = Option.none<number>().toResultElse(() => "error");
+    expectTypeOf(resultFromNone).toEqualTypeOf<ResultType<number, string>>();
+
+    const resultFromNoneError = Option.none<number>().toResultElse(
+      () => new Error("error"),
+    );
+    expectTypeOf(resultFromNoneError).toEqualTypeOf<
+      ResultType<number, Error>
+    >();
 
     // expect only accepts string message
     // @ts-expect-error - message must be string

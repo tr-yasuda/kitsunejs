@@ -53,6 +53,39 @@ if (failure.isErr()) {
 }
 ```
 
+#### Additional Helpers
+
+```typescript
+import { Result } from 'kitsunejs';
+
+const result: Result<number, string> = Result.ok(42);
+
+// Type guard + predicate
+if (result.isOkAnd((v) => v > 0)) {
+  console.log(result.unwrap()); // 42
+}
+
+// Map with defaults
+const value = Result.err<number, string>('error').mapOrElse(
+  (e) => e.length,
+  (v) => v * 2,
+);
+console.log(value); // 5
+
+// Inspect without changing the Result
+Result.err<number, string>('error')
+  .inspectErr((e) => console.error(e))
+  .unwrapOr(0);
+
+// Extract Err as Option
+const maybeError = Result.err<number, string>('error').err();
+console.log(maybeError.unwrap()); // 'error'
+
+// Extract Err value with custom message if Ok
+const error = Result.err<number, string>('error').expectErr('Expected Err');
+console.log(error); // 'error'
+```
+
 #### Error Handling with try/tryAsync
 
 ```typescript

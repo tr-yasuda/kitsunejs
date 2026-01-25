@@ -22,6 +22,44 @@ export abstract class Result<T, E> {
   abstract isErr(): this is Err<T, E>;
 
   /**
+   * Returns true if the result is Ok and the predicate returns true.
+   *
+   * This is a type guard that narrows the type to Ok<T, E> when true.
+   *
+   * @param predicate - Predicate applied to the Ok value
+   * @returns True if Ok and predicate returns true, otherwise false
+   *
+   * @example
+   * ```typescript
+   * const result: Result<number, string> = Result.ok(42);
+   *
+   * if (result.isOkAnd((v) => v > 0)) {
+   *   console.log(result.unwrap()); // 42
+   * }
+   * ```
+   */
+  abstract isOkAnd(predicate: (value: T) => boolean): this is Ok<T, E>;
+
+  /**
+   * Returns true if the result is Err and the predicate returns true.
+   *
+   * This is a type guard that narrows the type to Err<T, E> when true.
+   *
+   * @param predicate - Predicate applied to the Err value
+   * @returns True if Err and predicate returns true, otherwise false
+   *
+   * @example
+   * ```typescript
+   * const result: Result<number, string> = Result.err("error");
+   *
+   * if (result.isErrAnd((e) => e.length > 0)) {
+   *   console.log(result.unwrapErr()); // "error"
+   * }
+   * ```
+   */
+  abstract isErrAnd(predicate: (error: E) => boolean): this is Err<T, E>;
+
+  /**
    * Returns the contained Ok value.
    * Throws an UnwrapError if the value is Err.
    */
@@ -40,6 +78,24 @@ export abstract class Result<T, E> {
   abstract unwrapErr(): E;
 
   /**
+   * Returns the contained Err value with a custom error message.
+   * Throws an UnwrapError with the provided message if the value is Ok.
+   *
+   * @param message - Message to display on error
+   * @returns Err value if Err
+   *
+   * @example
+   * ```typescript
+   * const err = Result.err<number, string>("error message");
+   * console.log(err.expectErr("should be err")); // "error message"
+   *
+   * const ok = Result.ok<number, string>(42);
+   * // ok.expectErr("should be err"); // UnwrapError: should be err
+   * ```
+   */
+  abstract expectErr(message: string): E;
+
+  /**
    * Returns the contained Ok value or a provided default.
    */
   abstract unwrapOr(defaultValue: T): T;
@@ -55,9 +111,81 @@ export abstract class Result<T, E> {
   abstract map<U>(fn: (value: T) => U): Result<U, E>;
 
   /**
+   * Maps the Ok value to U by applying a function, or returns the provided default if Err.
+   *
+   * @template U - The type of the mapped value
+   * @param defaultValue - Value to return if Err
+   * @param fn - Function to map the Ok value
+   * @returns Mapped value if Ok, otherwise defaultValue
+   *
+   * @example
+   * ```typescript
+   * const ok = Result.ok<number, string>(21);
+   * console.log(ok.mapOr(0, (n) => n * 2)); // 42
+   *
+   * const err = Result.err<number, string>("error");
+   * console.log(err.mapOr(0, (n) => n * 2)); // 0
+   * ```
+   */
+  abstract mapOr<U>(defaultValue: U, fn: (value: T) => U): U;
+
+  /**
+   * Maps the Ok value to U by applying a function, or computes a default value from the Err.
+   *
+   * @template U - The type of the mapped value
+   * @param defaultFn - Function to compute the default value from the Err value
+   * @param fn - Function to map the Ok value
+   * @returns Mapped value if Ok, otherwise the result of defaultFn
+   *
+   * @example
+   * ```typescript
+   * const ok = Result.ok<number, string>(21);
+   * console.log(ok.mapOrElse((e) => e.length, (n) => n * 2)); // 42
+   *
+   * const err = Result.err<number, string>("error");
+   * console.log(err.mapOrElse((e) => e.length, (n) => n * 2)); // 5
+   * ```
+   */
+  abstract mapOrElse<U>(defaultFn: (error: E) => U, fn: (value: T) => U): U;
+
+  /**
    * Maps a Result<T, E> to Result<T, F> by applying a function to a contained Err value.
    */
   abstract mapErr<F>(fn: (error: E) => F): Result<T, F>;
+
+  /**
+   * Calls a function with the Ok value (if Ok), then returns self unchanged.
+   *
+   * @param fn - Function to call with the Ok value
+   * @returns Self, unchanged
+   *
+   * @example
+   * ```typescript
+   * const result = Result.ok(42)
+   *   .inspect((v) => console.log("ok:", v))
+   *   .map((v) => v + 1);
+   *
+   * console.log(result.unwrap()); // 43
+   * ```
+   */
+  abstract inspect(fn: (value: T) => void): this;
+
+  /**
+   * Calls a function with the Err value (if Err), then returns self unchanged.
+   *
+   * @param fn - Function to call with the Err value
+   * @returns Self, unchanged
+   *
+   * @example
+   * ```typescript
+   * const result = Result.err<number, string>("error")
+   *   .inspectErr((e) => console.error("err:", e))
+   *   .unwrapOr(0);
+   *
+   * console.log(result); // 0
+   * ```
+   */
+  abstract inspectErr(fn: (error: E) => void): this;
 
   /**
    * Returns the argument if the result is Ok, otherwise returns the Err value of self.
@@ -86,17 +214,34 @@ export abstract class Result<T, E> {
   abstract toOption(): OptionType<T>;
 
   /**
-   * Creates an Ok variant containing the given value.
+   * Converts from Result<T, E> to Option<E>.
+   * Converts self into an Option<E>, discarding the Ok value, if any.
+   *
+   * @returns Some(error) if Err, otherwise None
+   *
+   * @example
+   * ```typescript
+   * const err = Result.err<number, string>("error");
+   * console.log(err.err().unwrap()); // "error"
+   *
+   * const ok = Result.ok<number, string>(42);
+   * console.log(ok.err().isNone()); // true
+   * ```
    */
-  static ok<T, E = never>(value: T): Result<T, E> {
-    return new Ok<T, E>(value);
-  }
+  abstract err(): OptionType<E>;
 
   /**
    * Creates an Err variant containing the given error.
    */
   static err<T = never, E = unknown>(error: E): Result<T, E> {
     return new Err<T, E>(error);
+  }
+
+  /**
+   * Creates an Ok variant containing the given value.
+   */
+  static ok<T, E = never>(value: T): Result<T, E> {
+    return new Ok<T, E>(value);
   }
 
   /**
@@ -205,6 +350,14 @@ export class Ok<T, E = never> extends Result<T, E> {
     return false;
   }
 
+  isOkAnd(predicate: (value: T) => boolean): this is Ok<T, E> {
+    return predicate(this.value);
+  }
+
+  isErrAnd(_predicate: (error: E) => boolean): this is Err<T, E> {
+    return false;
+  }
+
   unwrap(): T {
     return this.value;
   }
@@ -215,6 +368,10 @@ export class Ok<T, E = never> extends Result<T, E> {
 
   unwrapErr(): never {
     throw new UnwrapError("Called unwrapErr on an Ok value");
+  }
+
+  expectErr(message: string): never {
+    throw new UnwrapError(message);
   }
 
   unwrapOr(_defaultValue: T): T {
@@ -229,8 +386,25 @@ export class Ok<T, E = never> extends Result<T, E> {
     return new Ok(fn(this.value));
   }
 
+  mapOr<U>(_defaultValue: U, fn: (value: T) => U): U {
+    return fn(this.value);
+  }
+
+  mapOrElse<U>(_defaultFn: (error: E) => U, fn: (value: T) => U): U {
+    return fn(this.value);
+  }
+
   mapErr<F>(_fn: (error: E) => F): Result<T, F> {
     return this as unknown as Result<T, F>;
+  }
+
+  inspect(fn: (value: T) => void): this {
+    fn(this.value);
+    return this;
+  }
+
+  inspectErr(_fn: (error: E) => void): this {
+    return this;
   }
 
   and<U>(other: Result<U, E>): Result<U, E> {
@@ -251,6 +425,10 @@ export class Ok<T, E = never> extends Result<T, E> {
 
   toOption(): OptionType<T> {
     return Option.some(this.value);
+  }
+
+  err(): OptionType<E> {
+    return Option.none<E>();
   }
 }
 
@@ -274,6 +452,14 @@ export class Err<T = never, E = unknown> extends Result<T, E> {
     return true;
   }
 
+  isOkAnd(_predicate: (value: T) => boolean): this is Ok<T, E> {
+    return false;
+  }
+
+  isErrAnd(predicate: (error: E) => boolean): this is Err<T, E> {
+    return predicate(this.error);
+  }
+
   unwrap(): never {
     throw new UnwrapError(
       `Called unwrap on an Err value: ${JSON.stringify(this.error)}`,
@@ -285,6 +471,10 @@ export class Err<T = never, E = unknown> extends Result<T, E> {
   }
 
   unwrapErr(): E {
+    return this.error;
+  }
+
+  expectErr(_message: string): E {
     return this.error;
   }
 
@@ -300,8 +490,25 @@ export class Err<T = never, E = unknown> extends Result<T, E> {
     return this as unknown as Result<U, E>;
   }
 
+  mapOr<U>(defaultValue: U, _fn: (value: T) => U): U {
+    return defaultValue;
+  }
+
+  mapOrElse<U>(defaultFn: (error: E) => U, _fn: (value: T) => U): U {
+    return defaultFn(this.error);
+  }
+
   mapErr<F>(fn: (error: E) => F): Result<T, F> {
     return new Err(fn(this.error));
+  }
+
+  inspect(_fn: (value: T) => void): this {
+    return this;
+  }
+
+  inspectErr(fn: (error: E) => void): this {
+    fn(this.error);
+    return this;
   }
 
   and<U>(_other: Result<U, E>): Result<U, E> {
@@ -322,5 +529,9 @@ export class Err<T = never, E = unknown> extends Result<T, E> {
 
   toOption(): OptionType<T> {
     return Option.none<T>();
+  }
+
+  err(): OptionType<E> {
+    return Option.some(this.error);
   }
 }

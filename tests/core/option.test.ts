@@ -275,6 +275,163 @@ describe("Option", () => {
     });
   });
 
+  describe("orElse()", () => {
+    test("Some.orElse(fn): returns self without calling fn", () => {
+      let called = 0;
+
+      const option = Option.some(42);
+      const recovered = option.orElse(() => {
+        called++;
+        return Option.some(0);
+      });
+
+      expect(called).toBe(0);
+      expect(recovered.isSome()).toBe(true);
+      expect(recovered.unwrap()).toBe(42);
+    });
+
+    test("None.orElse(fn): returns fn result", () => {
+      let called = 0;
+
+      const option = Option.none<number>();
+      const recovered = option.orElse(() => {
+        called++;
+        return Option.some(100);
+      });
+
+      expect(called).toBe(1);
+      expect(recovered.isSome()).toBe(true);
+      expect(recovered.unwrap()).toBe(100);
+    });
+
+    test("None.orElse(fn) can return None", () => {
+      const option = Option.none<number>();
+      const recovered = option.orElse(() => Option.none<number>());
+      expect(recovered.isNone()).toBe(true);
+    });
+  });
+
+  describe("xor()", () => {
+    test("Some.xor(Some): returns None", () => {
+      const option1 = Option.some(1);
+      const option2 = Option.some(2);
+      const combined = option1.xor(option2);
+      expect(combined.isNone()).toBe(true);
+    });
+
+    test("Some.xor(None): returns Some(self)", () => {
+      const option1 = Option.some(1);
+      const option2 = Option.none<number>();
+      const combined = option1.xor(option2);
+      expect(combined.isSome()).toBe(true);
+      expect(combined.unwrap()).toBe(1);
+    });
+
+    test("None.xor(Some): returns Some(other)", () => {
+      const option1 = Option.none<number>();
+      const option2 = Option.some(2);
+      const combined = option1.xor(option2);
+      expect(combined.isSome()).toBe(true);
+      expect(combined.unwrap()).toBe(2);
+    });
+
+    test("None.xor(None): returns None", () => {
+      const option1 = Option.none<number>();
+      const option2 = Option.none<number>();
+      const combined = option1.xor(option2);
+      expect(combined.isNone()).toBe(true);
+    });
+  });
+
+  describe("zip()", () => {
+    test("Some.zip(Some): returns Some([a, b])", () => {
+      const option1 = Option.some(1);
+      const option2 = Option.some("hello");
+
+      const zipped = option1.zip(option2);
+      expect(zipped.isSome()).toBe(true);
+      expect(zipped.unwrap()).toEqual([1, "hello"]);
+    });
+
+    test("Some.zip(None): returns None", () => {
+      const option1 = Option.some(1);
+      const option2 = Option.none<string>();
+
+      const zipped = option1.zip(option2);
+      expect(zipped.isNone()).toBe(true);
+    });
+
+    test("None.zip(Some): returns None", () => {
+      const option1 = Option.none<number>();
+      const option2 = Option.some("hello");
+
+      const zipped = option1.zip(option2);
+      expect(zipped.isNone()).toBe(true);
+    });
+  });
+
+  describe("zipWith()", () => {
+    test("Some.zipWith(Some, fn): returns Some(fn(a, b))", () => {
+      const option1 = Option.some(1);
+      const option2 = Option.some(2);
+
+      const zipped = option1.zipWith(option2, (a, b) => a + b);
+      expect(zipped.isSome()).toBe(true);
+      expect(zipped.unwrap()).toBe(3);
+    });
+
+    test("Some.zipWith(None, fn): returns None without calling fn", () => {
+      let called = 0;
+
+      const option1 = Option.some(1);
+      const option2 = Option.none<number>();
+
+      const zipped = option1.zipWith(option2, (_a, _b) => {
+        called++;
+        return 0;
+      });
+
+      expect(called).toBe(0);
+      expect(zipped.isNone()).toBe(true);
+    });
+
+    test("None.zipWith(Some, fn): returns None without calling fn", () => {
+      let called = 0;
+
+      const option1 = Option.none<number>();
+      const option2 = Option.some(2);
+
+      const zipped = option1.zipWith(option2, (_a, _b) => {
+        called++;
+        return 0;
+      });
+
+      expect(called).toBe(0);
+      expect(zipped.isNone()).toBe(true);
+    });
+  });
+
+  describe("unzip()", () => {
+    test("Some([a, b]).unzip(): returns [Some(a), Some(b)]", () => {
+      const option = Option.some<[number, string]>([1, "hello"]);
+      const [left, right] = option.unzip();
+
+      expect(left.isSome()).toBe(true);
+      expect(left.unwrap()).toBe(1);
+
+      expect(right.isSome()).toBe(true);
+      expect(right.unwrap()).toBe("hello");
+    });
+
+    test("None.unzip(): returns [None, None]", () => {
+      const option = Option.none<[number, string]>();
+      const [left, right] = option.unzip();
+
+      expect(left.isNone()).toBe(true);
+      expect(right.isNone()).toBe(true);
+    });
+  });
+
   describe("andThen()", () => {
     test("Some.andThen(fn): returns fn result", () => {
       const option = Option.some(42);

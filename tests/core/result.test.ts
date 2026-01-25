@@ -49,6 +49,48 @@ describe("Result", () => {
     });
   });
 
+  describe("isOkAnd()", () => {
+    test("Ok case: returns predicate result", () => {
+      const result = Result.ok(42);
+      expect(result.isOkAnd((v) => v > 0)).toBe(true);
+      expect(result.isOkAnd((v) => v < 0)).toBe(false);
+    });
+
+    test("Err case: returns false without calling predicate", () => {
+      let called = 0;
+
+      const result = Result.err<number, string>("error");
+      expect(
+        result.isOkAnd((_v) => {
+          called++;
+          return true;
+        }),
+      ).toBe(false);
+      expect(called).toBe(0);
+    });
+  });
+
+  describe("isErrAnd()", () => {
+    test("Err case: returns predicate result", () => {
+      const result = Result.err<number, string>("error");
+      expect(result.isErrAnd((e) => e.length > 0)).toBe(true);
+      expect(result.isErrAnd((e) => e.length < 0)).toBe(false);
+    });
+
+    test("Ok case: returns false without calling predicate", () => {
+      let called = 0;
+
+      const result = Result.ok<number, string>(42);
+      expect(
+        result.isErrAnd((_e) => {
+          called++;
+          return true;
+        }),
+      ).toBe(false);
+      expect(called).toBe(0);
+    });
+  });
+
   describe("unwrap()", () => {
     test("Ok case: returns the value", () => {
       const result = Result.ok(42);
@@ -85,6 +127,21 @@ describe("Result", () => {
     });
   });
 
+  describe("expectErr()", () => {
+    test("Err case: returns the error value", () => {
+      const result = Result.err<number, string>("error message");
+      expect(result.expectErr("custom message")).toBe("error message");
+    });
+
+    test("Ok case: throws an exception with custom message", () => {
+      const result = Result.ok<number, string>(42);
+      expect(() => result.expectErr("custom message")).toThrow(UnwrapError);
+      expect(() => result.expectErr("custom message")).toThrow(
+        "custom message",
+      );
+    });
+  });
+
   describe("unwrapOr()", () => {
     test("Ok case: returns the original value", () => {
       const result = Result.ok(42);
@@ -106,6 +163,60 @@ describe("Result", () => {
     test("Err case: returns the function result", () => {
       const result = Result.err<number, string>("error");
       expect(result.unwrapOrElse((error) => error.length)).toBe(5);
+    });
+  });
+
+  describe("mapOr()", () => {
+    test("Ok case: returns mapped value without using default", () => {
+      const result = Result.ok<number, string>(42);
+      expect(result.mapOr(0, (v) => v * 2)).toBe(84);
+    });
+
+    test("Err case: returns default value without calling mapper", () => {
+      let called = 0;
+
+      const result = Result.err<number, string>("error");
+      expect(
+        result.mapOr(123, (_v) => {
+          called++;
+          return 0;
+        }),
+      ).toBe(123);
+      expect(called).toBe(0);
+    });
+  });
+
+  describe("mapOrElse()", () => {
+    test("Ok case: returns mapped value without calling defaultFn", () => {
+      let called = 0;
+
+      const result = Result.ok<number, string>(42);
+      expect(
+        result.mapOrElse(
+          (_e) => {
+            called++;
+            return 0;
+          },
+          (v) => v * 2,
+        ),
+      ).toBe(84);
+      expect(called).toBe(0);
+    });
+
+    test("Err case: returns defaultFn result without calling mapper", () => {
+      let called = 0;
+
+      const result = Result.err<number, string>("error");
+      expect(
+        result.mapOrElse(
+          (e) => e.length,
+          (_v) => {
+            called++;
+            return 0;
+          },
+        ),
+      ).toBe(5);
+      expect(called).toBe(0);
     });
   });
 
@@ -144,6 +255,58 @@ describe("Result", () => {
       expect(mapped.isErr()).toBe(true);
       const errorValue = mapped.unwrapOrElse((err) => err);
       expect(errorValue).toBe(5);
+    });
+  });
+
+  describe("inspect()", () => {
+    test("Ok case: calls fn and returns same instance", () => {
+      let inspectedValue: number | null = null;
+
+      const result = Result.ok<number, string>(42);
+      const inspected = result.inspect((v) => {
+        inspectedValue = v;
+      });
+
+      expect(inspectedValue).toBe(42);
+      expect(inspected).toBe(result);
+    });
+
+    test("Err case: does not call fn and returns same instance", () => {
+      let called = 0;
+
+      const result = Result.err<number, string>("error");
+      const inspected = result.inspect((_v) => {
+        called++;
+      });
+
+      expect(called).toBe(0);
+      expect(inspected).toBe(result);
+    });
+  });
+
+  describe("inspectErr()", () => {
+    test("Err case: calls fn and returns same instance", () => {
+      let inspectedError: string | null = null;
+
+      const result = Result.err<number, string>("error");
+      const inspected = result.inspectErr((e) => {
+        inspectedError = e;
+      });
+
+      expect(inspectedError).toBe("error");
+      expect(inspected).toBe(result);
+    });
+
+    test("Ok case: does not call fn and returns same instance", () => {
+      let called = 0;
+
+      const result = Result.ok<number, string>(42);
+      const inspected = result.inspectErr((_e) => {
+        called++;
+      });
+
+      expect(called).toBe(0);
+      expect(inspected).toBe(result);
     });
   });
 
@@ -259,6 +422,21 @@ describe("Result", () => {
       const result = Result.err("error");
       const option = result.toOption();
       expect(option.isNone()).toBe(true);
+    });
+  });
+
+  describe("err()", () => {
+    test("Ok → None conversion", () => {
+      const result = Result.ok<number, string>(42);
+      const option = result.err();
+      expect(option.isNone()).toBe(true);
+    });
+
+    test("Err → Some conversion", () => {
+      const result = Result.err<number, string>("error");
+      const option = result.err();
+      expect(option.isSome()).toBe(true);
+      expect(option.unwrap()).toBe("error");
     });
   });
 

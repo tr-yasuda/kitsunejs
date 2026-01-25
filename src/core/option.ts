@@ -76,6 +76,60 @@ export abstract class Option<T> {
   abstract or(other: Option<T>): Option<T>;
 
   /**
+   * Returns the option if it contains a value, otherwise returns the result of fn.
+   */
+  orElse(fn: () => Option<T>): Option<T> {
+    if (this.isSome()) {
+      return this;
+    }
+    return fn();
+  }
+
+  /**
+   * Returns Some if exactly one of self, other is Some, otherwise returns None.
+   */
+  xor(other: Option<T>): Option<T> {
+    if (this.isSome()) {
+      return other.isSome() ? Option.none<T>() : this;
+    }
+    return other.isSome() ? other : this;
+  }
+
+  /**
+   * Zips self with another Option.
+   * If both are Some, returns Some([a, b]), otherwise returns None.
+   */
+  zip<U>(other: Option<U>): Option<[T, U]> {
+    if (this.isSome() && other.isSome()) {
+      const value: [T, U] = [this.unwrap(), other.unwrap()];
+      return Option.some(value);
+    }
+    return Option.none<[T, U]>();
+  }
+
+  /**
+   * Zips self with another Option using a function.
+   * If both are Some, returns Some(fn(a, b)), otherwise returns None.
+   */
+  zipWith<U, R>(other: Option<U>, fn: (a: T, b: U) => R): Option<R> {
+    if (this.isSome() && other.isSome()) {
+      return Option.some(fn(this.unwrap(), other.unwrap()));
+    }
+    return Option.none<R>();
+  }
+
+  /**
+   * Unzips an Option containing a 2-tuple into a 2-tuple of Options.
+   */
+  unzip<A, B>(this: Option<[A, B]>): [Option<A>, Option<B>] {
+    if (this.isSome()) {
+      const [a, b] = this.unwrap();
+      return [Option.some(a), Option.some(b)];
+    }
+    return [Option.none<A>(), Option.none<B>()];
+  }
+
+  /**
    * Returns None if the option is None, otherwise calls fn with the wrapped value and returns the result.
    */
   abstract andThen<U>(fn: (value: T) => Option<U>): Option<U>;

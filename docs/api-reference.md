@@ -864,6 +864,46 @@ if (option.isNone()) {
 }
 ```
 
+##### `isSomeAnd(predicate: (value: T) => boolean): boolean`
+
+Determines if the Option is a `Some` variant and the predicate returns `true` for its value.
+The predicate is only evaluated for `Some` values.
+
+**Parameters**:
+- `predicate: (value: T) => boolean` - Predicate to evaluate for Some values
+
+**Returns**: `boolean` - true if Some and predicate is true, otherwise false
+
+**Type Narrowing**: When this method returns `true`, TypeScript treats Option as type `Some<T>`.
+
+**Example**:
+```typescript
+const option = Option.some(42);
+
+if (option.isSomeAnd((n) => n > 0)) {
+  // Here option is of type Some<number>
+  console.log(option.unwrap()); // 42
+}
+```
+
+##### `isNoneOr(predicate: (value: T) => boolean): boolean`
+
+Returns `true` if the Option is `None`, otherwise returns the predicate result for the `Some` value.
+The predicate is only evaluated for `Some` values.
+
+**Parameters**:
+- `predicate: (value: T) => boolean` - Predicate to evaluate for Some values
+
+**Returns**: `boolean` - true if None, otherwise predicate result
+
+**Example**:
+```typescript
+const option = Option.fromNullable(process.env.DEBUG);
+
+// true if not set, otherwise checks if it equals "1"
+const enabled = option.isNoneOr((v) => v === "1");
+```
+
 #### Extraction
 
 ##### `unwrap(): T`
@@ -972,6 +1012,48 @@ console.log(doubled.unwrap()); // 84
 const none = Option.none<number>();
 const mapped = none.map((n) => n * 2);
 console.log(mapped.isNone()); // true
+```
+
+##### `mapOr<U>(defaultValue: U, fn: (value: T) => U): U`
+
+Applies a function to transform the `Some` value and returns the result. If `None`, returns the provided default value.
+
+**Parameters**:
+- `defaultValue: U` - Default value to return if None
+- `fn: (value: T) => U` - Function to transform the Some value
+
+**Returns**: `U` - Mapped value if Some, or default value if None
+
+**Example**:
+```typescript
+const some = Option.some(2);
+console.log(some.mapOr(0, (n) => n * 2)); // 4
+
+const none = Option.none<number>();
+console.log(none.mapOr(0, (n) => n * 2)); // 0
+```
+
+##### `mapOrElse<U>(defaultFn: () => U, fn: (value: T) => U): U`
+
+Applies a function to transform the `Some` value and returns the result. If `None`, executes `defaultFn` and returns its result.
+
+**Parameters**:
+- `defaultFn: () => U` - Function to execute if None. Returns a default value.
+- `fn: (value: T) => U` - Function to transform the Some value
+
+**Returns**: `U` - Mapped value if Some, or function result if None
+
+**Example**:
+```typescript
+const some = Option.some(2);
+console.log(some.mapOrElse(() => 0, (n) => n * 2)); // 4
+
+const none = Option.none<number>();
+console.log(none.mapOrElse(() => {
+  console.log('No value found');
+  return 0;
+}, (n) => n * 2)); // No value found
+               // 0
 ```
 
 #### Composition
@@ -1173,6 +1255,27 @@ console.log(ok.unwrap()); // 42
 
 const none = Option.none<number>();
 const err = none.toResult('No value');
+console.log(err.isErr()); // true
+console.log(err.unwrapErr()); // 'No value'
+```
+
+##### `toResultElse<E>(fn: () => E): Result<T, E>`
+
+Converts an `Option` to a `Result`. `Some` becomes `Ok`, `None` becomes `Err(fn())`.
+
+**Parameters**:
+- `fn: () => E` - Function to compute the error value if None
+
+**Returns**: `Result<T, E>` - Ok(value) if Some, Err(fn()) if None
+
+**Example**:
+```typescript
+const some = Option.some(42);
+const ok = some.toResultElse(() => 'No value');
+console.log(ok.unwrap()); // 42
+
+const none = Option.none<number>();
+const err = none.toResultElse(() => 'No value');
 console.log(err.isErr()); // true
 console.log(err.unwrapErr()); // 'No value'
 ```

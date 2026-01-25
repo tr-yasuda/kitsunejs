@@ -54,8 +54,13 @@ kitsunejs faithfully reproduces Rust's Result/Option API as much as possible, bu
 | `map(fn)`            | `map(fn)`                    |                                                                                                 |
 | `and(optb)`          | `and(other)`                 |                                                                                                 |
 | `or(optb)`           | `or(other)`                  |                                                                                                 |
+| `or_else(fn)`        | `orElse(fn)`                 | Lazy alternative to `or`. `fn` is only called for `None`                                        |
+| `xor(optb)`          | `xor(other)`                 | Returns `Some` if exactly one of the two is `Some`                                              |
 | `and_then(fn)`       | `andThen(fn)`                | Also known as flatMap                                                                           |
 | `filter(predicate)`  | `filter(predicate)`          |                                                                                                 |
+| `zip(optb)`          | `zip(other)`                 | Returns `Some([a, b])` if both are `Some`, otherwise returns `None`                             |
+| `zip_with(optb, fn)` | `zipWith(other, fn)`         | Returns `Some(fn(a, b))` if both are `Some`, otherwise returns `None`                           |
+| `unzip()`            | `unzip()`                    | Unzips `Option<[A, B]>` into `[Option<A>, Option<B>]`                                           |
 | `ok_or(err)`         | `toResult(error)`            | Different method name. Some → Ok, None → Err                                                    |
 | -                    | `Option.fromNullable(value)` | kitsunejs-specific. Integration with JavaScript/TypeScript null/undefined                       |
 | -                    | `Option.all(options)`        | kitsunejs-specific. Not in Rust std, but common in ecosystem                                    |

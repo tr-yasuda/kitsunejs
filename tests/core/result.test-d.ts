@@ -1,6 +1,6 @@
 import { describe, expectTypeOf, test } from "vitest";
 import { Option } from "@/core/option.js";
-import { type Err, type Ok, Result } from "@/core/result.js";
+import { Err, Ok, Result } from "@/core/result.js";
 
 describe("Result type tests", () => {
   test("type behavior", () => {
@@ -31,11 +31,62 @@ describe("Result type tests", () => {
       expectTypeOf(maybeResult.unwrapErr()).toEqualTypeOf<string>();
     }
 
+    // --- isOkAnd / isErrAnd ---
+
+    const maybeOkAnd: Result<number, string> = Result.ok(42);
+    if (maybeOkAnd.isOkAnd((v) => v > 0)) {
+      expectTypeOf(maybeOkAnd).toEqualTypeOf<Ok<number, string>>();
+      expectTypeOf(maybeOkAnd.unwrap()).toEqualTypeOf<number>();
+    }
+
+    const maybeErrAnd: Result<number, string> = Result.err("error");
+    if (maybeErrAnd.isErrAnd((e) => e.length > 0)) {
+      expectTypeOf(maybeErrAnd).toEqualTypeOf<Err<number, string>>();
+      expectTypeOf(maybeErrAnd.unwrapErr()).toEqualTypeOf<string>();
+    }
+
     // --- map / mapErr / andThen ---
 
     // map: number → string
     const mapped = Result.ok<number, string>(42).map((v) => v.toString());
     expectTypeOf(mapped).toEqualTypeOf<Result<string, string>>();
+
+    // mapOr: Ok returns mapper result, Err returns default
+    const mapOrOk = Result.ok<number, string>(42).mapOr("default", (n) =>
+      n.toString(),
+    );
+    expectTypeOf(mapOrOk).toEqualTypeOf<string>();
+
+    const mapOrErr = Result.err<number, string>("error").mapOr(0, (n) => n);
+    expectTypeOf(mapOrErr).toEqualTypeOf<number>();
+
+    // mapOrElse: Ok returns mapper result, Err returns defaultFn result
+    const mapOrElseOk = Result.ok<number, string>(42).mapOrElse(
+      (e) => e.length,
+      (n) => n * 2,
+    );
+    expectTypeOf(mapOrElseOk).toEqualTypeOf<number>();
+
+    const mapOrElseErr = Result.err<number, string>("error").mapOrElse(
+      (e) => e.length,
+      (n) => n * 2,
+    );
+    expectTypeOf(mapOrElseErr).toEqualTypeOf<number>();
+
+    // inspect / inspectErr: returns self unchanged
+    const inspectedOk = new Ok<number, string>(42).inspect((_v) => {});
+    expectTypeOf(inspectedOk).toEqualTypeOf<Ok<number, string>>();
+
+    const inspectedErr = new Err<number, string>("error").inspectErr(
+      (_e) => {},
+    );
+    expectTypeOf(inspectedErr).toEqualTypeOf<Err<number, string>>();
+
+    // expectErr: returns Err value
+    const expectedErr = Result.err<number, string>("error").expectErr(
+      "message",
+    );
+    expectTypeOf(expectedErr).toEqualTypeOf<string>();
 
     // mapErr: string → number
     const mappedErr = Result.err<number, string>("error").mapErr(
@@ -56,6 +107,12 @@ describe("Result type tests", () => {
 
     const optionFromErr = Result.err<number, string>("error").toOption();
     expectTypeOf(optionFromErr).toEqualTypeOf<Option<number>>();
+
+    const errOptionFromOk = Result.ok<number, string>(42).err();
+    expectTypeOf(errOptionFromOk).toEqualTypeOf<Option<string>>();
+
+    const errOptionFromErr = Result.err<number, string>("error").err();
+    expectTypeOf(errOptionFromErr).toEqualTypeOf<Option<string>>();
 
     const resultFromSome = Option.some(42).toResult("error");
     expectTypeOf(resultFromSome).toEqualTypeOf<Result<number, string>>();

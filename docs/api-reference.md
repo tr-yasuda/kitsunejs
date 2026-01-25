@@ -256,6 +256,42 @@ if (result.isErr()) {
 }
 ```
 
+##### `isOkAnd(predicate: (value: T) => boolean): boolean`
+
+Returns true if the Result is `Ok` and the predicate returns true.
+
+**Parameters**:
+- `predicate: (value: T) => boolean` - Predicate applied to the Ok value
+
+**Returns**: `boolean` - true if Ok and predicate returns true, otherwise false
+
+**Example**:
+```typescript
+const result: Result<number, string> = Result.ok(42);
+
+if (result.isOkAnd((v) => v > 0)) {
+  console.log(result.unwrap()); // 42
+}
+```
+
+##### `isErrAnd(predicate: (error: E) => boolean): boolean`
+
+Returns true if the Result is `Err` and the predicate returns true.
+
+**Parameters**:
+- `predicate: (error: E) => boolean` - Predicate applied to the Err value
+
+**Returns**: `boolean` - true if Err and predicate returns true, otherwise false
+
+**Example**:
+```typescript
+const result: Result<number, string> = Result.err('error');
+
+if (result.isErrAnd((e) => e.length > 0)) {
+  console.log(result.unwrapErr()); // 'error'
+}
+```
+
 #### Extraction
 
 ##### `unwrap(): T`
@@ -326,6 +362,26 @@ const ok = Result.ok(42);
 // ok.unwrapErr(); // UnwrapError: Called unwrapErr on an Ok value
 ```
 
+##### `expectErr(message: string): E`
+
+Extracts the `Err` value. Throws `UnwrapError` with the specified message if the value is `Ok`.
+
+**Parameters**:
+- `message: string` - Message to display on error
+
+**Returns**: `E` - Error value if Err
+
+**Throws**: `UnwrapError` - If Ok (with custom message)
+
+**Example**:
+```typescript
+const err = Result.err<number, string>('Something went wrong');
+console.log(err.expectErr('Should be Err')); // 'Something went wrong'
+
+const ok = Result.ok<number, string>(42);
+// ok.expectErr('Expected Err'); // UnwrapError: Expected Err
+```
+
 ##### `unwrapOr(defaultValue: T): T`
 
 Extracts the `Ok` value. Returns the specified default value if `Err`.
@@ -388,6 +444,44 @@ const mapped = err.map((n) => n * 2);
 console.log(mapped.isErr()); // true
 ```
 
+##### `mapOr<U>(defaultValue: U, fn: (value: T) => U): U`
+
+Returns the mapped `Ok` value, or a provided default if `Err`.
+
+**Parameters**:
+- `defaultValue: U` - Default value to return if Err
+- `fn: (value: T) => U` - Function to map the Ok value
+
+**Returns**: `U` - Mapped value if Ok, otherwise defaultValue
+
+**Example**:
+```typescript
+const ok = Result.ok<number, string>(21);
+console.log(ok.mapOr(0, (n) => n * 2)); // 42
+
+const err = Result.err<number, string>('error');
+console.log(err.mapOr(0, (n) => n * 2)); // 0
+```
+
+##### `mapOrElse<U>(defaultFn: (error: E) => U, fn: (value: T) => U): U`
+
+Returns the mapped `Ok` value, or computes a default value from the `Err`.
+
+**Parameters**:
+- `defaultFn: (error: E) => U` - Function to compute the default value from the Err value
+- `fn: (value: T) => U` - Function to map the Ok value
+
+**Returns**: `U` - Mapped value if Ok, otherwise the result of defaultFn
+
+**Example**:
+```typescript
+const ok = Result.ok<number, string>(21);
+console.log(ok.mapOrElse((e) => e.length, (n) => n * 2)); // 42
+
+const err = Result.err<number, string>('error');
+console.log(err.mapOrElse((e) => e.length, (n) => n * 2)); // 5
+```
+
 ##### `mapErr<F>(fn: (error: E) => F): Result<T, F>`
 
 Applies a function to transform the `Err` value. Returns the `Ok` unchanged if `Ok`.
@@ -406,6 +500,44 @@ console.log(mapped.unwrapErr()); // 'Wrapped: error'
 const ok = Result.ok(42);
 const mappedOk = ok.mapErr((e) => `Wrapped: ${e}`);
 console.log(mappedOk.unwrap()); // 42
+```
+
+#### Inspection
+
+##### `inspect(fn: (value: T) => void): Result<T, E>`
+
+Calls the function with the `Ok` value (if Ok), then returns self unchanged.
+
+**Parameters**:
+- `fn: (value: T) => void` - Function to call with the Ok value
+
+**Returns**: `Result<T, E>` - The same Result instance
+
+**Example**:
+```typescript
+const result = Result.ok(42)
+  .inspect((v) => console.log('ok:', v))
+  .map((v) => v + 1);
+
+console.log(result.unwrap()); // 43
+```
+
+##### `inspectErr(fn: (error: E) => void): Result<T, E>`
+
+Calls the function with the `Err` value (if Err), then returns self unchanged.
+
+**Parameters**:
+- `fn: (error: E) => void` - Function to call with the Err value
+
+**Returns**: `Result<T, E>` - The same Result instance
+
+**Example**:
+```typescript
+const value = Result.err<number, string>('error')
+  .inspectErr((e) => console.error('err:', e))
+  .unwrapOr(0);
+
+console.log(value); // 0
 ```
 
 #### Composition
@@ -512,6 +644,24 @@ console.log(some.unwrap()); // 42
 const err = Result.err('error');
 const none = err.toOption();
 console.log(none.isNone()); // true
+```
+
+##### `err(): Option<E>`
+
+Converts a `Result` to an `Option` containing the error. `Err` becomes `Some`, `Ok` becomes `None`.
+Ok value information is discarded.
+
+**Returns**: `Option<E>` - Some(error) if Err, None if Ok
+
+**Example**:
+```typescript
+const err = Result.err<number, string>('error');
+const someError = err.err();
+console.log(someError.unwrap()); // 'error'
+
+const ok = Result.ok<number, string>(42);
+const noneError = ok.err();
+console.log(noneError.isNone()); // true
 ```
 
 ## Option<T>
@@ -862,6 +1012,88 @@ console.log(some.or(other).unwrap()); // 42
 
 const none = Option.none<number>();
 console.log(none.or(other).unwrap()); // 100
+```
+
+##### `orElse(fn: () => Option<T>): Option<T>`
+
+Returns the Option if it is `Some`, otherwise returns the result of `fn`.
+
+**Parameters**:
+- `fn: () => Option<T>` - Function to execute if None
+
+**Returns**: `Option<T>` - self if Some, fn result if None
+
+**Example**:
+```typescript
+const some = Option.some(42).orElse(() => Option.some(0));
+console.log(some.unwrap()); // 42
+
+const none = Option.none<number>().orElse(() => Option.some(0));
+console.log(none.unwrap()); // 0
+```
+
+##### `xor(other: Option<T>): Option<T>`
+
+Returns `Some` if exactly one of self or other is `Some`, otherwise returns `None`.
+
+**Parameters**:
+- `other: Option<T>` - Another Option
+
+**Returns**: `Option<T>` - Some if exactly one is Some, otherwise None
+
+**Example**:
+```typescript
+const a = Option.some(1);
+const b = Option.none<number>();
+console.log(a.xor(b).unwrap()); // 1
+
+const c = Option.some(2);
+console.log(a.xor(c).isNone()); // true (both Some)
+```
+
+##### `zip<U>(other: Option<U>): Option<[T, U]>`
+
+Zips two Options into one Option containing a 2-tuple. Returns `None` if either is `None`.
+
+**Parameters**:
+- `other: Option<U>` - Another Option
+
+**Returns**: `Option<[T, U]>` - Some([a, b]) if both Some, otherwise None
+
+**Example**:
+```typescript
+const zipped = Option.some(1).zip(Option.some("hello"));
+console.log(zipped.unwrap()); // [1, "hello"]
+```
+
+##### `zipWith<U, R>(other: Option<U>, fn: (a: T, b: U) => R): Option<R>`
+
+Zips two Options using a function. Returns `None` if either is `None`.
+
+**Parameters**:
+- `other: Option<U>` - Another Option
+- `fn: (a: T, b: U) => R` - Function to combine values
+
+**Returns**: `Option<R>` - Some(fn(a, b)) if both Some, otherwise None
+
+**Example**:
+```typescript
+const sum = Option.some(1).zipWith(Option.some(2), (a, b) => a + b);
+console.log(sum.unwrap()); // 3
+```
+
+##### `unzip<A, B>(): [Option<A>, Option<B>]`
+
+Unzips an Option containing a 2-tuple into a 2-tuple of Options.
+This method is only available when the Option contains a 2-tuple (e.g., the result of `zip`).
+
+**Returns**: `[Option<A>, Option<B>]` - Tuple of Options
+
+**Example**:
+```typescript
+const [left, right] = Option.some(1).zip(Option.some("hello")).unzip();
+console.log(left.unwrap()); // 1
+console.log(right.unwrap()); // "hello"
 ```
 
 ##### `andThen<U>(fn: (value: T) => Option<U>): Option<U>`

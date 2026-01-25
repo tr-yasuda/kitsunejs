@@ -104,5 +104,38 @@ describe("Option type tests", () => {
     ];
     const anyFromReadonly = Option.any(readonlyAnyOptions);
     expectTypeOf(anyFromReadonly).toEqualTypeOf<Option<number>>();
+
+    // --- orElse / xor ---
+
+    const orElseSome = Option.some(1).orElse(() => Option.some(2));
+    expectTypeOf(orElseSome).toEqualTypeOf<Option<number>>();
+
+    const orElseNone = Option.none<number>().orElse(() => Option.some(2));
+    expectTypeOf(orElseNone).toEqualTypeOf<Option<number>>();
+
+    const xorSomeNone = Option.some(1).xor(Option.none<number>());
+    expectTypeOf(xorSomeNone).toEqualTypeOf<Option<number>>();
+
+    // @ts-expect-error - other must be Option<number>
+    Option.some(1).xor(Option.some("nope"));
+
+    // --- zip / zipWith / unzip ---
+
+    const zipped = Option.some(1).zip(Option.some("hello"));
+    expectTypeOf(zipped).toEqualTypeOf<Option<[number, string]>>();
+
+    const zippedWith = Option.some(1).zipWith(Option.some("hello"), (a, b) => {
+      const aNumber: number = a;
+      const bString: string = b;
+      return aNumber + bString.length;
+    });
+    expectTypeOf(zippedWith).toEqualTypeOf<Option<number>>();
+
+    const [unzippedLeft, unzippedRight] = zipped.unzip();
+    expectTypeOf(unzippedLeft).toEqualTypeOf<Option<number>>();
+    expectTypeOf(unzippedRight).toEqualTypeOf<Option<string>>();
+
+    // @ts-expect-error - unzip requires Option<[A, B]>
+    Option.some(1).unzip();
   });
 });

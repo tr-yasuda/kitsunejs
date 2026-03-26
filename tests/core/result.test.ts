@@ -465,6 +465,7 @@ describe("Result", () => {
       expect(transposed.isSome()).toBe(true);
       expect(transposed.unwrap().isErr()).toBe(true);
       expect(transposed.unwrap().unwrapErr()).toBe("error");
+      expect(transposed.unwrap()).toBe(result);
     });
   });
 
@@ -493,6 +494,7 @@ describe("Result", () => {
 
       expect(flattened.isErr()).toBe(true);
       expect(flattened.unwrapErr()).toBe("error");
+      expect(flattened).toBe(result);
     });
 
     test("only flattens one level", () => {

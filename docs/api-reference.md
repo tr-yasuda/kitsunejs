@@ -1093,14 +1093,14 @@ console.log(none.mapOrElse(() => {
 
 #### Inspection
 
-##### `inspect(fn: (value: T) => void): Option<T>`
+##### `inspect(fn: (value: T) => void): this`
 
 Calls the function with the `Some` value (if Some), then returns self unchanged.
 
 **Parameters**:
 - `fn: (value: T) => void` - Function to call with the Some value
 
-**Returns**: `Option<T>` - The same Option instance
+**Returns**: `this` - The same Option (or subclass) instance
 
 **Example**:
 ```typescript

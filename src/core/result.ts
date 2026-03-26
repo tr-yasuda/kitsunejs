@@ -214,7 +214,7 @@ export abstract class Result<T, E> {
     if (this.isOk()) {
       return this.unwrap().map((value) => Result.ok<U, E>(value));
     }
-    return Option.some(Result.err<U, E>(this.unwrapErr()));
+    return Option.some(this as unknown as Result<U, E>);
   }
 
   /**
@@ -224,7 +224,7 @@ export abstract class Result<T, E> {
     if (this.isOk()) {
       return this.unwrap();
     }
-    return Result.err<U, E>(this.unwrapErr());
+    return this as unknown as Result<U, E>;
   }
 
   /**

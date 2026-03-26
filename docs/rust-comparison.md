@@ -28,10 +28,14 @@ kitsunejs faithfully reproduces Rust's Result/Option API as much as possible, bu
 | `unwrap_or_else(fn)` | `unwrapOrElse(fn)`                  |                                                                                    |
 | `map(fn)`            | `map(fn)`                           |                                                                                    |
 | `map_err(fn)`        | `mapErr(fn)`                        |                                                                                    |
+| `inspect(f)`         | `inspect(fn)`                       |                                                                                    |
+| `inspect_err(f)`     | `inspectErr(fn)`                    |                                                                                    |
 | `and(res)`           | `and(res)`                          |                                                                                    |
 | `or(res)`            | `or(res)`                           |                                                                                    |
 | `and_then(fn)`       | `andThen(fn)`                       | Also known as flatMap                                                              |
 | `or_else(fn)`        | `orElse(fn)`                        |                                                                                    |
+| `transpose()`        | `transpose()`                       | `Result<Option<T>, E>` ↔ `Option<Result<T, E>>`                                   |
+| `flatten()`          | `flatten()`                         | Flattens one level of nested `Result`                                              |
 | `ok()`               | `toOption()`                        | Different method name. Error information is discarded and converted to `Option<T>` |
 | -                    | `Result.fromNullable(value, error)` | kitsunejs-specific. Integration with JavaScript/TypeScript null/undefined          |
 | -                    | `Result.try(fn)`                    | kitsunejs-specific. Integration with JavaScript exception handling                 |
@@ -56,6 +60,7 @@ kitsunejs faithfully reproduces Rust's Result/Option API as much as possible, bu
 | `map(fn)`            | `map(fn)`                    |                                                                                                 |
 | `map_or(default, f)` | `mapOr(defaultValue, fn)`    |                                                                                                 |
 | `map_or_else(default, f)` | `mapOrElse(defaultFn, fn)`   |                                                                                                 |
+| `inspect(f)`         | `inspect(fn)`                |                                                                                                 |
 | `and(optb)`          | `and(other)`                 |                                                                                                 |
 | `or(optb)`           | `or(other)`                  |                                                                                                 |
 | `or_else(fn)`        | `orElse(fn)`                 | Lazy alternative to `or`. `fn` is only called for `None`                                        |
@@ -65,6 +70,8 @@ kitsunejs faithfully reproduces Rust's Result/Option API as much as possible, bu
 | `zip(optb)`          | `zip(other)`                 | Returns `Some([a, b])` if both are `Some`, otherwise returns `None`                             |
 | `zip_with(optb, fn)` | `zipWith(other, fn)`         | Returns `Some(fn(a, b))` if both are `Some`, otherwise returns `None`                           |
 | `unzip()`            | `unzip()`                    | Unzips `Option<[A, B]>` into `[Option<A>, Option<B>]`                                           |
+| `transpose()`        | `transpose()`               | `Option<Result<T, E>>` ↔ `Result<Option<T>, E>`                                                 |
+| `flatten()`          | `flatten()`                 | Flattens one level of nested `Option`                                                           |
 | `ok_or(err)`         | `toResult(error)`            | Different method name. Some → Ok, None → Err                                                    |
 | `ok_or_else(fn)`     | `toResultElse(fn)`           | Different method name. Some → Ok, None → Err (computed lazily)                                  |
 | -                    | `Option.fromNullable(value)` | kitsunejs-specific. Integration with JavaScript/TypeScript null/undefined                       |

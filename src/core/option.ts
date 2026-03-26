@@ -66,6 +66,16 @@ export abstract class Option<T> {
   abstract mapOrElse<U>(defaultFn: () => U, fn: (value: T) => U): U;
 
   /**
+   * Calls a function with the Some value (if Some), then returns self unchanged.
+   */
+  inspect(fn: (value: T) => void): this {
+    if (this.isSome()) {
+      fn(this.unwrap());
+    }
+    return this;
+  }
+
+  /**
    * Returns None if the option is None, otherwise returns other.
    */
   abstract and<U>(other: Option<U>): Option<U>;
@@ -130,6 +140,16 @@ export abstract class Option<T> {
   }
 
   /**
+   * Transposes an Option of a Result into a Result of an Option.
+   */
+  transpose<U, E>(this: Option<ResultType<U, E>>): ResultType<Option<U>, E> {
+    if (this.isSome()) {
+      return this.unwrap().map((value) => Option.some(value));
+    }
+    return Result.ok<Option<U>, E>(this as unknown as Option<U>);
+  }
+
+  /**
    * Returns None if the option is None, otherwise calls fn with the wrapped value and returns the result.
    */
   abstract andThen<U>(fn: (value: T) => Option<U>): Option<U>;
@@ -144,6 +164,16 @@ export abstract class Option<T> {
    * Converts from Option<T> to Result<T, E>.
    */
   abstract toResult<E>(error: E): ResultType<T, E>;
+
+  /**
+   * Flattens one level of nesting in an Option.
+   */
+  flatten<U>(this: Option<Option<U>>): Option<U> {
+    if (this.isSome()) {
+      return this.unwrap();
+    }
+    return this as unknown as Option<U>;
+  }
 
   /**
    * Converts from Option<T> to Result<T, E> by computing the error from a function.

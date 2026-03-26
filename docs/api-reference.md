@@ -553,7 +553,7 @@ Converts `Result<Option<U>, E>` into `Option<Result<U, E>>`.
 const okSome = Result.ok<Option<number>, string>(Option.some(42)).transpose();
 console.log(okSome.unwrap().unwrap()); // 42
 
-const okNone = Result.ok<Option<number>, string>(Option.none()).transpose();
+const okNone = Result.ok<Option<number>, string>(Option.none<number>()).transpose();
 console.log(okNone.isNone()); // true
 
 const err = Result.err<Option<number>, string>('error').transpose();

@@ -483,6 +483,7 @@ describe("Option", () => {
 
       expect(transposed.isOk()).toBe(true);
       expect(transposed.unwrap().isNone()).toBe(true);
+      expect(transposed.unwrap()).toBe(option);
     });
   });
 
@@ -563,6 +564,7 @@ describe("Option", () => {
       const flattened = option.flatten();
 
       expect(flattened.isNone()).toBe(true);
+      expect(flattened).toBe(option);
     });
 
     test("only flattens one level", () => {

@@ -146,7 +146,7 @@ export abstract class Option<T> {
     if (this.isSome()) {
       return this.unwrap().map((value) => Option.some(value));
     }
-    return Result.ok<Option<U>, E>(Option.none<U>());
+    return Result.ok<Option<U>, E>(this as unknown as Option<U>);
   }
 
   /**
@@ -172,7 +172,7 @@ export abstract class Option<T> {
     if (this.isSome()) {
       return this.unwrap();
     }
-    return Option.none<U>();
+    return this as unknown as Option<U>;
   }
 
   /**

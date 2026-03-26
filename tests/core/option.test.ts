@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { UnwrapError } from "@/core/errors.js";
 import { None, Option, Some } from "@/core/option.js";
+import { Result } from "@/core/result.js";
 
 describe("Option", () => {
   describe("Option.some()", () => {
@@ -229,6 +230,32 @@ describe("Option", () => {
     });
   });
 
+  describe("inspect()", () => {
+    test("Some case: calls fn and returns same instance", () => {
+      let inspectedValue: number | null = null;
+
+      const option = Option.some(42);
+      const inspected = option.inspect((value) => {
+        inspectedValue = value;
+      });
+
+      expect(inspectedValue).toBe(42);
+      expect(inspected).toBe(option);
+    });
+
+    test("None case: does not call fn and returns same instance", () => {
+      let called = 0;
+
+      const option = Option.none<number>();
+      const inspected = option.inspect((_value) => {
+        called += 1;
+      });
+
+      expect(called).toBe(0);
+      expect(inspected).toBe(option);
+    });
+  });
+
   describe("and()", () => {
     test("Some.and(other): returns other", () => {
       const option1 = Option.some(42);
@@ -432,6 +459,33 @@ describe("Option", () => {
     });
   });
 
+  describe("transpose()", () => {
+    test("Some(Ok(value)): returns Ok(Some(value))", () => {
+      const option = Option.some(Result.ok<number, string>(42));
+      const transposed = option.transpose();
+
+      expect(transposed.isOk()).toBe(true);
+      expect(transposed.unwrap().isSome()).toBe(true);
+      expect(transposed.unwrap().unwrap()).toBe(42);
+    });
+
+    test("Some(Err(error)): returns Err(error)", () => {
+      const option = Option.some(Result.err<number, string>("error"));
+      const transposed = option.transpose();
+
+      expect(transposed.isErr()).toBe(true);
+      expect(transposed.unwrapErr()).toBe("error");
+    });
+
+    test("None: returns Ok(None)", () => {
+      const option = Option.none<Result<number, string>>();
+      const transposed = option.transpose();
+
+      expect(transposed.isOk()).toBe(true);
+      expect(transposed.unwrap().isNone()).toBe(true);
+    });
+  });
+
   describe("andThen()", () => {
     test("Some.andThen(fn): returns fn result", () => {
       const option = Option.some(42);
@@ -485,6 +539,39 @@ describe("Option", () => {
       const filtered = option.filter((value) => value.length > 3);
       expect(filtered.isSome()).toBe(true);
       expect(filtered.unwrap()).toBe("hello");
+    });
+  });
+
+  describe("flatten()", () => {
+    test("Some(Some(value)): returns Some(value)", () => {
+      const option = Option.some(Option.some(42));
+      const flattened = option.flatten();
+
+      expect(flattened.isSome()).toBe(true);
+      expect(flattened.unwrap()).toBe(42);
+    });
+
+    test("Some(None): returns None", () => {
+      const option = Option.some(Option.none<number>());
+      const flattened = option.flatten();
+
+      expect(flattened.isNone()).toBe(true);
+    });
+
+    test("None: returns None", () => {
+      const option = Option.none<Option<number>>();
+      const flattened = option.flatten();
+
+      expect(flattened.isNone()).toBe(true);
+    });
+
+    test("only flattens one level", () => {
+      const option = Option.some(Option.some(Option.some(42)));
+      const flattened = option.flatten();
+
+      expect(flattened.isSome()).toBe(true);
+      expect(flattened.unwrap().isSome()).toBe(true);
+      expect(flattened.unwrap().unwrap()).toBe(42);
     });
   });
 

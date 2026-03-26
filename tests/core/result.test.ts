@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { UnwrapError } from "@/core/errors.js";
+import { Option } from "@/core/option.js";
 import { Err, Ok, Result } from "@/core/result.js";
 
 describe("Result", () => {
@@ -437,6 +438,72 @@ describe("Result", () => {
       const option = result.err();
       expect(option.isSome()).toBe(true);
       expect(option.unwrap()).toBe("error");
+    });
+  });
+
+  describe("transpose()", () => {
+    test("Ok(Some(value)): returns Some(Ok(value))", () => {
+      const result = Result.ok<Option<number>, string>(Option.some(42));
+      const transposed = result.transpose();
+
+      expect(transposed.isSome()).toBe(true);
+      expect(transposed.unwrap().isOk()).toBe(true);
+      expect(transposed.unwrap().unwrap()).toBe(42);
+    });
+
+    test("Ok(None): returns None", () => {
+      const result = Result.ok<Option<number>, string>(Option.none<number>());
+      const transposed = result.transpose();
+
+      expect(transposed.isNone()).toBe(true);
+    });
+
+    test("Err(error): returns Some(Err(error))", () => {
+      const result = Result.err<Option<number>, string>("error");
+      const transposed = result.transpose();
+
+      expect(transposed.isSome()).toBe(true);
+      expect(transposed.unwrap().isErr()).toBe(true);
+      expect(transposed.unwrap().unwrapErr()).toBe("error");
+    });
+  });
+
+  describe("flatten()", () => {
+    test("Ok(Ok(value)): returns Ok(value)", () => {
+      const result = Result.ok<Result<number, string>, string>(Result.ok(42));
+      const flattened = result.flatten();
+
+      expect(flattened.isOk()).toBe(true);
+      expect(flattened.unwrap()).toBe(42);
+    });
+
+    test("Ok(Err(error)): returns Err(error)", () => {
+      const result = Result.ok<Result<number, string>, string>(
+        Result.err("error"),
+      );
+      const flattened = result.flatten();
+
+      expect(flattened.isErr()).toBe(true);
+      expect(flattened.unwrapErr()).toBe("error");
+    });
+
+    test("Err(error): returns Err(error)", () => {
+      const result = Result.err<Result<number, string>, string>("error");
+      const flattened = result.flatten();
+
+      expect(flattened.isErr()).toBe(true);
+      expect(flattened.unwrapErr()).toBe("error");
+    });
+
+    test("only flattens one level", () => {
+      const result = Result.ok<Result<Result<number, string>, string>, string>(
+        Result.ok(Result.ok(42)),
+      );
+      const flattened = result.flatten();
+
+      expect(flattened.isOk()).toBe(true);
+      expect(flattened.unwrap().isOk()).toBe(true);
+      expect(flattened.unwrap().unwrap()).toBe(42);
     });
   });
 

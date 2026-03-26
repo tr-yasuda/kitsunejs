@@ -4,6 +4,105 @@ import { Err, Ok, Result } from "@/core/result.js";
 
 describe("Result type tests", () => {
   test("type behavior", () => {
+    class LegacyResult<T, E> extends Result<T, E> {
+      readonly tag: "Ok" | "Err";
+
+      constructor(private readonly inner: Result<T, E>) {
+        super();
+        this.tag = inner.tag;
+      }
+
+      isOk(): this is Ok<T, E> {
+        return this.inner.isOk();
+      }
+
+      isErr(): this is Err<T, E> {
+        return this.inner.isErr();
+      }
+
+      isOkAnd(predicate: (value: T) => boolean): this is Ok<T, E> {
+        return this.inner.isOkAnd(predicate);
+      }
+
+      isErrAnd(predicate: (error: E) => boolean): this is Err<T, E> {
+        return this.inner.isErrAnd(predicate);
+      }
+
+      unwrap(): T {
+        return this.inner.unwrap();
+      }
+
+      expect(message: string): T {
+        return this.inner.expect(message);
+      }
+
+      unwrapErr(): E {
+        return this.inner.unwrapErr();
+      }
+
+      expectErr(message: string): E {
+        return this.inner.expectErr(message);
+      }
+
+      unwrapOr(defaultValue: T): T {
+        return this.inner.unwrapOr(defaultValue);
+      }
+
+      unwrapOrElse(fn: (error: E) => T): T {
+        return this.inner.unwrapOrElse(fn);
+      }
+
+      map<U>(fn: (value: T) => U): Result<U, E> {
+        return this.inner.map(fn);
+      }
+
+      mapOr<U>(defaultValue: U, fn: (value: T) => U): U {
+        return this.inner.mapOr(defaultValue, fn);
+      }
+
+      mapOrElse<U>(defaultFn: (error: E) => U, fn: (value: T) => U): U {
+        return this.inner.mapOrElse(defaultFn, fn);
+      }
+
+      mapErr<F>(fn: (error: E) => F): Result<T, F> {
+        return this.inner.mapErr(fn);
+      }
+
+      inspect(fn: (value: T) => void): this {
+        this.inner.inspect(fn);
+        return this;
+      }
+
+      inspectErr(fn: (error: E) => void): this {
+        this.inner.inspectErr(fn);
+        return this;
+      }
+
+      and<U>(other: Result<U, E>): Result<U, E> {
+        return this.inner.and(other);
+      }
+
+      or<F>(other: Result<T, F>): Result<T, F> {
+        return this.inner.or(other);
+      }
+
+      andThen<U>(fn: (value: T) => Result<U, E>): Result<U, E> {
+        return this.inner.andThen(fn);
+      }
+
+      orElse<F>(fn: (error: E) => Result<T, F>): Result<T, F> {
+        return this.inner.orElse(fn);
+      }
+
+      toOption(): Option<T> {
+        return this.inner.toOption();
+      }
+
+      err(): Option<E> {
+        return this.inner.err();
+      }
+    }
+
     // --- Basic type inference ---
 
     const okNumber = Result.ok(42);
@@ -113,6 +212,47 @@ describe("Result type tests", () => {
 
     const errOptionFromErr = Result.err<number, string>("error").err();
     expectTypeOf(errOptionFromErr).toEqualTypeOf<Option<string>>();
+
+    const transposedOkSome = Result.ok<Option<number>, string>(
+      Option.some(42),
+    ).transpose();
+    expectTypeOf(transposedOkSome).toEqualTypeOf<
+      Option<Result<number, string>>
+    >();
+
+    const transposedOkNone = Result.ok<Option<number>, string>(
+      Option.none<number>(),
+    ).transpose();
+    expectTypeOf(transposedOkNone).toEqualTypeOf<
+      Option<Result<number, string>>
+    >();
+
+    const transposedErr = Result.err<Option<number>, string>(
+      "error",
+    ).transpose();
+    expectTypeOf(transposedErr).toEqualTypeOf<Option<Result<number, string>>>();
+
+    const flattenedOk = Result.ok<Result<number, string>, string>(
+      Result.ok(42),
+    ).flatten();
+    expectTypeOf(flattenedOk).toEqualTypeOf<Result<number, string>>();
+
+    const flattenedErr = Result.err<Result<number, string>, string>(
+      "error",
+    ).flatten();
+    expectTypeOf(flattenedErr).toEqualTypeOf<Result<number, string>>();
+
+    const legacyTransposed = new LegacyResult<Option<number>, string>(
+      Result.ok(Option.some(42)),
+    ).transpose();
+    expectTypeOf(legacyTransposed).toEqualTypeOf<
+      Option<Result<number, string>>
+    >();
+
+    const legacyFlattened = new LegacyResult<Result<number, string>, string>(
+      Result.ok(Result.ok(42)),
+    ).flatten();
+    expectTypeOf(legacyFlattened).toEqualTypeOf<Result<number, string>>();
 
     const resultFromSome = Option.some(42).toResult("error");
     expectTypeOf(resultFromSome).toEqualTypeOf<Result<number, string>>();

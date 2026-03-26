@@ -208,6 +208,26 @@ export abstract class Result<T, E> {
   abstract orElse<F>(fn: (error: E) => Result<T, F>): Result<T, F>;
 
   /**
+   * Transposes a Result of an Option into an Option of a Result.
+   */
+  transpose<U>(this: Result<OptionType<U>, E>): OptionType<Result<U, E>> {
+    if (this.isOk()) {
+      return this.unwrap().map((value) => Result.ok<U, E>(value));
+    }
+    return Option.some(Result.err<U, E>(this.unwrapErr()));
+  }
+
+  /**
+   * Flattens one level of nesting in a Result.
+   */
+  flatten<U>(this: Result<Result<U, E>, E>): Result<U, E> {
+    if (this.isOk()) {
+      return this.unwrap();
+    }
+    return Result.err<U, E>(this.unwrapErr());
+  }
+
+  /**
    * Converts from Result<T, E> to Option<T>.
    * Converts self into an Option<T>, discarding the error, if any.
    */

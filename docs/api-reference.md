@@ -540,6 +540,41 @@ const value = Result.err<number, string>('error')
 console.log(value); // 0
 ```
 
+#### Transformation
+
+##### `transpose<U>(this: Result<Option<U>, E>): Option<Result<U, E>>`
+
+Converts `Result<Option<U>, E>` into `Option<Result<U, E>>`.
+
+**Returns**: `Option<Result<U, E>>` - Some(Result) for Ok(Some) or Err, None for Ok(None)
+
+**Example**:
+```typescript
+const okSome = Result.ok<Option<number>, string>(Option.some(42)).transpose();
+console.log(okSome.unwrap().unwrap()); // 42
+
+const okNone = Result.ok<Option<number>, string>(Option.none()).transpose();
+console.log(okNone.isNone()); // true
+
+const err = Result.err<Option<number>, string>('error').transpose();
+console.log(err.unwrap().unwrapErr()); // 'error'
+```
+
+##### `flatten<U>(this: Result<Result<U, E>, E>): Result<U, E>`
+
+Flattens one level of nested `Result`.
+
+**Returns**: `Result<U, E>` - Inner Result for Ok(Ok/Err), original Err for Err
+
+**Example**:
+```typescript
+const nested = Result.ok<Result<number, string>, string>(Result.ok(42));
+console.log(nested.flatten().unwrap()); // 42
+
+const nestedErr = Result.ok<Result<number, string>, string>(Result.err('error'));
+console.log(nestedErr.flatten().unwrapErr()); // 'error'
+```
+
 #### Composition
 
 ##### `and<U>(other: Result<U, E>): Result<U, E>`
@@ -1056,6 +1091,26 @@ console.log(none.mapOrElse(() => {
                // 0
 ```
 
+#### Inspection
+
+##### `inspect(fn: (value: T) => void): Option<T>`
+
+Calls the function with the `Some` value (if Some), then returns self unchanged.
+
+**Parameters**:
+- `fn: (value: T) => void` - Function to call with the Some value
+
+**Returns**: `Option<T>` - The same Option instance
+
+**Example**:
+```typescript
+const option = Option.some(42)
+  .inspect((value) => console.log('some:', value))
+  .map((value) => value + 1);
+
+console.log(option.unwrap()); // 43
+```
+
 #### Composition
 
 ##### `and<U>(other: Option<U>): Option<U>`
@@ -1178,6 +1233,24 @@ console.log(left.unwrap()); // 1
 console.log(right.unwrap()); // "hello"
 ```
 
+##### `transpose<U, E>(this: Option<Result<U, E>>): Result<Option<U>, E>`
+
+Converts `Option<Result<U, E>>` into `Result<Option<U>, E>`.
+
+**Returns**: `Result<Option<U>, E>` - Ok(Some(value)) for Some(Ok), Err(error) for Some(Err), Ok(None) for None
+
+**Example**:
+```typescript
+const someOk = Option.some(Result.ok<number, string>(42)).transpose();
+console.log(someOk.unwrap().unwrap()); // 42
+
+const someErr = Option.some(Result.err<number, string>('error')).transpose();
+console.log(someErr.unwrapErr()); // 'error'
+
+const none = Option.none<Result<number, string>>().transpose();
+console.log(none.unwrap().isNone()); // true
+```
+
 ##### `andThen<U>(fn: (value: T) => Option<U>): Option<U>`
 
 If `Some`, executes the function and chains to the next Option. If `None`, returns unchanged.
@@ -1234,6 +1307,21 @@ console.log(filteredOut.isNone()); // true
 const none = Option.none<number>();
 const stillNone = none.filter((n) => n > 0);
 console.log(stillNone.isNone()); // true
+```
+
+##### `flatten<U>(this: Option<Option<U>>): Option<U>`
+
+Flattens one level of nested `Option`.
+
+**Returns**: `Option<U>` - Inner Option for Some(Some/None), None for None
+
+**Example**:
+```typescript
+const nested = Option.some(Option.some(42));
+console.log(nested.flatten().unwrap()); // 42
+
+const nestedNone = Option.some(Option.none<number>());
+console.log(nestedNone.flatten().isNone()); // true
 ```
 
 #### Conversion

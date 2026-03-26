@@ -136,6 +136,16 @@ Branch naming conventions:
 
 ---
 
+### GitHub Actions Supply Chain Safety
+
+Workflow references under `.github/workflows/` must stay pinned to a full
+commit SHA and keep the release comment (for example
+`# v6.0.2`). This repository validates those files with `pinact` and the
+root `.pinact.yaml` configuration. When you add or update an action, keep the
+pinned form in your diff and make sure the `pinact` CI check passes.
+
+---
+
 ## Coding Standards
 
 kitsunejs follows strict coding standards to maintain consistency and quality. Please review the [**Style Guide**](./STYLE_GUIDE.md) for detailed rules.

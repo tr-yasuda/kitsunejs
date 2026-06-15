@@ -171,6 +171,27 @@ export abstract class Result<T, E> {
   abstract mapOrElse<U>(defaultFn: (error: E) => U, fn: (value: T) => U): U;
 
   /**
+   * Pattern matches over the Result, applying one of two functions depending on the variant.
+   *
+   * @template U - The type of the returned value
+   * @param onOk - Function applied to the Ok value
+   * @param onErr - Function applied to the Err value
+   * @returns The result of applying the appropriate function
+   *
+   * @example
+   * ```typescript
+   * const ok = Result.ok<number, string>(42);
+   * console.log(ok.match((v) => v * 2, (e) => e.length)); // 84
+   *
+   * const err = Result.err<number, string>("error");
+   * console.log(err.match((v) => v * 2, (e) => e.length)); // 5
+   * ```
+   */
+  match<U>(onOk: (value: T) => U, onErr: (error: E) => U): U {
+    return this.mapOrElse(onErr, onOk);
+  }
+
+  /**
    * Maps a Result<T, E> to Result<T, F> by applying a function to a contained Err value.
    */
   abstract mapErr<F>(fn: (error: E) => F): Result<T, F>;

@@ -482,6 +482,34 @@ const err = Result.err<number, string>('error');
 console.log(err.mapOrElse((e) => e.length, (n) => n * 2)); // 5
 ```
 
+##### `match<U>(onOk: (value: T) => U, onErr: (error: E) => U): U`
+
+Pattern matches over the `Result`, applying `onOk` if the result is `Ok` or `onErr` if it is `Err`.
+TypeScript infers `U` as the common return type of both functions; if the branches return different types, `U` becomes their common supertype (often a union).
+
+**Parameters**:
+- `onOk: (value: T) => U` - Function applied to the Ok value
+- `onErr: (error: E) => U` - Function applied to the Err value
+
+**Returns**: `U` - Result of the applied function
+
+**Example**:
+```typescript
+const result = Result.ok<number, string>(21);
+const message = result.match(
+  (value) => `Success: ${value}`,
+  (error) => `Error: ${error}`,
+);
+console.log(message); // 'Success: 21'
+
+const failure = Result.err<number, string>('not found');
+const failureMessage = failure.match(
+  (value) => `Success: ${value}`,
+  (error) => `Error: ${error}`,
+);
+console.log(failureMessage); // 'Error: not found'
+```
+
 ##### `mapErr<F>(fn: (error: E) => F): Result<T, F>`
 
 Applies a function to transform the `Err` value. Returns the `Ok` unchanged if `Ok`.
@@ -1089,6 +1117,34 @@ console.log(none.mapOrElse(() => {
   return 0;
 }, (n) => n * 2)); // No value found
                // 0
+```
+
+##### `match<U>(onSome: (value: T) => U, onNone: () => U): U`
+
+Pattern matches over the `Option`, applying `onSome` if the option is `Some` or `onNone` if it is `None`.
+TypeScript infers `U` as the common return type of both functions; if the branches return different types, `U` becomes their common supertype (often a union).
+
+**Parameters**:
+- `onSome: (value: T) => U` - Function applied to the Some value
+- `onNone: () => U` - Function called when None
+
+**Returns**: `U` - Result of the applied function
+
+**Example**:
+```typescript
+const some = Option.some<number>(42);
+const message = some.match(
+  (value) => `Got: ${value}`,
+  () => 'No value',
+);
+console.log(message); // 'Got: 42'
+
+const none = Option.none<number>();
+const noneMessage = none.match(
+  (value) => `Got: ${value}`,
+  () => 'No value',
+);
+console.log(noneMessage); // 'No value'
 ```
 
 #### Inspection

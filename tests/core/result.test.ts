@@ -102,6 +102,18 @@ describe("Result", () => {
       const result = Result.err("error");
       expect(() => result.unwrap()).toThrow(UnwrapError);
     });
+
+    test("Err case with BigInt value: throws UnwrapError", () => {
+      const result = Result.err<number, bigint>(1n);
+      expect(() => result.unwrap()).toThrow(UnwrapError);
+    });
+
+    test("Err case with circular object: throws UnwrapError", () => {
+      const circular: Record<string, unknown> = { a: 1 };
+      circular.self = circular;
+      const result = Result.err<number, typeof circular>(circular);
+      expect(() => result.unwrap()).toThrow(UnwrapError);
+    });
   });
 
   describe("expect()", () => {

@@ -265,7 +265,7 @@ describe("Result type tests", () => {
     >();
 
     const legacyOrElseAsync = new LegacyResult<number, string>(
-      Result.err("error"),
+      Result.err<number, string>("error"),
     ).orElseAsync(async (_e) => Result.ok(0));
     expectTypeOf(legacyOrElseAsync).toEqualTypeOf<
       Promise<Result<number, never>>

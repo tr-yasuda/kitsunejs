@@ -28,6 +28,7 @@ kitsunejs faithfully reproduces Rust's Result/Option API as much as possible, bu
 | `unwrap_or_else(fn)` | `unwrapOrElse(fn)`                  |                                                                                    |
 | `map(fn)`            | `map(fn)`                           |                                                                                    |
 | `map_err(fn)`        | `mapErr(fn)`                        |                                                                                    |
+| `match` expression   | `match(onOk, onErr)`                | kitsunejs provides this as a method because TypeScript lacks a native `match` expression |
 | `inspect(f)`         | `inspect(fn)`                       |                                                                                    |
 | `inspect_err(f)`     | `inspectErr(fn)`                    |                                                                                    |
 | `and(res)`           | `and(res)`                          |                                                                                    |
@@ -60,6 +61,7 @@ kitsunejs faithfully reproduces Rust's Result/Option API as much as possible, bu
 | `map(fn)`            | `map(fn)`                    |                                                                                                 |
 | `map_or(default, f)` | `mapOr(defaultValue, fn)`    |                                                                                                 |
 | `map_or_else(default, f)` | `mapOrElse(defaultFn, fn)`   |                                                                                                 |
+| `match` expression    | `match(onSome, onNone)`      | kitsunejs provides this as a method because TypeScript lacks a native `match` expression        |
 | `inspect(f)`         | `inspect(fn)`                |                                                                                                 |
 | `and(optb)`          | `and(other)`                 |                                                                                                 |
 | `or(optb)`           | `or(other)`                  |                                                                                                 |

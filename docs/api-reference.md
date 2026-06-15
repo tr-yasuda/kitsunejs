@@ -696,7 +696,7 @@ async function fetchUser(id: number): Promise<Result<User, Error>> {
   // ...
 }
 
-const result = await Result.ok(42).andThenAsync(async (id) => fetchUser(id));
+const result = await Result.ok<number, Error>(42).andThenAsync(fetchUser);
 ```
 
 ##### `orElseAsync<F>(fn: (error: E) => Promise<Result<T, F>>): Promise<Result<T, F>>`
@@ -710,10 +710,10 @@ Async version of `orElse`. If `Err`, awaits the async function to switch to anot
 
 **Example**:
 ```typescript
-const result = await Result.err('primary failed')
+const result = await Result.err<number, string>('primary failed')
   .orElseAsync(async (e) => {
     const fallback = await fetchFallback();
-    return fallback ? Result.ok(fallback) : Result.err(e);
+    return fallback ? Result.ok<number, string>(fallback) : Result.err<number, string>(e);
   });
 ```
 

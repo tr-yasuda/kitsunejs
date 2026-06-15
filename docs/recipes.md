@@ -244,7 +244,7 @@ async function fetchProfile(user: User): Promise<Result<Profile, ApiError>> {
 }
 
 async function loadProfile(id: number): Promise<Result<Profile, ApiError>> {
-  const result = await Result.ok(id)
+  const result = await Result.ok<number, ApiError>(id)
     .andThenAsync(fetchUser)
     .then((r) => r.andThenAsync(fetchProfile));
 

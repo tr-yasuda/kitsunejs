@@ -165,7 +165,9 @@ export abstract class Result<T, E> {
    * console.log(err.match((v) => v * 2, (e) => e.length)); // 5
    * ```
    */
-  abstract match<U>(onOk: (value: T) => U, onErr: (error: E) => U): U;
+  match<U>(onOk: (value: T) => U, onErr: (error: E) => U): U {
+    return this.mapOrElse(onErr, onOk);
+  }
 
   /**
    * Maps a Result<T, E> to Result<T, F> by applying a function to a contained Err value.
@@ -433,10 +435,6 @@ export class Ok<T, E = never> extends Result<T, E> {
     return fn(this.value);
   }
 
-  match<U>(onOk: (value: T) => U, _onErr: (error: E) => U): U {
-    return onOk(this.value);
-  }
-
   mapErr<F>(_fn: (error: E) => F): Result<T, F> {
     return this as unknown as Result<T, F>;
   }
@@ -539,10 +537,6 @@ export class Err<T = never, E = unknown> extends Result<T, E> {
 
   mapOrElse<U>(defaultFn: (error: E) => U, _fn: (value: T) => U): U {
     return defaultFn(this.error);
-  }
-
-  match<U>(_onOk: (value: T) => U, onErr: (error: E) => U): U {
-    return onErr(this.error);
   }
 
   mapErr<F>(fn: (error: E) => F): Result<T, F> {

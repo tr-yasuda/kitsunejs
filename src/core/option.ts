@@ -82,7 +82,9 @@ export abstract class Option<T> {
    * console.log(none.match((v) => v * 2, () => 0)); // 0
    * ```
    */
-  abstract match<U>(onSome: (value: T) => U, onNone: () => U): U;
+  match<U>(onSome: (value: T) => U, onNone: () => U): U {
+    return this.mapOrElse(onNone, onSome);
+  }
 
   /**
    * Calls a function with the Some value (if Some), then returns self unchanged.
@@ -311,10 +313,6 @@ export class Some<T> extends Option<T> {
     return fn(this.value);
   }
 
-  match<U>(onSome: (value: T) => U, _onNone: () => U): U {
-    return onSome(this.value);
-  }
-
   and<U>(other: Option<U>): Option<U> {
     return other;
   }
@@ -388,10 +386,6 @@ export class None<T = never> extends Option<T> {
 
   mapOrElse<U>(defaultFn: () => U, _fn: (value: T) => U): U {
     return defaultFn();
-  }
-
-  match<U>(_onSome: (value: T) => U, onNone: () => U): U {
-    return onNone();
   }
 
   and<U>(_other: Option<U>): Option<U> {

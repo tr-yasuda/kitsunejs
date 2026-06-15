@@ -485,7 +485,7 @@ console.log(err.mapOrElse((e) => e.length, (n) => n * 2)); // 5
 ##### `match<U>(onOk: (value: T) => U, onErr: (error: E) => U): U`
 
 Pattern matches over the `Result`, applying `onOk` if the result is `Ok` or `onErr` if it is `Err`.
-Both functions must return the same type `U`.
+TypeScript infers `U` as the common return type of both functions; if the branches return different types, `U` becomes their common supertype (often a union).
 
 **Parameters**:
 - `onOk: (value: T) => U` - Function applied to the Ok value
@@ -1122,7 +1122,7 @@ console.log(none.mapOrElse(() => {
 ##### `match<U>(onSome: (value: T) => U, onNone: () => U): U`
 
 Pattern matches over the `Option`, applying `onSome` if the option is `Some` or `onNone` if it is `None`.
-Both branches must return the same type `U`.
+TypeScript infers `U` as the common return type of both functions; if the branches return different types, `U` becomes their common supertype (often a union).
 
 **Parameters**:
 - `onSome: (value: T) => U` - Function applied to the Some value

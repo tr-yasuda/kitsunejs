@@ -31,4 +31,6 @@ jobs:
         run: pnpm type-check
       - name: lint
         run: pnpm lint
+      - name: test with coverage
+        run: pnpm test:coverage
 

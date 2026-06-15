@@ -3,6 +3,28 @@ import type { Option as OptionType } from "@/core/option.js";
 import { Option } from "@/core/option.js";
 
 /**
+ * Safely stringifies a value for use in an error message.
+ * Falls back to String() when JSON.stringify returns undefined or throws
+ * (e.g. undefined, functions, symbols, BigInt, or circular references).
+ */
+function safeStringify(value: unknown): string {
+  try {
+    const serialized = JSON.stringify(value);
+    if (serialized !== undefined) {
+      return serialized;
+    }
+  } catch {
+    // fall through to the fallback below
+  }
+
+  try {
+    return String(value);
+  } catch {
+    return "[unable to serialize error value]";
+  }
+}
+
+/**
  * Abstract base class for Result<T, E>
  * Represents a value that is either a success (Ok) or a failure (Err).
  */
@@ -482,7 +504,7 @@ export class Err<T = never, E = unknown> extends Result<T, E> {
 
   unwrap(): never {
     throw new UnwrapError(
-      `Called unwrap on an Err value: ${JSON.stringify(this.error)}`,
+      `Called unwrap on an Err value: ${safeStringify(this.error)}`,
     );
   }
 

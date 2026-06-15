@@ -266,6 +266,42 @@ async function getDisplayName(): Promise<Option<string>> {
 }
 ```
 
+### 3.4 Converting an Existing Promise to Result
+
+> Use case: When you already have a Promise from an external API or library and want to handle it as a Result
+
+**Problem**: Want to convert an existing Promise into a Result without wrapping it in a function
+
+**Solution**:
+```typescript
+type User = {
+  id: number;
+  name: string;
+};
+
+async function fetchUser(id: number): Promise<Result<User, Error>> {
+  // fetch returns a Promise — no wrapper function needed
+  const userPromise = fetch(`/api/users/${id}`).then((response) => {
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    return response.json() as Promise<User>;
+  });
+  return Result.fromPromise(userPromise);
+}
+
+// Usage example
+async function main() {
+  const result = await fetchUser(123);
+
+  if (result.isOk()) {
+    console.log('User:', result.unwrap());
+  } else {
+    console.error('Failed to fetch user:', result.unwrapErr().message);
+  }
+}
+```
+
 ---
 
 ## 4. Data Validation

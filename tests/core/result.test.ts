@@ -843,6 +843,63 @@ describe("Result", () => {
     });
   });
 
+  describe("Result.fromPromise()", () => {
+    test("Promise resolves → Ok", async () => {
+      const result = await Result.fromPromise(Promise.resolve(42));
+      expect(result.isOk()).toBe(true);
+      expect(result.unwrap()).toBe(42);
+    });
+
+    test("Promise rejects → Err", async () => {
+      const result = await Result.fromPromise(
+        Promise.reject(new Error("rejected")),
+      );
+      expect(result.isErr()).toBe(true);
+    });
+
+    test("Promise rejects → Err (verify error content)", async () => {
+      const result = await Result.fromPromise<number, Error>(
+        Promise.reject(new Error("async test error")),
+      );
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        const error = result.unwrapOrElse((err) => {
+          expect(err).toBeInstanceOf(Error);
+          expect(err.message).toBe("async test error");
+          return 0;
+        });
+        expect(error).toBe(0);
+      }
+    });
+
+    test("falsy value (0) still becomes Ok", async () => {
+      const result = await Result.fromPromise(Promise.resolve(0));
+      expect(result.isOk()).toBe(true);
+      expect(result.unwrap()).toBe(0);
+    });
+
+    test("falsy value (empty string) still becomes Ok", async () => {
+      const result = await Result.fromPromise(Promise.resolve(""));
+      expect(result.isOk()).toBe(true);
+      expect(result.unwrap()).toBe("");
+    });
+
+    test("falsy value (false) still becomes Ok", async () => {
+      const result = await Result.fromPromise(Promise.resolve(false));
+      expect(result.isOk()).toBe(true);
+      expect(result.unwrap()).toBe(false);
+    });
+
+    test("works with a Promise from an async function", async () => {
+      async function fetchValue(): Promise<string> {
+        return "fetched";
+      }
+      const result = await Result.fromPromise(fetchValue());
+      expect(result.isOk()).toBe(true);
+      expect(result.unwrap()).toBe("fetched");
+    });
+  });
+
   describe("edge cases", () => {
     test("Ok(null) is valid", () => {
       const result = Result.ok(null);

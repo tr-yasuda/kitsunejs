@@ -368,6 +368,14 @@ export abstract class Result<T, E> {
   }
 
   /**
+   * Converts a Promise to a Promise<Result>.
+   * Returns Ok if the Promise resolves successfully, otherwise returns Err with the caught error.
+   */
+  static fromPromise<T, E = Error>(promise: Promise<T>): Promise<Result<T, E>> {
+    return Result.tryAsync<T, E>(() => promise);
+  }
+
+  /**
    * Combines multiple Results into a single Result.
    * Returns Ok containing an array of all values if all Results are Ok.
    * Returns the first Err if any Result is Err.

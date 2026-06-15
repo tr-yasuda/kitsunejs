@@ -150,6 +150,44 @@ async function fetchData() {
 }
 ```
 
+##### `Result.fromPromise<T, E = Error>(promise: Promise<T>): Promise<Result<T, E>>`
+
+Converts an existing Promise to a `Promise<Result>`.
+Returns `Ok` if the Promise resolves successfully, otherwise returns `Err` if rejected.
+
+This is useful when you already have a Promise (for example, from an external API or library) and want to convert it into a Result without wrapping it in an additional function.
+
+**Parameters**:
+- `promise: Promise<T>` - Promise to convert
+
+**Returns**: `Promise<Result<T, E>>` - Promise containing Ok or Err
+
+**Example**:
+```typescript
+type Data = {
+  id: number;
+  value: string;
+};
+
+async function fetchData(): Promise<Result<Data, Error>> {
+  const responsePromise = fetch('/api/data').then((response) => {
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    return response.json() as Promise<Data>;
+  });
+  const result = await Result.fromPromise(responsePromise);
+
+  if (result.isOk()) {
+    console.log(result.unwrap());
+  } else {
+    console.error('Fetch failed');
+  }
+
+  return result;
+}
+```
+
 #### Aggregation & Combination
 
 ##### `Result.all<T, E>(results: readonly Result<T, E>[]): Result<T[], E>`

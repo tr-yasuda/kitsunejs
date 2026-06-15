@@ -98,12 +98,7 @@ export abstract class Option<T> {
   /**
    * Returns the option if it contains a value, otherwise returns the async result of fn.
    */
-  async orElseAsync(fn: () => Promise<Option<T>>): Promise<Option<T>> {
-    if (this.isSome()) {
-      return this;
-    }
-    return fn();
-  }
+  abstract orElseAsync(fn: () => Promise<Option<T>>): Promise<Option<T>>;
 
   /**
    * Returns Some if exactly one of self, other is Some, otherwise returns None.
@@ -336,6 +331,10 @@ export class Some<T> extends Option<T> {
     return fn(this.value);
   }
 
+  async orElseAsync(_fn: () => Promise<Option<T>>): Promise<Option<T>> {
+    return this;
+  }
+
   filter(predicate: (value: T) => boolean): Option<T> {
     return predicate(this.value) ? this : Option.none<T>();
   }
@@ -419,6 +418,10 @@ export class None<T = never> extends Option<T> {
     _fn: (value: T) => Promise<Option<U>>,
   ): Promise<Option<U>> {
     return Option.none<U>();
+  }
+
+  async orElseAsync(fn: () => Promise<Option<T>>): Promise<Option<T>> {
+    return fn();
   }
 
   filter(_predicate: (value: T) => boolean): Option<T> {

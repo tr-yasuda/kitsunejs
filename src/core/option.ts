@@ -66,6 +66,25 @@ export abstract class Option<T> {
   abstract mapOrElse<U>(defaultFn: () => U, fn: (value: T) => U): U;
 
   /**
+   * Pattern matches over the Option, applying one of two functions depending on the variant.
+   *
+   * @template U - The type of the returned value
+   * @param onSome - Function applied to the Some value
+   * @param onNone - Function called when None
+   * @returns The result of applying the appropriate function
+   *
+   * @example
+   * ```typescript
+   * const some = Option.some<number>(42);
+   * console.log(some.match((v) => v * 2, () => 0)); // 84
+   *
+   * const none = Option.none<number>();
+   * console.log(none.match((v) => v * 2, () => 0)); // 0
+   * ```
+   */
+  abstract match<U>(onSome: (value: T) => U, onNone: () => U): U;
+
+  /**
    * Calls a function with the Some value (if Some), then returns self unchanged.
    */
   inspect(fn: (value: T) => void): this {
@@ -292,6 +311,10 @@ export class Some<T> extends Option<T> {
     return fn(this.value);
   }
 
+  match<U>(onSome: (value: T) => U, _onNone: () => U): U {
+    return onSome(this.value);
+  }
+
   and<U>(other: Option<U>): Option<U> {
     return other;
   }
@@ -365,6 +388,10 @@ export class None<T = never> extends Option<T> {
 
   mapOrElse<U>(defaultFn: () => U, _fn: (value: T) => U): U {
     return defaultFn();
+  }
+
+  match<U>(_onSome: (value: T) => U, onNone: () => U): U {
+    return onNone();
   }
 
   and<U>(_other: Option<U>): Option<U> {

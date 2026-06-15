@@ -64,6 +64,10 @@ describe("Result type tests", () => {
         return this.inner.mapOrElse(defaultFn, fn);
       }
 
+      match<U>(onOk: (value: T) => U, onErr: (error: E) => U): U {
+        return this.inner.match(onOk, onErr);
+      }
+
       mapErr<F>(fn: (error: E) => F): Result<T, F> {
         return this.inner.mapErr(fn);
       }
@@ -186,6 +190,19 @@ describe("Result type tests", () => {
       "message",
     );
     expectTypeOf(expectedErr).toEqualTypeOf<string>();
+
+    // match: returns unified type U
+    const matchOk = Result.ok<number, string>(42).match(
+      (v) => v * 2,
+      (e) => e.length,
+    );
+    expectTypeOf(matchOk).toEqualTypeOf<number>();
+
+    const matchErr = Result.err<number, string>("error").match(
+      (v) => v * 2,
+      (e) => e.length,
+    );
+    expectTypeOf(matchErr).toEqualTypeOf<number>();
 
     // mapErr: string → number
     const mappedErr = Result.err<number, string>("error").mapErr(

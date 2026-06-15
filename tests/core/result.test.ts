@@ -221,6 +221,59 @@ describe("Result", () => {
     });
   });
 
+  describe("match()", () => {
+    test("Ok case: applies onOk and returns its result", () => {
+      let okCalled = 0;
+      let errCalled = 0;
+
+      const result = Result.ok<number, string>(42);
+      const matched = result.match(
+        (v) => {
+          okCalled++;
+          return v * 2;
+        },
+        (_e) => {
+          errCalled++;
+          return 0;
+        },
+      );
+
+      expect(matched).toBe(84);
+      expect(okCalled).toBe(1);
+      expect(errCalled).toBe(0);
+    });
+
+    test("Err case: applies onErr and returns its result", () => {
+      let okCalled = 0;
+      let errCalled = 0;
+
+      const result = Result.err<number, string>("error");
+      const matched = result.match(
+        (_v) => {
+          okCalled++;
+          return 0;
+        },
+        (e) => {
+          errCalled++;
+          return e.length;
+        },
+      );
+
+      expect(matched).toBe(5);
+      expect(okCalled).toBe(0);
+      expect(errCalled).toBe(1);
+    });
+
+    test("type conversion works correctly", () => {
+      const result = Result.ok<number, string>(42);
+      const matched = result.match(
+        (v) => v.toString(),
+        (e) => e,
+      );
+      expect(matched).toBe("42");
+    });
+  });
+
   describe("map()", () => {
     test("Ok case: map is applied", () => {
       const result = Result.ok(42);

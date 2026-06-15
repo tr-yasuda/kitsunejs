@@ -361,6 +361,25 @@ describe("Result type tests", () => {
       Promise<Result<number, Error>>
     >();
 
+    const fromPromiseResult = Result.fromPromise(Promise.resolve(42));
+    expectTypeOf(fromPromiseResult).toEqualTypeOf<
+      Promise<Result<number, Error>>
+    >();
+
+    const fromPromiseExplicit = Result.fromPromise<number, string>(
+      Promise.resolve(42),
+    );
+    expectTypeOf(fromPromiseExplicit).toEqualTypeOf<
+      Promise<Result<number, string>>
+    >();
+
+    const fromPromiseRejected = Result.fromPromise<number, Error>(
+      Promise.reject(new Error("fail")),
+    );
+    expectTypeOf(fromPromiseRejected).toEqualTypeOf<
+      Promise<Result<number, Error>>
+    >();
+
     // --- Result.all / Result.any ---
 
     // Result.all: all Ok → Ok<T[]>

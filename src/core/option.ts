@@ -66,6 +66,27 @@ export abstract class Option<T> {
   abstract mapOrElse<U>(defaultFn: () => U, fn: (value: T) => U): U;
 
   /**
+   * Pattern matches over the Option, applying one of two functions depending on the variant.
+   *
+   * @template U - The type of the returned value
+   * @param onSome - Function applied to the Some value
+   * @param onNone - Function called when None
+   * @returns The result of applying the appropriate function
+   *
+   * @example
+   * ```typescript
+   * const some = Option.some<number>(42);
+   * console.log(some.match((v) => v * 2, () => 0)); // 84
+   *
+   * const none = Option.none<number>();
+   * console.log(none.match((v) => v * 2, () => 0)); // 0
+   * ```
+   */
+  match<U>(onSome: (value: T) => U, onNone: () => U): U {
+    return this.mapOrElse(onNone, onSome);
+  }
+
+  /**
    * Calls a function with the Some value (if Some), then returns self unchanged.
    */
   inspect(fn: (value: T) => void): this {

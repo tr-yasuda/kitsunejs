@@ -28,6 +28,7 @@ kitsunejs faithfully reproduces Rust's Result/Option API as much as possible, bu
 | `unwrap_or_else(fn)` | `unwrapOrElse(fn)`                  |                                                                                    |
 | `map(fn)`            | `map(fn)`                           |                                                                                    |
 | `map_err(fn)`        | `mapErr(fn)`                        |                                                                                    |
+| `match` expression   | `match(onOk, onErr)`                | kitsunejs provides this as a method because TypeScript lacks a native `match` expression |
 | `inspect(f)`         | `inspect(fn)`                       |                                                                                    |
 | `inspect_err(f)`     | `inspectErr(fn)`                    |                                                                                    |
 | `and(res)`           | `and(res)`                          |                                                                                    |
@@ -60,6 +61,7 @@ kitsunejs faithfully reproduces Rust's Result/Option API as much as possible, bu
 | `map(fn)`            | `map(fn)`                    |                                                                                                 |
 | `map_or(default, f)` | `mapOr(defaultValue, fn)`    |                                                                                                 |
 | `map_or_else(default, f)` | `mapOrElse(defaultFn, fn)`   |                                                                                                 |
+| `match` expression    | `match(onSome, onNone)`      | kitsunejs provides this as a method because TypeScript lacks a native `match` expression        |
 | `inspect(f)`         | `inspect(fn)`                |                                                                                                 |
 | `and(optb)`          | `and(other)`                 |                                                                                                 |
 | `or(optb)`           | `or(other)`                  |                                                                                                 |
@@ -181,11 +183,10 @@ function processData(input: Option<number>): Result<number, string> {
 function main() {
   const result = processData(Option.some(10));
 
-  if (result.isOk()) {
-    console.log(`Result: ${result.unwrap()}`);
-  } else {
-    console.error(`Error: ${result.unwrapErr()}`);
-  }
+  result.match(
+    (value) => console.log(`Result: ${value}`),
+    (error) => console.error(`Error: ${error}`),
+  );
 }
 
 main();
@@ -197,7 +198,7 @@ main();
 2. **Type annotations**: `: i32` → `: number`, `: String` → `: string`
 3. **Strings**: `.to_string()` → string literals
 4. **Constructors**: `Ok()` → `Result.ok()`, `Some()` → `Option.some()`
-5. **Pattern matching**: `match` → `if`/`else` with type guards
+5. **Pattern matching**: `match` expression → `match` method
 6. **Naming convention**: `ok_or` → `toResult`, `and_then` → `andThen`
 
 By using kitsunejs, you can achieve a functional programming style similar to Rust in TypeScript.

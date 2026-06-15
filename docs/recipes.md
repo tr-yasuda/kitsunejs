@@ -8,6 +8,7 @@
 4. Data Validation
 5. Combining Multiple Operations
 6. Integration with Other Libraries
+7. Pattern Matching
 
 ---
 
@@ -751,4 +752,70 @@ const doubled = Result.ok(21).map((n) => n * 2);
 
 // andThen: T => Result<U, E>
 const result = Result.ok(10).andThen((n) => divide(n, 2));
+```
+
+---
+
+## 7. Pattern Matching
+
+### 7.1 Exhaustive Handling with Result.match
+
+> Use case: When you want to handle both `Ok` and `Err` in a single expression
+
+**Problem**: `if/else` with type guards works, but can be verbose for simple transformations.
+
+**Solution**:
+```typescript
+import { Result } from 'kitsunejs';
+
+function describeResult(result: Result<number, string>): string {
+  return result.match(
+    (value) => `Success: ${value}`,
+    (error) => `Failed: ${error}`,
+  );
+}
+
+console.log(describeResult(Result.ok(42))); // 'Success: 42'
+console.log(describeResult(Result.err('timeout'))); // 'Failed: timeout'
+```
+
+### 7.2 Exhaustive Handling with Option.match
+
+> Use case: When you want to provide a fallback in the same expression
+
+**Problem**: You need to produce a value whether the option is `Some` or `None`.
+
+**Solution**:
+```typescript
+import { Option } from 'kitsunejs';
+
+function describeOption(option: Option<number>): string {
+  return option.match(
+    (value) => `Got value: ${value}`,
+    () => 'No value available',
+  );
+}
+
+console.log(describeOption(Option.some(42))); // 'Got value: 42'
+console.log(describeOption(Option.none())); // 'No value available'
+```
+
+### 7.3 Mapping Both Branches
+
+> Use case: When both variants should be transformed to the same output type
+
+**Problem**: You want to render a UI message from a `Result` without unwrapping.
+
+**Solution**:
+```typescript
+import { Result } from 'kitsunejs';
+
+type ApiError = { status: number; message: string };
+
+function renderUserResult(result: Result<User, ApiError>): string {
+  return result.match(
+    (user) => `Welcome, ${user.name}!`,
+    (error) => `Error ${error.status}: ${error.message}`,
+  );
+}
 ```

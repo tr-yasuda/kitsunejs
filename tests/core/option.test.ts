@@ -230,6 +230,59 @@ describe("Option", () => {
     });
   });
 
+  describe("match()", () => {
+    test("Some case: applies onSome and returns its result", () => {
+      let someCalled = 0;
+      let noneCalled = 0;
+
+      const option = Option.some<number>(42);
+      const matched = option.match(
+        (v) => {
+          someCalled++;
+          return v * 2;
+        },
+        () => {
+          noneCalled++;
+          return 0;
+        },
+      );
+
+      expect(matched).toBe(84);
+      expect(someCalled).toBe(1);
+      expect(noneCalled).toBe(0);
+    });
+
+    test("None case: applies onNone and returns its result", () => {
+      let someCalled = 0;
+      let noneCalled = 0;
+
+      const option = Option.none<number>();
+      const matched = option.match(
+        (_v) => {
+          someCalled++;
+          return 0;
+        },
+        () => {
+          noneCalled++;
+          return 100;
+        },
+      );
+
+      expect(matched).toBe(100);
+      expect(someCalled).toBe(0);
+      expect(noneCalled).toBe(1);
+    });
+
+    test("type conversion works correctly", () => {
+      const option = Option.some<number>(42);
+      const matched = option.match(
+        (v) => v.toString(),
+        () => "default",
+      );
+      expect(matched).toBe("42");
+    });
+  });
+
   describe("inspect()", () => {
     test("Some case: calls fn and returns same instance", () => {
       let inspectedValue: number | null = null;

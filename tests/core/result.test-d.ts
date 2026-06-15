@@ -203,6 +203,19 @@ describe("Result type tests", () => {
     );
     expectTypeOf(expectedErr).toEqualTypeOf<string>();
 
+    // match: returns unified type U
+    const matchOk = Result.ok<number, string>(42).match(
+      (v) => v * 2,
+      (e) => e.length,
+    );
+    expectTypeOf(matchOk).toEqualTypeOf<number>();
+
+    const matchErr = Result.err<number, string>("error").match(
+      (v) => v * 2,
+      (e) => e.length,
+    );
+    expectTypeOf(matchErr).toEqualTypeOf<number>();
+
     // mapErr: string → number
     const mappedErr = Result.err<number, string>("error").mapErr(
       (e) => e.length,

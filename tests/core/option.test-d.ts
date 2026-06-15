@@ -156,6 +156,19 @@ describe("Option type tests", () => {
     );
     expectTypeOf(mappedOrElse).toEqualTypeOf<string>();
 
+    // match: returns unified type U
+    const matchSome = Option.some(42).match(
+      (v) => v * 2,
+      () => 0,
+    );
+    expectTypeOf(matchSome).toEqualTypeOf<number>();
+
+    const matchNone = Option.none<number>().match(
+      (v) => v * 2,
+      () => 0,
+    );
+    expectTypeOf(matchNone).toEqualTypeOf<number>();
+
     const inspectedSome = Option.some(42).inspect((_value) => {});
     expectTypeOf(inspectedSome).toEqualTypeOf<Option<number>>();
 

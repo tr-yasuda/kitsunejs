@@ -114,6 +114,11 @@ describe("Result", () => {
       const result = Result.err<number, typeof circular>(circular);
       expect(() => result.unwrap()).toThrow(UnwrapError);
     });
+
+    test("Err case with undefined value: throws UnwrapError", () => {
+      const result = Result.err<number, undefined>(undefined);
+      expect(() => result.unwrap()).toThrow(UnwrapError);
+    });
   });
 
   describe("expect()", () => {

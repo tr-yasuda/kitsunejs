@@ -4,17 +4,23 @@ import { Option } from "@/core/option.js";
 
 /**
  * Safely stringifies a value for use in an error message.
- * Falls back to String() when JSON.stringify fails (e.g. BigInt or circular references).
+ * Falls back to String() when JSON.stringify returns undefined or throws
+ * (e.g. undefined, functions, symbols, BigInt, or circular references).
  */
 function safeStringify(value: unknown): string {
   try {
-    return JSON.stringify(value);
-  } catch {
-    try {
-      return String(value);
-    } catch {
-      return "[unable to serialize error value]";
+    const serialized = JSON.stringify(value);
+    if (serialized !== undefined) {
+      return serialized;
     }
+  } catch {
+    // fall through to the fallback below
+  }
+
+  try {
+    return String(value);
+  } catch {
+    return "[unable to serialize error value]";
   }
 }
 

@@ -94,6 +94,22 @@ describe("Result type tests", () => {
         return this.inner.orElse(fn);
       }
 
+      mapAsync<U>(fn: (value: T) => Promise<U>): Promise<Result<U, E>> {
+        return this.inner.mapAsync(fn);
+      }
+
+      andThenAsync<U>(
+        fn: (value: T) => Promise<Result<U, E>>,
+      ): Promise<Result<U, E>> {
+        return this.inner.andThenAsync(fn);
+      }
+
+      orElseAsync<F>(
+        fn: (error: E) => Promise<Result<T, F>>,
+      ): Promise<Result<T, F>> {
+        return this.inner.orElseAsync(fn);
+      }
+
       toOption(): Option<T> {
         return this.inner.toOption();
       }
@@ -198,6 +214,62 @@ describe("Result type tests", () => {
       .andThen((n) => Result.ok<string, string>(n.toString()))
       .andThen((s) => Result.ok<boolean, string>(s.length > 0));
     expectTypeOf(chained).toEqualTypeOf<Result<boolean, string>>();
+
+    // --- async methods ---
+
+    // mapAsync: number → string
+    const mapAsyncOk = Result.ok<number, string>(42).mapAsync(async (v) =>
+      v.toString(),
+    );
+    expectTypeOf(mapAsyncOk).toEqualTypeOf<Promise<Result<string, string>>>();
+
+    const mapAsyncErr = Result.err<number, string>("error").mapAsync(
+      async (v) => v.toString(),
+    );
+    expectTypeOf(mapAsyncErr).toEqualTypeOf<Promise<Result<string, string>>>();
+
+    // andThenAsync: number → string
+    const andThenAsyncOk = Result.ok<number, string>(42).andThenAsync(
+      async (v) => Result.ok(v.toString()),
+    );
+    expectTypeOf(andThenAsyncOk).toEqualTypeOf<
+      Promise<Result<string, string>>
+    >();
+
+    // orElseAsync: string error → number error
+    const orElseAsyncErr = Result.err<number, string>("error").orElseAsync(
+      async (e) => Result.ok<number, number>(e.length),
+    );
+    expectTypeOf(orElseAsyncErr).toEqualTypeOf<
+      Promise<Result<number, number>>
+    >();
+
+    const orElseAsyncOk = Result.ok<number, string>(42).orElseAsync(
+      async (_e) => Result.ok(0),
+    );
+    expectTypeOf(orElseAsyncOk).toEqualTypeOf<Promise<Result<number, never>>>();
+
+    // LegacyResult async methods
+    const legacyMapAsync = new LegacyResult<number, string>(
+      Result.ok(42),
+    ).mapAsync(async (v) => v.toString());
+    expectTypeOf(legacyMapAsync).toEqualTypeOf<
+      Promise<Result<string, string>>
+    >();
+
+    const legacyAndThenAsync = new LegacyResult<number, string>(
+      Result.ok(42),
+    ).andThenAsync(async (v) => Result.ok(v.toString()));
+    expectTypeOf(legacyAndThenAsync).toEqualTypeOf<
+      Promise<Result<string, string>>
+    >();
+
+    const legacyOrElseAsync = new LegacyResult<number, string>(
+      Result.err("error"),
+    ).orElseAsync(async (_e) => Result.ok(0));
+    expectTypeOf(legacyOrElseAsync).toEqualTypeOf<
+      Promise<Result<number, never>>
+    >();
 
     // --- toOption / Option.toResult ---
 

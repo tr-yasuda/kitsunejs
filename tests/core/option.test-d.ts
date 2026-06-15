@@ -68,6 +68,20 @@ describe("Option type tests", () => {
         return this.inner.andThen(fn);
       }
 
+      mapAsync<U>(fn: (value: T) => Promise<U>): Promise<Option<U>> {
+        return this.inner.mapAsync(fn);
+      }
+
+      andThenAsync<U>(
+        fn: (value: T) => Promise<Option<U>>,
+      ): Promise<Option<U>> {
+        return this.inner.andThenAsync(fn);
+      }
+
+      orElseAsync(fn: () => Promise<Option<T>>): Promise<Option<T>> {
+        return this.inner.orElseAsync(fn);
+      }
+
       filter(predicate: (value: T) => boolean): Option<T> {
         return this.inner.filter(predicate);
       }
@@ -153,6 +167,50 @@ describe("Option type tests", () => {
       .andThen((n) => Option.some(n.toString()))
       .andThen((s) => Option.some(s.length > 0));
     expectTypeOf(chained).toEqualTypeOf<Option<boolean>>();
+
+    // --- async methods ---
+
+    // mapAsync: number → string
+    const mapAsyncSome = Option.some(42).mapAsync(async (v) => v.toString());
+    expectTypeOf(mapAsyncSome).toEqualTypeOf<Promise<Option<string>>>();
+
+    const mapAsyncNone = Option.none<number>().mapAsync(async (v) =>
+      v.toString(),
+    );
+    expectTypeOf(mapAsyncNone).toEqualTypeOf<Promise<Option<string>>>();
+
+    // andThenAsync: number → string
+    const andThenAsyncSome = Option.some(42).andThenAsync(async (v) =>
+      Option.some(v.toString()),
+    );
+    expectTypeOf(andThenAsyncSome).toEqualTypeOf<Promise<Option<string>>>();
+
+    // orElseAsync
+    const orElseAsyncNone = Option.none<number>().orElseAsync(async () =>
+      Option.some(0),
+    );
+    expectTypeOf(orElseAsyncNone).toEqualTypeOf<Promise<Option<number>>>();
+
+    const orElseAsyncSome = Option.some(42).orElseAsync(async () =>
+      Option.some(0),
+    );
+    expectTypeOf(orElseAsyncSome).toEqualTypeOf<Promise<Option<number>>>();
+
+    // LegacyOption async methods
+    const legacyMapAsync = new LegacyOption(Option.some(42)).mapAsync(
+      async (v) => v.toString(),
+    );
+    expectTypeOf(legacyMapAsync).toEqualTypeOf<Promise<Option<string>>>();
+
+    const legacyAndThenAsync = new LegacyOption(Option.some(42)).andThenAsync(
+      async (v) => Option.some(v.toString()),
+    );
+    expectTypeOf(legacyAndThenAsync).toEqualTypeOf<Promise<Option<string>>>();
+
+    const legacyOrElseAsync = new LegacyOption(
+      Option.none<number>(),
+    ).orElseAsync(async () => Option.some(0));
+    expectTypeOf(legacyOrElseAsync).toEqualTypeOf<Promise<Option<number>>>();
 
     // filter: keeps T
     const filtered = Option.some(42).filter((v) => v > 0);

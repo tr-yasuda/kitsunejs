@@ -411,6 +411,136 @@ describe("Result", () => {
     });
   });
 
+  describe("async methods", () => {
+    describe("mapAsync()", () => {
+      test("Ok.mapAsync: applies async mapper and returns Promise<Ok>", async () => {
+        const result = Result.ok<number, string>(42);
+        const mapped = await result.mapAsync(async (value) => value * 2);
+
+        expect(mapped.isOk()).toBe(true);
+        expect(mapped.unwrap()).toBe(84);
+      });
+
+      test("Ok.mapAsync: type conversion works correctly", async () => {
+        const result = Result.ok<number, string>(42);
+        const mapped = await result.mapAsync(async (value) => value.toString());
+
+        expect(mapped.isOk()).toBe(true);
+        expect(mapped.unwrap()).toBe("42");
+      });
+
+      test("Err.mapAsync: does not call mapper and preserves error", async () => {
+        let called = 0;
+        const result = Result.err<number, string>("error");
+        const mapped = await result.mapAsync(async (_value) => {
+          called++;
+          return 0;
+        });
+
+        expect(called).toBe(0);
+        expect(mapped.isErr()).toBe(true);
+        expect(mapped.unwrapErr()).toBe("error");
+      });
+
+      test("Ok.mapAsync: rejected promise propagates", async () => {
+        const result = Result.ok<number, string>(42);
+        const mapped = result.mapAsync(async () => {
+          throw new Error("async error");
+        });
+
+        await expect(mapped).rejects.toThrow("async error");
+      });
+    });
+
+    describe("andThenAsync()", () => {
+      test("Ok.andThenAsync: applies async fn and returns resulting Result", async () => {
+        const result = Result.ok<number, string>(42);
+        const chained = await result.andThenAsync(async (value) =>
+          Result.ok(value * 2),
+        );
+
+        expect(chained.isOk()).toBe(true);
+        expect(chained.unwrap()).toBe(84);
+      });
+
+      test("Ok.andThenAsync: propagates Err returned by async fn", async () => {
+        const result = Result.ok<number, string>(42);
+        const chained = await result.andThenAsync(async (_value) =>
+          Result.err<string, string>("new error"),
+        );
+
+        expect(chained.isErr()).toBe(true);
+        expect(chained.unwrapOrElse((err) => err)).toBe("new error");
+      });
+
+      test("Err.andThenAsync: does not call fn and returns self", async () => {
+        let called = 0;
+        const result = Result.err<number, string>("error");
+        const chained = await result.andThenAsync(async (_value) => {
+          called++;
+          return Result.ok(0);
+        });
+
+        expect(called).toBe(0);
+        expect(chained.isErr()).toBe(true);
+        expect(chained.unwrapErr()).toBe("error");
+      });
+
+      test("Ok.andThenAsync: rejected promise propagates", async () => {
+        const result = Result.ok<number, string>(42);
+        const chained = result.andThenAsync(async () => {
+          throw new Error("async error");
+        });
+
+        await expect(chained).rejects.toThrow("async error");
+      });
+    });
+
+    describe("orElseAsync()", () => {
+      test("Ok.orElseAsync: does not call fn and returns self", async () => {
+        let called = 0;
+        const result = Result.ok<number, string>(42);
+        const recovered = await result.orElseAsync(async (_error) => {
+          called++;
+          return Result.ok(0);
+        });
+
+        expect(called).toBe(0);
+        expect(recovered.isOk()).toBe(true);
+        expect(recovered.unwrap()).toBe(42);
+      });
+
+      test("Err.orElseAsync: applies async fn and returns recovered Ok", async () => {
+        const result = Result.err<number, string>("error");
+        const recovered = await result.orElseAsync(async (_error) =>
+          Result.ok(42),
+        );
+
+        expect(recovered.isOk()).toBe(true);
+        expect(recovered.unwrap()).toBe(42);
+      });
+
+      test("Err.orElseAsync: propagates new Err returned by async fn", async () => {
+        const result = Result.err<number, string>("error1");
+        const recovered = await result.orElseAsync(async (_error) =>
+          Result.err<number, string>("error2"),
+        );
+
+        expect(recovered.isErr()).toBe(true);
+        expect(recovered.unwrapErr()).toBe("error2");
+      });
+
+      test("Err.orElseAsync: rejected promise propagates", async () => {
+        const result = Result.err<number, string>("error");
+        const recovered = result.orElseAsync(async () => {
+          throw new Error("async error");
+        });
+
+        await expect(recovered).rejects.toThrow("async error");
+      });
+    });
+  });
+
   describe("toOption()", () => {
     test("Ok → Some conversion", () => {
       const result = Result.ok(42);

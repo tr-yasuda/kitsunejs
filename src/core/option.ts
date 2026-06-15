@@ -117,6 +117,11 @@ export abstract class Option<T> {
   }
 
   /**
+   * Returns the option if it contains a value, otherwise returns the async result of fn.
+   */
+  abstract orElseAsync(fn: () => Promise<Option<T>>): Promise<Option<T>>;
+
+  /**
    * Returns Some if exactly one of self, other is Some, otherwise returns None.
    */
   xor(other: Option<T>): Option<T> {
@@ -174,6 +179,18 @@ export abstract class Option<T> {
    * Returns None if the option is None, otherwise calls fn with the wrapped value and returns the result.
    */
   abstract andThen<U>(fn: (value: T) => Option<U>): Option<U>;
+
+  /**
+   * Maps an Option<T> to Option<U> by applying an async function to a contained Some value.
+   */
+  abstract mapAsync<U>(fn: (value: T) => Promise<U>): Promise<Option<U>>;
+
+  /**
+   * Returns None if the option is None, otherwise calls async fn with the wrapped value and returns the result.
+   */
+  abstract andThenAsync<U>(
+    fn: (value: T) => Promise<Option<U>>,
+  ): Promise<Option<U>>;
 
   /**
    * Returns None if the option is None, otherwise calls predicate with the wrapped value.
@@ -325,6 +342,20 @@ export class Some<T> extends Option<T> {
     return fn(this.value);
   }
 
+  async mapAsync<U>(fn: (value: T) => Promise<U>): Promise<Option<U>> {
+    return new Some(await fn(this.value));
+  }
+
+  async andThenAsync<U>(
+    fn: (value: T) => Promise<Option<U>>,
+  ): Promise<Option<U>> {
+    return fn(this.value);
+  }
+
+  async orElseAsync(_fn: () => Promise<Option<T>>): Promise<Option<T>> {
+    return this;
+  }
+
   filter(predicate: (value: T) => boolean): Option<T> {
     return predicate(this.value) ? this : Option.none<T>();
   }
@@ -398,6 +429,20 @@ export class None<T = never> extends Option<T> {
 
   andThen<U>(_fn: (value: T) => Option<U>): Option<U> {
     return Option.none<U>();
+  }
+
+  async mapAsync<U>(_fn: (value: T) => Promise<U>): Promise<Option<U>> {
+    return Option.none<U>();
+  }
+
+  async andThenAsync<U>(
+    _fn: (value: T) => Promise<Option<U>>,
+  ): Promise<Option<U>> {
+    return Option.none<U>();
+  }
+
+  async orElseAsync(fn: () => Promise<Option<T>>): Promise<Option<T>> {
+    return fn();
   }
 
   filter(_predicate: (value: T) => boolean): Option<T> {

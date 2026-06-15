@@ -689,6 +689,62 @@ const result = Result.err('primary failed')
 console.log(result.unwrap()); // 42
 ```
 
+##### `mapAsync<U>(fn: (value: T) => Promise<U>): Promise<Result<U, E>>`
+
+Async version of `map`. Applies an async function to the `Ok` value. If `Err`, returns unchanged.
+
+**Parameters**:
+- `fn: (value: T) => Promise<U>` - Async function to transform the Ok value
+
+**Returns**: `Promise<Result<U, E>>` - Promise of transformed Result
+
+**Example**:
+```typescript
+const result = Result.ok(42);
+const doubled = await result.mapAsync(async (n) => n * 2);
+console.log(doubled.unwrap()); // 84
+
+const err = Result.err<number, string>('error');
+const mapped = await err.mapAsync(async (n) => n * 2);
+console.log(mapped.isErr()); // true
+```
+
+##### `andThenAsync<U>(fn: (value: T) => Promise<Result<U, E>>): Promise<Result<U, E>>`
+
+Async version of `andThen`. If `Ok`, awaits the async function and chains to the next Result. If `Err`, returns unchanged.
+
+**Parameters**:
+- `fn: (value: T) => Promise<Result<U, E>>` - Async function to generate the next Result from the Ok value
+
+**Returns**: `Promise<Result<U, E>>` - Promise of chained Result
+
+**Example**:
+```typescript
+async function fetchUser(id: number): Promise<Result<User, Error>> {
+  // ...
+}
+
+const result = await Result.ok<number, Error>(42).andThenAsync(fetchUser);
+```
+
+##### `orElseAsync<F>(fn: (error: E) => Promise<Result<T, F>>): Promise<Result<T, F>>`
+
+Async version of `orElse`. If `Err`, awaits the async function to switch to another Result. If `Ok`, returns unchanged.
+
+**Parameters**:
+- `fn: (error: E) => Promise<Result<T, F>>` - Async function to generate another Result from the Err value
+
+**Returns**: `Promise<Result<T, F>>` - Promise of switched Result
+
+**Example**:
+```typescript
+const result = await Result.err<number, string>('primary failed')
+  .orElseAsync(async (e) => {
+    const fallback = await fetchFallback();
+    return fallback ? Result.ok<number, string>(fallback) : Result.err<number, string>(e);
+  });
+```
+
 #### Conversion
 
 ##### `toOption(): Option<T>`
@@ -1337,6 +1393,61 @@ const invalid = Option.some('invalid')
   .andThen((str) => parseNumber(str));
 
 console.log(invalid.isNone()); // true
+```
+
+##### `mapAsync<U>(fn: (value: T) => Promise<U>): Promise<Option<U>>`
+
+Async version of `map`. Applies an async function to the `Some` value. If `None`, returns unchanged.
+
+**Parameters**:
+- `fn: (value: T) => Promise<U>` - Async function to transform the Some value
+
+**Returns**: `Promise<Option<U>>` - Promise of transformed Option
+
+**Example**:
+```typescript
+const option = Option.some(42);
+const doubled = await option.mapAsync(async (n) => n * 2);
+console.log(doubled.unwrap()); // 84
+
+const none = Option.none<number>();
+const mapped = await none.mapAsync(async (n) => n * 2);
+console.log(mapped.isNone()); // true
+```
+
+##### `andThenAsync<U>(fn: (value: T) => Promise<Option<U>>): Promise<Option<U>>`
+
+Async version of `andThen`. If `Some`, awaits the async function and chains to the next Option. If `None`, returns unchanged.
+
+**Parameters**:
+- `fn: (value: T) => Promise<Option<U>>` - Async function to generate the next Option from the Some value
+
+**Returns**: `Promise<Option<U>>` - Promise of chained Option
+
+**Example**:
+```typescript
+const option = await Option.some('42').andThenAsync(async (str) => {
+  const num = await parseNumberAsync(str);
+  return num !== null ? Option.some(num) : Option.none();
+});
+```
+
+##### `orElseAsync(fn: () => Promise<Option<T>>): Promise<Option<T>>`
+
+Async version of `orElse`. Returns the Option if it is `Some`, otherwise awaits and returns the async result of `fn`.
+
+**Parameters**:
+- `fn: () => Promise<Option<T>>` - Async function to execute if None
+
+**Returns**: `Promise<Option<T>>` - Promise of self if Some, fn result if None
+
+**Example**:
+```typescript
+const option = await Option.none<number>()
+  .orElseAsync(async () => {
+    const value = await fetchDefaultValue();
+    return Option.some(value);
+  });
 ```
 
 #### Filtering

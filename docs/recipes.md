@@ -222,6 +222,50 @@ async function main() {
 }
 ```
 
+### 3.3 Async Chaining with Result and Option
+
+> Use case: When you want to chain async operations without unwrapping
+
+**Problem**: Need to chain multiple async operations while preserving error handling
+
+**Solution**:
+```typescript
+import { Result, Option } from 'kitsunejs';
+
+type User = { id: number; name: string };
+type Profile = { bio: string };
+type ApiError = { status: number; message: string };
+
+async function fetchUser(id: number): Promise<Result<User, ApiError>> {
+  // ...
+}
+
+async function fetchProfile(user: User): Promise<Result<Profile, ApiError>> {
+  // ...
+}
+
+async function loadProfile(id: number): Promise<Result<Profile, ApiError>> {
+  const result = await Result.ok<number, ApiError>(id)
+    .andThenAsync(fetchUser)
+    .then((r) => r.andThenAsync(fetchProfile));
+
+  return result;
+}
+
+// With Option
+async function fetchConfigValue(key: string): Promise<Option<string>> {
+  // ...
+}
+
+async function getDisplayName(): Promise<Option<string>> {
+  const option = await Option.some('DISPLAY_NAME')
+    .andThenAsync(fetchConfigValue)
+    .then((o) => o.mapAsync(async (value) => value.toUpperCase()));
+
+  return option;
+}
+```
+
 ---
 
 ## 4. Data Validation

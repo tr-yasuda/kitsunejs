@@ -251,6 +251,25 @@ export abstract class Result<T, E> {
   abstract orElse<F>(fn: (error: E) => Result<T, F>): Result<T, F>;
 
   /**
+   * Maps a Result<T, E> to Result<U, E> by applying an async function to a contained Ok value.
+   */
+  abstract mapAsync<U>(fn: (value: T) => Promise<U>): Promise<Result<U, E>>;
+
+  /**
+   * Calls an async function if the result is Ok, otherwise returns the Err value of self.
+   */
+  abstract andThenAsync<U>(
+    fn: (value: T) => Promise<Result<U, E>>,
+  ): Promise<Result<U, E>>;
+
+  /**
+   * Calls an async function if the result is Err, otherwise returns the Ok value of self.
+   */
+  abstract orElseAsync<F>(
+    fn: (error: E) => Promise<Result<T, F>>,
+  ): Promise<Result<T, F>>;
+
+  /**
    * Transposes a Result of an Option into an Option of a Result.
    */
   transpose<U>(this: Result<OptionType<U>, E>): OptionType<Result<U, E>> {
@@ -486,6 +505,22 @@ export class Ok<T, E = never> extends Result<T, E> {
     return this as unknown as Result<T, F>;
   }
 
+  async mapAsync<U>(fn: (value: T) => Promise<U>): Promise<Result<U, E>> {
+    return new Ok(await fn(this.value));
+  }
+
+  async andThenAsync<U>(
+    fn: (value: T) => Promise<Result<U, E>>,
+  ): Promise<Result<U, E>> {
+    return fn(this.value);
+  }
+
+  async orElseAsync<F>(
+    _fn: (error: E) => Promise<Result<T, F>>,
+  ): Promise<Result<T, F>> {
+    return this as unknown as Result<T, F>;
+  }
+
   toOption(): OptionType<T> {
     return Option.some(this.value);
   }
@@ -587,6 +622,22 @@ export class Err<T = never, E = unknown> extends Result<T, E> {
   }
 
   orElse<F>(fn: (error: E) => Result<T, F>): Result<T, F> {
+    return fn(this.error);
+  }
+
+  async mapAsync<U>(_fn: (value: T) => Promise<U>): Promise<Result<U, E>> {
+    return this as unknown as Result<U, E>;
+  }
+
+  async andThenAsync<U>(
+    _fn: (value: T) => Promise<Result<U, E>>,
+  ): Promise<Result<U, E>> {
+    return this as unknown as Result<U, E>;
+  }
+
+  async orElseAsync<F>(
+    fn: (error: E) => Promise<Result<T, F>>,
+  ): Promise<Result<T, F>> {
     return fn(this.error);
   }
 

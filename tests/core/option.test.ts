@@ -391,6 +391,132 @@ describe("Option", () => {
     });
   });
 
+  describe("async methods", () => {
+    describe("mapAsync()", () => {
+      test("Some.mapAsync: applies async mapper and returns Promise<Some>", async () => {
+        const option = Option.some(42);
+        const mapped = await option.mapAsync(async (value) => value * 2);
+
+        expect(mapped.isSome()).toBe(true);
+        expect(mapped.unwrap()).toBe(84);
+      });
+
+      test("Some.mapAsync: type conversion works correctly", async () => {
+        const option = Option.some(42);
+        const mapped = await option.mapAsync(async (value) => value.toString());
+
+        expect(mapped.isSome()).toBe(true);
+        expect(mapped.unwrap()).toBe("42");
+      });
+
+      test("None.mapAsync: does not call mapper and returns Promise<None>", async () => {
+        let called = 0;
+        const option = Option.none<number>();
+        const mapped = await option.mapAsync(async (_value) => {
+          called++;
+          return 0;
+        });
+
+        expect(called).toBe(0);
+        expect(mapped.isNone()).toBe(true);
+      });
+
+      test("Some.mapAsync: rejected promise propagates", async () => {
+        const option = Option.some(42);
+        const mapped = option.mapAsync(async () => {
+          throw new Error("async error");
+        });
+
+        await expect(mapped).rejects.toThrow("async error");
+      });
+    });
+
+    describe("andThenAsync()", () => {
+      test("Some.andThenAsync: applies async fn and returns resulting Option", async () => {
+        const option = Option.some(42);
+        const chained = await option.andThenAsync(async (value) =>
+          Option.some(value * 2),
+        );
+
+        expect(chained.isSome()).toBe(true);
+        expect(chained.unwrap()).toBe(84);
+      });
+
+      test("Some.andThenAsync: propagates None returned by async fn", async () => {
+        const option = Option.some(42);
+        const chained = await option.andThenAsync(async () =>
+          Option.none<number>(),
+        );
+
+        expect(chained.isNone()).toBe(true);
+      });
+
+      test("None.andThenAsync: does not call fn and returns Promise<None>", async () => {
+        let called = 0;
+        const option = Option.none<number>();
+        const chained = await option.andThenAsync(async (_value) => {
+          called++;
+          return Option.some(0);
+        });
+
+        expect(called).toBe(0);
+        expect(chained.isNone()).toBe(true);
+      });
+
+      test("Some.andThenAsync: rejected promise propagates", async () => {
+        const option = Option.some(42);
+        const chained = option.andThenAsync(async () => {
+          throw new Error("async error");
+        });
+
+        await expect(chained).rejects.toThrow("async error");
+      });
+    });
+
+    describe("orElseAsync()", () => {
+      test("Some.orElseAsync: does not call fn and returns self", async () => {
+        let called = 0;
+        const option = Option.some(42);
+        const recovered = await option.orElseAsync(async () => {
+          called++;
+          return Option.some(0);
+        });
+
+        expect(called).toBe(0);
+        expect(recovered.isSome()).toBe(true);
+        expect(recovered.unwrap()).toBe(42);
+      });
+
+      test("None.orElseAsync: applies async fn and returns recovered Some", async () => {
+        const option = Option.none<number>();
+        const recovered = await option.orElseAsync(async () =>
+          Option.some(100),
+        );
+
+        expect(recovered.isSome()).toBe(true);
+        expect(recovered.unwrap()).toBe(100);
+      });
+
+      test("None.orElseAsync: propagates None returned by async fn", async () => {
+        const option = Option.none<number>();
+        const recovered = await option.orElseAsync(async () =>
+          Option.none<number>(),
+        );
+
+        expect(recovered.isNone()).toBe(true);
+      });
+
+      test("None.orElseAsync: rejected promise propagates", async () => {
+        const option = Option.none<number>();
+        const recovered = option.orElseAsync(async () => {
+          throw new Error("async error");
+        });
+
+        await expect(recovered).rejects.toThrow("async error");
+      });
+    });
+  });
+
   describe("xor()", () => {
     test("Some.xor(Some): returns None", () => {
       const option1 = Option.some(1);

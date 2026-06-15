@@ -64,10 +64,6 @@ describe("Result type tests", () => {
         return this.inner.mapOrElse(defaultFn, fn);
       }
 
-      match<U>(onOk: (value: T) => U, onErr: (error: E) => U): U {
-        return this.inner.match(onOk, onErr);
-      }
-
       mapErr<F>(fn: (error: E) => F): Result<T, F> {
         return this.inner.mapErr(fn);
       }

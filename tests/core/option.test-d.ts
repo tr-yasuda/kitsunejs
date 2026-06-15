@@ -56,10 +56,6 @@ describe("Option type tests", () => {
         return this.inner.mapOrElse(defaultFn, fn);
       }
 
-      match<U>(onSome: (value: T) => U, onNone: () => U): U {
-        return this.inner.match(onSome, onNone);
-      }
-
       and<U>(other: Option<U>): Option<U> {
         return this.inner.and(other);
       }

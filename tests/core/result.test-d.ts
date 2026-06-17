@@ -117,6 +117,10 @@ describe("Result type tests", () => {
       err(): Option<E> {
         return this.inner.err();
       }
+
+      [Symbol.iterator](): Iterator<T> {
+        return this.inner[Symbol.iterator]();
+      }
     }
 
     // --- Basic type inference ---
@@ -428,5 +432,18 @@ describe("Result type tests", () => {
     ];
     const anyFromReadonly = Result.any(readonlyAnyResults);
     expectTypeOf(anyFromReadonly).toEqualTypeOf<Result<number, string[]>>();
+
+    // --- Symbol.iterator ---
+
+    const okIterator = Result.ok<number, string>(42)[Symbol.iterator]();
+    expectTypeOf(okIterator).toEqualTypeOf<Iterator<number>>();
+
+    const errIterator = Result.err<number, string>("error")[Symbol.iterator]();
+    expectTypeOf(errIterator).toEqualTypeOf<Iterator<number>>();
+
+    const legacyIterator = new LegacyResult<number, string>(Result.ok(42))[
+      Symbol.iterator
+    ]();
+    expectTypeOf(legacyIterator).toEqualTypeOf<Iterator<number>>();
   });
 });

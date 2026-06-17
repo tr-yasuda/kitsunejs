@@ -2,6 +2,10 @@ import { UnwrapError } from "@/core/errors.js";
 import type { Result as ResultType } from "@/core/result.js";
 import { Result } from "@/core/result.js";
 
+const EMPTY_ITERATOR: Iterator<never> = Object.freeze({
+  next: (): IteratorResult<never> => ({ done: true, value: undefined }),
+});
+
 export abstract class Option<T> {
   abstract readonly tag: "Some" | "None";
 
@@ -39,6 +43,20 @@ export abstract class Option<T> {
    * Throws an UnwrapError with the provided message if the value is None.
    */
   abstract expect(message: string): T;
+
+  /**
+   * Implements the iterable protocol.
+   * Some yields its contained value once; None yields nothing.
+   *
+   * Subclasses may override this for a more efficient implementation,
+   * but the default implementation inherited from this base class is
+   * sufficient for correctness.
+   */
+  *[Symbol.iterator](): Iterator<T> {
+    if (this.isSome()) {
+      yield this.unwrap();
+    }
+  }
 
   /**
    * Returns the contained Some value or a provided default.
@@ -310,6 +328,10 @@ export class Some<T> extends Option<T> {
     return this.value;
   }
 
+  *[Symbol.iterator](): Iterator<T> {
+    yield this.value;
+  }
+
   unwrapOr(_defaultValue: T): T {
     return this.value;
   }
@@ -397,6 +419,10 @@ export class None<T = never> extends Option<T> {
 
   expect(message: string): T {
     throw new UnwrapError(message);
+  }
+
+  [Symbol.iterator](): Iterator<T> {
+    return EMPTY_ITERATOR as Iterator<T>;
   }
 
   unwrapOr(defaultValue: T): T {

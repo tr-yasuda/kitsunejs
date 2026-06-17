@@ -37,6 +37,7 @@ kitsunejs faithfully reproduces Rust's Result/Option API as much as possible, bu
 | `or_else(fn)`        | `orElse(fn)`                        |                                                                                    |
 | `transpose()`        | `transpose()`                       | `Result<Option<T>, E>` ↔ `Option<Result<T, E>>`                                   |
 | `flatten()`          | `flatten()`                         | Flattens one level of nested `Result`                                              |
+| `into_iter()`        | `[Symbol.iterator]()`               | Not a direct equivalent. kitsunejs yields the Ok value once; Rust iterates the Ok value's items when it is iterable. Err yields nothing in both. |
 | `ok()`               | `toOption()`                        | Different method name. Error information is discarded and converted to `Option<T>` |
 | -                    | `Result.fromNullable(value, error)` | kitsunejs-specific. Integration with JavaScript/TypeScript null/undefined          |
 | -                    | `Result.try(fn)`                    | kitsunejs-specific. Integration with JavaScript exception handling                 |
@@ -74,6 +75,7 @@ kitsunejs faithfully reproduces Rust's Result/Option API as much as possible, bu
 | `unzip()`            | `unzip()`                    | Unzips `Option<[A, B]>` into `[Option<A>, Option<B>]`                                           |
 | `transpose()`        | `transpose()`               | `Option<Result<T, E>>` ↔ `Result<Option<T>, E>`                                                 |
 | `flatten()`          | `flatten()`                 | Flattens one level of nested `Option`                                                           |
+| `into_iter()`        | `[Symbol.iterator]()`        | Closest equivalent. `Some` yields its contained value; `None` yields nothing. Rust `iter()` yields references instead. |
 | `ok_or(err)`         | `toResult(error)`            | Different method name. Some → Ok, None → Err                                                    |
 | `ok_or_else(fn)`     | `toResultElse(fn)`           | Different method name. Some → Ok, None → Err (computed lazily)                                  |
 | -                    | `Option.fromNullable(value)` | kitsunejs-specific. Integration with JavaScript/TypeScript null/undefined                       |

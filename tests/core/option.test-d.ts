@@ -93,6 +93,10 @@ describe("Option type tests", () => {
       toResultElse<E>(fn: () => E): ResultType<T, E> {
         return this.inner.toResultElse(fn);
       }
+
+      [Symbol.iterator](): Iterator<T> {
+        return this.inner[Symbol.iterator]();
+      }
     }
 
     // --- Basic type inference ---
@@ -374,5 +378,16 @@ describe("Option type tests", () => {
       Option.some(Option.some(42)),
     ).flatten();
     expectTypeOf(legacyFlattened).toEqualTypeOf<Option<number>>();
+
+    // --- Symbol.iterator ---
+
+    const someIterator = Option.some(42)[Symbol.iterator]();
+    expectTypeOf(someIterator).toEqualTypeOf<Iterator<number>>();
+
+    const noneIterator = Option.none<number>()[Symbol.iterator]();
+    expectTypeOf(noneIterator).toEqualTypeOf<Iterator<number>>();
+
+    const legacyIterator = new LegacyOption(Option.some(42))[Symbol.iterator]();
+    expectTypeOf(legacyIterator).toEqualTypeOf<Iterator<number>>();
   });
 });

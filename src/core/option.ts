@@ -2,8 +2,11 @@ import { UnwrapError } from "@/core/errors.js";
 import type { Result as ResultType } from "@/core/result.js";
 import { Result } from "@/core/result.js";
 
-const EMPTY_ITERATOR: Iterator<never> = Object.freeze({
+const EMPTY_ITERATOR: IterableIterator<never> = Object.freeze({
   next: (): IteratorResult<never> => ({ done: true, value: undefined }),
+  [Symbol.iterator](): IterableIterator<never> {
+    return this;
+  },
 });
 
 export abstract class Option<T> {
@@ -52,7 +55,7 @@ export abstract class Option<T> {
    * but the default implementation inherited from this base class is
    * sufficient for correctness.
    */
-  *[Symbol.iterator](): Iterator<T> {
+  *[Symbol.iterator](): IterableIterator<T> {
     if (this.isSome()) {
       yield this.unwrap();
     }
@@ -328,7 +331,7 @@ export class Some<T> extends Option<T> {
     return this.value;
   }
 
-  *[Symbol.iterator](): Iterator<T> {
+  *[Symbol.iterator](): IterableIterator<T> {
     yield this.value;
   }
 
@@ -421,8 +424,8 @@ export class None<T = never> extends Option<T> {
     throw new UnwrapError(message);
   }
 
-  [Symbol.iterator](): Iterator<T> {
-    return EMPTY_ITERATOR as Iterator<T>;
+  [Symbol.iterator](): IterableIterator<T> {
+    return EMPTY_ITERATOR as IterableIterator<T>;
   }
 
   unwrapOr(defaultValue: T): T {

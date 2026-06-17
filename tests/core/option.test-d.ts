@@ -94,7 +94,7 @@ describe("Option type tests", () => {
         return this.inner.toResultElse(fn);
       }
 
-      [Symbol.iterator](): Iterator<T> {
+      [Symbol.iterator](): IterableIterator<T> {
         return this.inner[Symbol.iterator]();
       }
     }
@@ -382,12 +382,12 @@ describe("Option type tests", () => {
     // --- Symbol.iterator ---
 
     const someIterator = Option.some(42)[Symbol.iterator]();
-    expectTypeOf(someIterator).toEqualTypeOf<Iterator<number>>();
+    expectTypeOf(someIterator).toEqualTypeOf<IterableIterator<number>>();
 
     const noneIterator = Option.none<number>()[Symbol.iterator]();
-    expectTypeOf(noneIterator).toEqualTypeOf<Iterator<number>>();
+    expectTypeOf(noneIterator).toEqualTypeOf<IterableIterator<number>>();
 
     const legacyIterator = new LegacyOption(Option.some(42))[Symbol.iterator]();
-    expectTypeOf(legacyIterator).toEqualTypeOf<Iterator<number>>();
+    expectTypeOf(legacyIterator).toEqualTypeOf<IterableIterator<number>>();
   });
 });

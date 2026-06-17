@@ -1134,6 +1134,16 @@ describe("Result", () => {
       expect(iterator.next()).toEqual({ value: undefined, done: true });
     });
 
+    test("Ok returned iterator is itself iterable", () => {
+      const iterator = Result.ok(42)[Symbol.iterator]();
+      expect([...iterator]).toEqual([42]);
+    });
+
+    test("Err returned iterator is itself iterable", () => {
+      const iterator = Result.err<number, string>("error")[Symbol.iterator]();
+      expect([...iterator]).toEqual([]);
+    });
+
     test("Ok works with array destructuring", () => {
       const [value] = Result.ok(42);
       expect(value).toBe(42);

@@ -118,7 +118,7 @@ describe("Result type tests", () => {
         return this.inner.err();
       }
 
-      [Symbol.iterator](): Iterator<T> {
+      [Symbol.iterator](): IterableIterator<T> {
         return this.inner[Symbol.iterator]();
       }
     }
@@ -436,14 +436,14 @@ describe("Result type tests", () => {
     // --- Symbol.iterator ---
 
     const okIterator = Result.ok<number, string>(42)[Symbol.iterator]();
-    expectTypeOf(okIterator).toEqualTypeOf<Iterator<number>>();
+    expectTypeOf(okIterator).toEqualTypeOf<IterableIterator<number>>();
 
     const errIterator = Result.err<number, string>("error")[Symbol.iterator]();
-    expectTypeOf(errIterator).toEqualTypeOf<Iterator<number>>();
+    expectTypeOf(errIterator).toEqualTypeOf<IterableIterator<number>>();
 
     const legacyIterator = new LegacyResult<number, string>(Result.ok(42))[
       Symbol.iterator
     ]();
-    expectTypeOf(legacyIterator).toEqualTypeOf<Iterator<number>>();
+    expectTypeOf(legacyIterator).toEqualTypeOf<IterableIterator<number>>();
   });
 });

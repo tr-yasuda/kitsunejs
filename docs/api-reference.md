@@ -420,15 +420,15 @@ const ok = Result.ok<number, string>(42);
 // ok.expectErr('Expected Err'); // UnwrapError: Expected Err
 ```
 
-##### `[Symbol.iterator](): Iterator<T>`
+##### `[Symbol.iterator](): IterableIterator<T>`
 
 Implements the JavaScript iterable protocol.
 
 `Ok` yields its contained value once. `Err` yields nothing.
 
-This is a JavaScript-specific convenience for treating `Result` as a zero-or-one-element collection. It is not a direct equivalent of Rust's `IntoIterator for Result`, which requires the Ok type itself to be iterable and yields that type's items.
+This matches Rust's `IntoIterator` behavior for `Result`, where the Ok value is yielded once and the Err variant produces no items.
 
-**Returns**: `Iterator<T>` - Iterator over the contained Ok value
+**Returns**: `IterableIterator<T>` - Iterator over the contained Ok value
 
 **Example**:
 ```typescript
@@ -1132,13 +1132,13 @@ const none = Option.none();
 // none.expect('Expected a value'); // UnwrapError: Expected a value
 ```
 
-##### `[Symbol.iterator](): Iterator<T>`
+##### `[Symbol.iterator](): IterableIterator<T>`
 
 Implements the JavaScript iterable protocol.
 
 `Some` yields its contained value once. `None` yields nothing.
 
-**Returns**: `Iterator<T>` - Iterator over the contained Some value
+**Returns**: `IterableIterator<T>` - Iterator over the contained Some value
 
 **Example**:
 ```typescript

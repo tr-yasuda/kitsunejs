@@ -428,5 +428,18 @@ describe("Result type tests", () => {
     ];
     const anyFromReadonly = Result.any(readonlyAnyResults);
     expectTypeOf(anyFromReadonly).toEqualTypeOf<Result<number, string[]>>();
+
+    // --- Symbol.iterator ---
+
+    const okIterator = Result.ok<number, string>(42)[Symbol.iterator]();
+    expectTypeOf(okIterator).toEqualTypeOf<IterableIterator<number>>();
+
+    const errIterator = Result.err<number, string>("error")[Symbol.iterator]();
+    expectTypeOf(errIterator).toEqualTypeOf<IterableIterator<number>>();
+
+    const legacyIterator = new LegacyResult<number, string>(Result.ok(42))[
+      Symbol.iterator
+    ]();
+    expectTypeOf(legacyIterator).toEqualTypeOf<IterableIterator<number>>();
   });
 });

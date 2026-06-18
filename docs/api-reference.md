@@ -420,6 +420,29 @@ const ok = Result.ok<number, string>(42);
 // ok.expectErr('Expected Err'); // UnwrapError: Expected Err
 ```
 
+##### `[Symbol.iterator](): IterableIterator<T>`
+
+Implements the JavaScript iterable protocol.
+
+`Ok` yields its contained value once. `Err` yields nothing.
+
+This matches Rust's `IntoIterator` behavior for `Result`, where the Ok value is yielded once and the Err variant produces no items.
+
+**Returns**: `IterableIterator<T>` - Iterator over the contained Ok value
+
+**Example**:
+```typescript
+const ok = Result.ok(42);
+console.log([...ok]); // [42]
+
+const err = Result.err<number, string>('error');
+console.log([...err]); // []
+
+for (const value of Result.ok(42)) {
+  console.log(value); // 42
+}
+```
+
 ##### `unwrapOr(defaultValue: T): T`
 
 Extracts the `Ok` value. Returns the specified default value if `Err`.
@@ -1107,6 +1130,27 @@ console.log(some.expect('Should have value')); // 42
 
 const none = Option.none();
 // none.expect('Expected a value'); // UnwrapError: Expected a value
+```
+
+##### `[Symbol.iterator](): IterableIterator<T>`
+
+Implements the JavaScript iterable protocol.
+
+`Some` yields its contained value once. `None` yields nothing.
+
+**Returns**: `IterableIterator<T>` - Iterator over the contained Some value
+
+**Example**:
+```typescript
+const some = Option.some(42);
+console.log([...some]); // [42]
+
+const none = Option.none<number>();
+console.log([...none]); // []
+
+for (const value of Option.some(42)) {
+  console.log(value); // 42
+}
 ```
 
 ##### `unwrapOr(defaultValue: T): T`

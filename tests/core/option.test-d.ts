@@ -374,5 +374,16 @@ describe("Option type tests", () => {
       Option.some(Option.some(42)),
     ).flatten();
     expectTypeOf(legacyFlattened).toEqualTypeOf<Option<number>>();
+
+    // --- Symbol.iterator ---
+
+    const someIterator = Option.some(42)[Symbol.iterator]();
+    expectTypeOf(someIterator).toEqualTypeOf<IterableIterator<number>>();
+
+    const noneIterator = Option.none<number>()[Symbol.iterator]();
+    expectTypeOf(noneIterator).toEqualTypeOf<IterableIterator<number>>();
+
+    const legacyIterator = new LegacyOption(Option.some(42))[Symbol.iterator]();
+    expectTypeOf(legacyIterator).toEqualTypeOf<IterableIterator<number>>();
   });
 });

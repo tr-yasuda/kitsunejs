@@ -1081,4 +1081,82 @@ describe("Result", () => {
       expect(errorValues).toEqual(["error1", "error2"]);
     });
   });
+
+  describe("[Symbol.iterator]", () => {
+    test("Ok yields value once with for...of", () => {
+      const result = Result.ok(42);
+      const values: number[] = [];
+      for (const value of result) {
+        values.push(value);
+      }
+      expect(values).toEqual([42]);
+    });
+
+    test("Ok works with spread syntax", () => {
+      const result = Result.ok(42);
+      expect([...result]).toEqual([42]);
+    });
+
+    test("Err yields nothing", () => {
+      const result = Result.err<number, string>("error");
+      const values: number[] = [];
+      for (const value of result) {
+        values.push(value);
+      }
+      expect(values).toEqual([]);
+    });
+
+    test("Err spread syntax produces empty array", () => {
+      const result = Result.err<number, string>("error");
+      expect([...result]).toEqual([]);
+    });
+
+    test("Ok iterator can be consumed multiple times independently", () => {
+      const result = Result.ok(42);
+      expect([...result]).toEqual([42]);
+      expect([...result]).toEqual([42]);
+    });
+
+    test("Err iterator can be consumed multiple times independently", () => {
+      const result = Result.err<number, string>("error");
+      expect([...result]).toEqual([]);
+      expect([...result]).toEqual([]);
+    });
+
+    test("Ok iterator protocol returns correct next() values", () => {
+      const iterator = Result.ok(42)[Symbol.iterator]();
+      expect(iterator.next()).toEqual({ value: 42, done: false });
+      expect(iterator.next()).toEqual({ value: undefined, done: true });
+    });
+
+    test("Err iterator protocol returns done immediately", () => {
+      const iterator = Result.err<number, string>("error")[Symbol.iterator]();
+      expect(iterator.next()).toEqual({ value: undefined, done: true });
+    });
+
+    test("Ok returned iterator is itself iterable", () => {
+      const iterator = Result.ok(42)[Symbol.iterator]();
+      expect([...iterator]).toEqual([42]);
+    });
+
+    test("Err returned iterator is itself iterable", () => {
+      const iterator = Result.err<number, string>("error")[Symbol.iterator]();
+      expect([...iterator]).toEqual([]);
+    });
+
+    test("Ok works with array destructuring", () => {
+      const [value] = Result.ok(42);
+      expect(value).toBe(42);
+    });
+
+    test("Err destructuring yields undefined", () => {
+      const [value] = Result.err<number, string>("error");
+      expect(value).toBeUndefined();
+    });
+
+    test("Ok containing an iterable value yields it as a single element", () => {
+      const result = Result.ok([1, 2, 3]);
+      expect([...result]).toEqual([[1, 2, 3]]);
+    });
+  });
 });

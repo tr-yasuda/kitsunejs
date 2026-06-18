@@ -117,10 +117,6 @@ describe("Result type tests", () => {
       err(): Option<E> {
         return this.inner.err();
       }
-
-      [Symbol.iterator](): IterableIterator<T> {
-        return this.inner[Symbol.iterator]();
-      }
     }
 
     // --- Basic type inference ---

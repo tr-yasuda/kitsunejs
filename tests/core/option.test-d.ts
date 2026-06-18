@@ -93,10 +93,6 @@ describe("Option type tests", () => {
       toResultElse<E>(fn: () => E): ResultType<T, E> {
         return this.inner.toResultElse(fn);
       }
-
-      [Symbol.iterator](): IterableIterator<T> {
-        return this.inner[Symbol.iterator]();
-      }
     }
 
     // --- Basic type inference ---

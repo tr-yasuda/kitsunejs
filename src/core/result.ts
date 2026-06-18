@@ -2,6 +2,13 @@ import { UnwrapError } from "@/core/errors.js";
 import type { Option as OptionType } from "@/core/option.js";
 import { Option } from "@/core/option.js";
 
+const EMPTY_ITERATOR: IterableIterator<never> = Object.freeze({
+  next: (): IteratorResult<never> => ({ done: true, value: undefined }),
+  [Symbol.iterator](): IterableIterator<never> {
+    return this;
+  },
+});
+
 /**
  * Safely stringifies a value for use in an error message.
  * Falls back to String() when JSON.stringify returns undefined or throws
@@ -92,6 +99,20 @@ export abstract class Result<T, E> {
    * Throws an UnwrapError with the provided message if the value is Err.
    */
   abstract expect(message: string): T;
+
+  /**
+   * Implements the iterable protocol.
+   * Ok yields its contained value once; Err yields nothing.
+   *
+   * Subclasses may override this for a more efficient implementation,
+   * but the default implementation inherited from this base class is
+   * sufficient for correctness.
+   */
+  *[Symbol.iterator](): IterableIterator<T> {
+    if (this.isOk()) {
+      yield this.unwrap();
+    }
+  }
 
   /**
    * Returns the contained Err value.
@@ -456,6 +477,10 @@ export class Ok<T, E = never> extends Result<T, E> {
     return this.value;
   }
 
+  *[Symbol.iterator](): IterableIterator<T> {
+    yield this.value;
+  }
+
   unwrapErr(): never {
     throw new UnwrapError("Called unwrapErr on an Ok value");
   }
@@ -582,6 +607,10 @@ export class Err<T = never, E = unknown> extends Result<T, E> {
 
   expectErr(_message: string): E {
     return this.error;
+  }
+
+  [Symbol.iterator](): IterableIterator<T> {
+    return EMPTY_ITERATOR as IterableIterator<T>;
   }
 
   unwrapOr(defaultValue: T): T {

@@ -1011,4 +1011,82 @@ describe("Option", () => {
       expect(combined.unwrap()).toBe("first");
     });
   });
+
+  describe("[Symbol.iterator]", () => {
+    test("Some yields value once with for...of", () => {
+      const option = Option.some(42);
+      const values: number[] = [];
+      for (const value of option) {
+        values.push(value);
+      }
+      expect(values).toEqual([42]);
+    });
+
+    test("Some works with spread syntax", () => {
+      const option = Option.some(42);
+      expect([...option]).toEqual([42]);
+    });
+
+    test("None yields nothing", () => {
+      const option = Option.none<number>();
+      const values: number[] = [];
+      for (const value of option) {
+        values.push(value);
+      }
+      expect(values).toEqual([]);
+    });
+
+    test("None spread syntax produces empty array", () => {
+      const option = Option.none<number>();
+      expect([...option]).toEqual([]);
+    });
+
+    test("Some iterator can be consumed multiple times independently", () => {
+      const option = Option.some(42);
+      expect([...option]).toEqual([42]);
+      expect([...option]).toEqual([42]);
+    });
+
+    test("None iterator can be consumed multiple times independently", () => {
+      const option = Option.none<number>();
+      expect([...option]).toEqual([]);
+      expect([...option]).toEqual([]);
+    });
+
+    test("Some iterator protocol returns correct next() values", () => {
+      const iterator = Option.some(42)[Symbol.iterator]();
+      expect(iterator.next()).toEqual({ value: 42, done: false });
+      expect(iterator.next()).toEqual({ value: undefined, done: true });
+    });
+
+    test("None iterator protocol returns done immediately", () => {
+      const iterator = Option.none<number>()[Symbol.iterator]();
+      expect(iterator.next()).toEqual({ value: undefined, done: true });
+    });
+
+    test("Some returned iterator is itself iterable", () => {
+      const iterator = Option.some(42)[Symbol.iterator]();
+      expect([...iterator]).toEqual([42]);
+    });
+
+    test("None returned iterator is itself iterable", () => {
+      const iterator = Option.none<number>()[Symbol.iterator]();
+      expect([...iterator]).toEqual([]);
+    });
+
+    test("Some works with array destructuring", () => {
+      const [value] = Option.some(42);
+      expect(value).toBe(42);
+    });
+
+    test("None destructuring yields undefined", () => {
+      const [value] = Option.none<number>();
+      expect(value).toBeUndefined();
+    });
+
+    test("Some containing an iterable value yields it as a single element", () => {
+      const option = Option.some([1, 2, 3]);
+      expect([...option]).toEqual([[1, 2, 3]]);
+    });
+  });
 });

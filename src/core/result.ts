@@ -13,17 +13,21 @@ function isResult(value: unknown): value is Result<unknown, unknown> {
   if (value instanceof Result) {
     return true;
   }
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "tag" in value &&
-    "unwrap" in value &&
-    "unwrapErr" in value &&
-    typeof (value as { unwrap: unknown }).unwrap === "function" &&
-    typeof (value as { unwrapErr: unknown }).unwrapErr === "function" &&
-    ((value as { tag: unknown }).tag === "Ok" ||
-      (value as { tag: unknown }).tag === "Err")
-  );
+  try {
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      "tag" in value &&
+      "unwrap" in value &&
+      "unwrapErr" in value &&
+      typeof (value as { unwrap: unknown }).unwrap === "function" &&
+      typeof (value as { unwrapErr: unknown }).unwrapErr === "function" &&
+      ((value as { tag: unknown }).tag === "Ok" ||
+        (value as { tag: unknown }).tag === "Err")
+    );
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -372,11 +376,13 @@ export abstract class Result<T, E> {
   abstract err(): OptionType<E>;
 
   /**
-   * Returns true if the result equals another result by value.
-   * Both results must be the same variant (`Ok`/`Err`) and contain strictly
-   * equal (`===`) values. Returns false for non-Result arguments.
+   * Returns true if the result equals another result (or Result-like object)
+   * by value. Both must be the same variant (`Ok`/`Err`) and contain strictly
+   * equal (`===`) values. Returns false for arguments that do not look like a
+   * Result, including missing or non-callable `unwrap`/`unwrapErr` methods or
+   * an invalid variant tag.
    *
-   * @param other - Result to compare with
+   * @param other - Result (or Result-like object) to compare with
    * @returns true if both results are equal, otherwise false
    *
    * @example

@@ -333,9 +333,10 @@ if (result.isErrAnd((e) => e.length > 0)) {
 ##### `equals(other: Result<T, E>): boolean`
 
 Returns `true` if this Result equals `other` by comparing both the variant (Ok/Err) and the contained value using strict equality (`===`).
+`other` may be a real `Result` instance or a structurally compatible Result-like object with the correct variant tag and callable `unwrap`/`unwrapErr` methods.
 
 **Parameters**:
-- `other: Result<T, E>` - Result to compare with
+- `other: Result<T, E>` - Result or Result-like object to compare with
 
 **Returns**: `boolean` - true if both the variant and value are equal
 
@@ -886,15 +887,15 @@ console.log(noneError.isNone()); // true
 
 ##### `equals<U, F>(other: Result<U, F>): boolean`
 
-Returns `true` if the result equals another result.
-Both results must be the same variant (`Ok`/`Err`) and their contained values must be strictly equal (`===`).
+Returns `true` if the result equals another result (or Result-like object).
+Both must be the same variant (`Ok`/`Err`) and their contained values must be strictly equal (`===`).
 For objects and arrays this means reference equality, not deep structural equality.
-Returns `false` for non-Result arguments.
+Returns `false` for arguments that do not look like a Result (for example, missing or non-callable `unwrap`/`unwrapErr`, or an invalid variant tag).
 
 Note: Because the comparison uses `===`, `Result.ok(NaN).equals(Result.ok(NaN))` returns `false`, while `Result.ok(+0).equals(Result.ok(-0))` returns `true`.
 
 **Parameters**:
-- `other: Result<U, F>` - Result to compare with
+- `other: Result<U, F>` - Result or Result-like object to compare with
 
 **Returns**: `boolean` - true if both results are equal, otherwise false
 
@@ -1164,9 +1165,10 @@ const enabled = option.isNoneOr((v) => v === "1");
 ##### `equals(other: Option<T>): boolean`
 
 Returns `true` if this Option equals `other` by comparing both the variant (Some/None) and the contained value using strict equality (`===`).
+`other` may be a real `Option` instance or a structurally compatible Option-like object with the correct variant tag and a callable `unwrap` method.
 
 **Parameters**:
-- `other: Option<T>` - Option to compare with
+- `other: Option<T>` - Option or Option-like object to compare with
 
 **Returns**: `boolean` - true if both the variant and value are equal
 
@@ -1736,15 +1738,15 @@ console.log(err.unwrapErr()); // 'No value'
 
 ##### `equals<U>(other: Option<U>): boolean`
 
-Returns `true` if the option equals another option.
-Both options must be `Some` with strictly equal (`===`) values, or both must be `None`.
+Returns `true` if the option equals another option (or Option-like object).
+Both must be `Some` with strictly equal (`===`) values, or both must be `None`.
 For objects and arrays this means reference equality, not deep structural equality.
-Returns `false` for non-Option arguments.
+Returns `false` for arguments that do not look like an Option (for example, missing or non-callable `unwrap`, or an invalid variant tag).
 
 Note: Because the comparison uses `===`, `Option.some(NaN).equals(Option.some(NaN))` returns `false`, while `Option.some(+0).equals(Option.some(-0))` returns `true`.
 
 **Parameters**:
-- `other: Option<U>` - Option to compare with
+- `other: Option<U>` - Option or Option-like object to compare with
 
 **Returns**: `boolean` - true if both options are equal, otherwise false
 

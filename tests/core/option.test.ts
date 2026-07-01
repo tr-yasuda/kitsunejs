@@ -1021,6 +1021,23 @@ describe("Option", () => {
       expect(
         none.equals({ tag: "None", unwrap: 1 } as unknown as Option<number>),
       ).toBe(false);
+
+      expect(
+        some.equals({
+          get tag() {
+            throw new Error("throwing tag");
+          },
+          unwrap: () => 1,
+        } as unknown as Option<number>),
+      ).toBe(false);
+      expect(
+        some.equals({
+          tag: "Some",
+          get unwrap() {
+            throw new Error("throwing unwrap");
+          },
+        } as unknown as Option<number>),
+      ).toBe(false);
     });
   });
 

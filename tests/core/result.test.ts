@@ -880,6 +880,25 @@ describe("Result", () => {
           string
         >),
       ).toBe(false);
+
+      expect(
+        ok.equals({
+          get tag() {
+            throw new Error("throwing tag");
+          },
+          unwrap: () => 1,
+          unwrapErr: () => "error",
+        } as unknown as Result<number, string>),
+      ).toBe(false);
+      expect(
+        ok.equals({
+          tag: "Ok",
+          get unwrap() {
+            throw new Error("throwing unwrap");
+          },
+          unwrapErr: () => "error",
+        } as unknown as Result<number, string>),
+      ).toBe(false);
     });
   });
 

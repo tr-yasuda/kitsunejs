@@ -13,15 +13,19 @@ function isOption(value: unknown): value is Option<unknown> {
   if (value instanceof Option) {
     return true;
   }
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "tag" in value &&
-    "unwrap" in value &&
-    typeof (value as { unwrap: unknown }).unwrap === "function" &&
-    ((value as { tag: unknown }).tag === "Some" ||
-      (value as { tag: unknown }).tag === "None")
-  );
+  try {
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      "tag" in value &&
+      "unwrap" in value &&
+      typeof (value as { unwrap: unknown }).unwrap === "function" &&
+      ((value as { tag: unknown }).tag === "Some" ||
+        (value as { tag: unknown }).tag === "None")
+    );
+  } catch {
+    return false;
+  }
 }
 
 export abstract class Option<T> {
@@ -276,11 +280,13 @@ export abstract class Option<T> {
   abstract toResultElse<E>(fn: () => E): ResultType<T, E>;
 
   /**
-   * Returns true if the option equals another option by value.
-   * Both options must be `Some` with strictly equal (`===`) values, or both
-   * must be `None`. Returns false for non-Option arguments.
+   * Returns true if the option equals another option (or Option-like object)
+   * by value. Both must be `Some` with strictly equal (`===`) values, or both
+   * must be `None`. Returns false for arguments that do not look like an
+   * Option, including missing or non-callable `unwrap` or an invalid variant
+   * tag.
    *
-   * @param other - Option to compare with
+   * @param other - Option (or Option-like object) to compare with
    * @returns true if both options are equal, otherwise false
    *
    * @example

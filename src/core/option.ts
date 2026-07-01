@@ -240,6 +240,37 @@ export abstract class Option<T> {
   abstract toResultElse<E>(fn: () => E): ResultType<T, E>;
 
   /**
+   * Returns true if the option equals another option by value.
+   * Both options must be `Some` with strictly equal (`===`) values, or both
+   * must be `None`. Returns false for non-Option arguments.
+   *
+   * @param other - Option to compare with
+   * @returns true if both options are equal, otherwise false
+   *
+   * @example
+   * ```typescript
+   * const some1 = Option.some(42);
+   * const some2 = Option.some(42);
+   * console.log(some1.equals(some2)); // true
+   *
+   * const none = Option.none<number>();
+   * console.log(some1.equals(none)); // false
+   * ```
+   */
+  equals<U>(other: Option<U>): boolean {
+    if (!(other instanceof Option)) {
+      return false;
+    }
+    if (this.tag === "Some" && other.tag === "Some") {
+      return (this.unwrap() as unknown as U) === other.unwrap();
+    }
+    if (this.tag === "None" && other.tag === "None") {
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Creates a Some variant containing the given value.
    */
   static some<T>(value: T): Option<T> {

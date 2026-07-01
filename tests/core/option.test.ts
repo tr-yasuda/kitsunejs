@@ -826,6 +826,107 @@ describe("Option", () => {
     });
   });
 
+  describe("equals()", () => {
+    test("Some equals Some with same value", () => {
+      const option1 = Option.some(1);
+      const option2 = Option.some(1);
+      expect(option1.equals(option2)).toBe(true);
+    });
+
+    test("Some does not equal Some with different value", () => {
+      const option1 = Option.some(1);
+      const option2 = Option.some(2);
+      expect(option1.equals(option2)).toBe(false);
+    });
+
+    test("Some does not equal None", () => {
+      const some = Option.some(1);
+      const none = Option.none<number>();
+      expect(some.equals(none)).toBe(false);
+    });
+
+    test("None equals None", () => {
+      const option1 = Option.none<number>();
+      const option2 = Option.none<number>();
+      expect(option1.equals(option2)).toBe(true);
+    });
+
+    test("None does not equal Some", () => {
+      const none = Option.none<number>();
+      const some = Option.some(1);
+      expect(none.equals(some)).toBe(false);
+    });
+
+    test("uses strict equality for Some values", () => {
+      const option1 = Option.some(1);
+      const option2 = Option.some("1");
+      expect(option1.equals(option2)).toBe(false);
+    });
+
+    test("compares object references, not structure", () => {
+      const value = { a: 1 };
+      const option1 = Option.some(value);
+      const option2 = Option.some({ a: 1 });
+      expect(option1.equals(option2)).toBe(false);
+      expect(option1.equals(Option.some(value))).toBe(true);
+    });
+
+    test("compares array references, not structure", () => {
+      const value = [1, 2];
+      const option1 = Option.some(value);
+      const option2 = Option.some([1, 2]);
+      expect(option1.equals(option2)).toBe(false);
+      expect(option1.equals(Option.some(value))).toBe(true);
+    });
+
+    test("NaN values are not equal", () => {
+      const option1 = Option.some(Number.NaN);
+      const option2 = Option.some(Number.NaN);
+      expect(option1.equals(option2)).toBe(false);
+    });
+
+    test("+0 and -0 are equal", () => {
+      const option1 = Option.some(0);
+      const option2 = Option.some(-0);
+      expect(option1.equals(option2)).toBe(true);
+    });
+
+    test("null contained values are equal", () => {
+      const option1 = Option.some<number | null>(null);
+      const option2 = Option.some<number | null>(null);
+      expect(option1.equals(option2)).toBe(true);
+    });
+
+    test("undefined contained values are equal", () => {
+      const option1 = Option.some<number | undefined>(undefined);
+      const option2 = Option.some<number | undefined>(undefined);
+      expect(option1.equals(option2)).toBe(true);
+    });
+
+    test("is reflexive", () => {
+      const some = Option.some(42);
+      const none = Option.none<number>();
+      expect(some.equals(some)).toBe(true);
+      expect(none.equals(none)).toBe(true);
+    });
+
+    test("is symmetric for mixed variants", () => {
+      const some = Option.some(1);
+      const none = Option.none<number>();
+      expect(some.equals(none)).toBe(false);
+      expect(none.equals(some)).toBe(false);
+    });
+
+    test("returns false for non-Option arguments", () => {
+      const some = Option.some(1);
+      expect(some.equals(null as unknown as Option<never>)).toBe(false);
+      expect(some.equals(undefined as unknown as Option<never>)).toBe(false);
+      expect(some.equals({ tag: "Some" } as unknown as Option<never>)).toBe(
+        false,
+      );
+    });
+  });
+
   describe("Option.fromNullable()", () => {
     test("null → None", () => {
       const option = Option.fromNullable(null);

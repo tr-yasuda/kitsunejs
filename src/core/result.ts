@@ -334,6 +334,37 @@ export abstract class Result<T, E> {
   abstract err(): OptionType<E>;
 
   /**
+   * Returns true if the result equals another result by value.
+   * Both results must be the same variant (`Ok`/`Err`) and contain strictly
+   * equal (`===`) values. Returns false for non-Result arguments.
+   *
+   * @param other - Result to compare with
+   * @returns true if both results are equal, otherwise false
+   *
+   * @example
+   * ```typescript
+   * const ok1 = Result.ok(42);
+   * const ok2 = Result.ok(42);
+   * console.log(ok1.equals(ok2)); // true
+   *
+   * const err = Result.err<number, string>("error");
+   * console.log(ok1.equals(err)); // false
+   * ```
+   */
+  equals<U, F>(other: Result<U, F>): boolean {
+    if (!(other instanceof Result)) {
+      return false;
+    }
+    if (this.tag === "Ok" && other.tag === "Ok") {
+      return (this.unwrap() as unknown as U) === other.unwrap();
+    }
+    if (this.tag === "Err" && other.tag === "Err") {
+      return (this.unwrapErr() as unknown as F) === other.unwrapErr();
+    }
+    return false;
+  }
+
+  /**
    * Creates an Err variant containing the given error.
    */
   static err<T = never, E = unknown>(error: E): Result<T, E> {

@@ -197,6 +197,27 @@ describe("Result type tests", () => {
     );
     expectTypeOf(inspectedErr).toEqualTypeOf<Err<number, string>>();
 
+    // tap: returns self unchanged regardless of variant
+    const tappedOk = new Ok<number, string>(42).tap((_r) => {});
+    expectTypeOf(tappedOk).toEqualTypeOf<Ok<number, string>>();
+
+    const tappedErr = new Err<number, string>("error").tap((_r) => {});
+    expectTypeOf(tappedErr).toEqualTypeOf<Err<number, string>>();
+
+    const legacyTapped = new LegacyResult<number, string>(
+      Result.ok<number, string>(42),
+    ).tap((_r) => {});
+    expectTypeOf(legacyTapped).toEqualTypeOf<LegacyResult<number, string>>();
+
+    // tap callback receives Result<T, E>
+    Result.ok<number, string>(42).tap((r) => {
+      expectTypeOf(r).toEqualTypeOf<Result<number, string>>();
+    });
+    type ResultTapCallback = Parameters<Result<number, string>["tap"]>[0];
+    expectTypeOf<ResultTapCallback>().toEqualTypeOf<
+      (result: Result<number, string>) => void
+    >();
+
     // expectErr: returns Err value
     const expectedErr = Result.err<number, string>("error").expectErr(
       "message",

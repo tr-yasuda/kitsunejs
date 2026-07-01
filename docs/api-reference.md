@@ -629,6 +629,25 @@ const value = Result.err('error')
 console.log(value); // 0
 ```
 
+##### `tap(fn: (result: Result<T, E>) => void): this`
+
+Calls the function with self regardless of whether the result is `Ok` or `Err`,
+then returns self unchanged.
+
+**Parameters**:
+- `fn: (result: Result<T, E>) => void` - Function to call with the Result
+
+**Returns**: `this` - The same Result (or subclass) instance
+
+**Example**:
+```typescript
+const result = Result.ok<number, string>(42)
+  .tap((r) => console.log('result:', r.tag))
+  .map((v) => v + 1);
+
+console.log(result.unwrap()); // 43
+```
+
 #### Transformation
 
 ##### `transpose<U>(this: Result<Option<U>, E>): Option<Result<U, E>>`
@@ -1300,6 +1319,25 @@ Calls the function with the `Some` value (if Some), then returns self unchanged.
 ```typescript
 const option = Option.some(42)
   .inspect((value) => console.log('some:', value))
+  .map((value) => value + 1);
+
+console.log(option.unwrap()); // 43
+```
+
+##### `tap(fn: (option: Option<T>) => void): this`
+
+Calls the function with self regardless of whether the option is `Some` or `None`,
+then returns self unchanged.
+
+**Parameters**:
+- `fn: (option: Option<T>) => void` - Function to call with the Option
+
+**Returns**: `this` - The same Option (or subclass) instance
+
+**Example**:
+```typescript
+const option = Option.some(42)
+  .tap((o) => console.log('option:', o.tag))
   .map((value) => value + 1);
 
 console.log(option.unwrap()); // 43

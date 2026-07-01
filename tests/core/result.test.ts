@@ -391,6 +391,73 @@ describe("Result", () => {
     });
   });
 
+  describe("tap()", () => {
+    test("Ok case: calls fn with self and returns same instance", () => {
+      let received: Result<number, string> | null = null;
+
+      const result = Result.ok<number, string>(42);
+      const tapped = result.tap((r) => {
+        received = r;
+      });
+
+      expect(received).toBe(result);
+      expect(tapped).toBe(result);
+    });
+
+    test("Err case: calls fn with self and returns same instance", () => {
+      let received: Result<number, string> | null = null;
+
+      const result = Result.err<number, string>("error");
+      const tapped = result.tap((r) => {
+        received = r;
+      });
+
+      expect(received).toBe(result);
+      expect(tapped).toBe(result);
+    });
+
+    test("calls fn exactly once", () => {
+      let called = 0;
+
+      const result = Result.ok<number, string>(42);
+      result.tap(() => {
+        called++;
+      });
+
+      expect(called).toBe(1);
+    });
+
+    test("propagates a thrown callback error", () => {
+      const result = Result.ok<number, string>(42);
+
+      expect(() =>
+        result.tap(() => {
+          throw new Error("tap error");
+        }),
+      ).toThrow("tap error");
+    });
+
+    test("Ok case: can be chained without changing the Result", () => {
+      const result = Result.ok<number, string>(21)
+        .tap((r) => {
+          expect(r.unwrap()).toBe(21);
+        })
+        .map((v) => v * 2);
+
+      expect(result.unwrap()).toBe(42);
+    });
+
+    test("Err case: can be chained without changing the Result", () => {
+      const result = Result.err<number, string>("error")
+        .tap((r) => {
+          expect(r.unwrapErr()).toBe("error");
+        })
+        .map((v) => v * 2);
+
+      expect(result.unwrapErr()).toBe("error");
+    });
+  });
+
   describe("and()", () => {
     test("Ok.and(other): returns other", () => {
       const result1 = Result.ok(42);

@@ -9,6 +9,7 @@
 5. Combining Multiple Operations
 6. Integration with Other Libraries
 7. Pattern Matching
+8. Side Effects and Logging
 
 ---
 
@@ -854,4 +855,83 @@ function renderUserResult(result: Result<User, ApiError>): string {
     (error) => `Error ${error.status}: ${error.message}`,
   );
 }
+```
+
+---
+
+## 8. Side Effects and Logging
+
+### 8.1 Running a Side Effect on Any Result Variant
+
+> Use case: When you want to log, emit metrics, or clean up for both `Ok` and `Err`
+> without breaking the chain.
+
+**Problem**: `inspect` only runs on `Ok`, and `inspectErr` only runs on `Err`.
+You need a single hook that sees the whole `Result` regardless of its variant.
+
+**Solution**: Use `Result.tap`.
+
+```typescript
+import { Result } from 'kitsunejs';
+
+function parseNumber(input: string): Result<number, string> {
+  const parsed = Number.parseInt(input, 10);
+  return Number.isNaN(parsed)
+    ? Result.err(`Invalid number: ${input}`)
+    : Result.ok(parsed);
+}
+
+// tap runs for Ok and continues the chain.
+const okResult = parseNumber('42')
+  .tap((r) => {
+    console.log(`Parsed with status: ${r.tag}`);
+    // Emit metrics, log to external service, etc.
+  })
+  .map((n) => n * 2);
+
+if (okResult.isOk()) {
+  console.log(okResult.unwrap()); // 84
+}
+
+// tap also runs for Err without changing the Result.
+const errResult = parseNumber('not-a-number').tap((r) => {
+  console.log(`Parsing failed with status: ${r.tag}`);
+});
+
+if (errResult.isErr()) {
+  console.log(errResult.unwrapErr()); // Invalid number: not-a-number
+}
+```
+
+### 8.2 Running a Side Effect on Any Option Variant
+
+> Use case: When you want to log or clean up for both `Some` and `None`.
+
+**Problem**: `inspect` only runs on `Some`. You need a hook that sees the whole
+`Option` regardless of its variant.
+
+**Solution**: Use `Option.tap`.
+
+```typescript
+import { Option } from 'kitsunejs';
+
+const config = {
+  debugFlag: undefined as string | undefined,
+};
+
+// tap runs for Some and continues the chain.
+const someOption = Option.fromNullable(config.debugFlag)
+  .tap((o) => {
+    console.log(`Debug flag is: ${o.tag}`);
+  })
+  .map((value) => value.toLowerCase());
+
+console.log(someOption.unwrapOr('off'));
+
+// tap also runs for None without changing the Option.
+const noneOption = Option.none<string>().tap((o) => {
+  console.log(`Debug flag is: ${o.tag}`);
+});
+
+console.log(noneOption.unwrapOr('off')); // off
 ```

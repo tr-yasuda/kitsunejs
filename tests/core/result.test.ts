@@ -170,6 +170,11 @@ describe("Result", () => {
       const result = Result.err<number, string>("error");
       expect(result.unwrapOr(0)).toBe(0);
     });
+
+    test("Err case without generic annotation returns the default value", () => {
+      const result = Result.err("error");
+      expect(result.unwrapOr(0)).toBe(0);
+    });
   });
 
   describe("unwrapOrElse()", () => {
@@ -180,6 +185,11 @@ describe("Result", () => {
 
     test("Err case: returns the function result", () => {
       const result = Result.err<number, string>("error");
+      expect(result.unwrapOrElse((error) => error.length)).toBe(5);
+    });
+
+    test("Err case without generic annotation returns the function result", () => {
+      const result = Result.err("error");
       expect(result.unwrapOrElse((error) => error.length)).toBe(5);
     });
   });

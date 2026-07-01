@@ -141,12 +141,12 @@ export abstract class Result<T, E> {
   /**
    * Returns the contained Ok value or a provided default.
    */
-  abstract unwrapOr(defaultValue: T): T;
+  abstract unwrapOr<U>(defaultValue: U): T | U;
 
   /**
    * Returns the contained Ok value or computes it from a function.
    */
-  abstract unwrapOrElse(fn: (error: E) => T): T;
+  abstract unwrapOrElse<U>(fn: (error: E) => U): T | U;
 
   /**
    * Maps a Result<T, E> to Result<U, E> by applying a function to a contained Ok value.
@@ -489,11 +489,11 @@ export class Ok<T, E = never> extends Result<T, E> {
     throw new UnwrapError(message);
   }
 
-  unwrapOr(_defaultValue: T): T {
+  unwrapOr<U>(_defaultValue: U): T {
     return this.value;
   }
 
-  unwrapOrElse(_fn: (error: E) => T): T {
+  unwrapOrElse<U>(_fn: (error: E) => U): T {
     return this.value;
   }
 
@@ -613,11 +613,11 @@ export class Err<T = never, E = unknown> extends Result<T, E> {
     return EMPTY_ITERATOR as IterableIterator<T>;
   }
 
-  unwrapOr(defaultValue: T): T {
+  unwrapOr<U>(defaultValue: U): T | U {
     return defaultValue;
   }
 
-  unwrapOrElse(fn: (error: E) => T): T {
+  unwrapOrElse<U>(fn: (error: E) => U): T | U {
     return fn(this.error);
   }
 

@@ -443,14 +443,14 @@ for (const value of Result.ok(42)) {
 }
 ```
 
-##### `unwrapOr(defaultValue: T): T`
+##### `unwrapOr<U>(defaultValue: U): T | U`
 
 Extracts the `Ok` value. Returns the specified default value if `Err`.
 
 **Parameters**:
-- `defaultValue: T` - Default value to return if Err
+- `defaultValue: U` - Default value to return if Err
 
-**Returns**: `T` - Ok value, or default value if Err
+**Returns**: `T | U` - Ok value, or default value if Err
 
 **Example**:
 ```typescript
@@ -461,14 +461,14 @@ const err = Result.err('error');
 console.log(err.unwrapOr(0)); // 0
 ```
 
-##### `unwrapOrElse(fn: (error: E) => T): T`
+##### `unwrapOrElse<U>(fn: (error: E) => U): T | U`
 
 Extracts the `Ok` value. If `Err`, executes the function and returns its result.
 
 **Parameters**:
-- `fn: (error: E) => T` - Function to execute if Err. Receives the error value and returns a default value.
+- `fn: (error: E) => U` - Function to execute if Err. Receives the error value and returns a default value.
 
-**Returns**: `T` - Ok value, or function result
+**Returns**: `T | U` - Ok value, or function result
 
 **Example**:
 ```typescript
@@ -622,7 +622,7 @@ Calls the function with the `Err` value (if Err), then returns self unchanged.
 
 **Example**:
 ```typescript
-const value = Result.err<number, string>('error')
+const value = Result.err('error')
   .inspectErr((e) => console.error('err:', e))
   .unwrapOr(0);
 
@@ -912,7 +912,7 @@ Creates a `None` variant representing value absence.
 
 **Example**:
 ```typescript
-const option = Option.none<number>();
+const option = Option.none();
 console.log(option.isNone()); // true
 console.log(option.unwrapOr(0)); // 0
 ```
@@ -1153,39 +1153,39 @@ for (const value of Option.some(42)) {
 }
 ```
 
-##### `unwrapOr(defaultValue: T): T`
+##### `unwrapOr<U>(defaultValue: U): T | U`
 
 Extracts the `Some` value. Returns the specified default value if `None`.
 
 **Parameters**:
-- `defaultValue: T` - Default value to return if None
+- `defaultValue: U` - Default value to return if None
 
-**Returns**: `T` - Some value, or default value if None
+**Returns**: `T | U` - Some value, or default value if None
 
 **Example**:
 ```typescript
 const some = Option.some(42);
 console.log(some.unwrapOr(0)); // 42
 
-const none = Option.none<number>();
+const none = Option.none();
 console.log(none.unwrapOr(0)); // 0
 ```
 
-##### `unwrapOrElse(fn: () => T): T`
+##### `unwrapOrElse<U>(fn: () => U): T | U`
 
 Extracts the `Some` value. If `None`, executes the function and returns its result.
 
 **Parameters**:
-- `fn: () => T` - Function to execute if None. Returns a default value.
+- `fn: () => U` - Function to execute if None. Returns a default value.
 
-**Returns**: `T` - Some value, or function result
+**Returns**: `T | U` - Some value, or function result
 
 **Example**:
 ```typescript
 const some = Option.some(42);
 console.log(some.unwrapOrElse(() => 0)); // 42
 
-const none = Option.none<number>();
+const none = Option.none();
 console.log(none.unwrapOrElse(() => {
   console.log('No value found');
   return 0;

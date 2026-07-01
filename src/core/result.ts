@@ -9,6 +9,27 @@ const EMPTY_ITERATOR: IterableIterator<never> = Object.freeze({
   },
 });
 
+function isResult(value: unknown): value is Result<unknown, unknown> {
+  if (value instanceof Result) {
+    return true;
+  }
+  try {
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      "tag" in value &&
+      "unwrap" in value &&
+      "unwrapErr" in value &&
+      typeof (value as { unwrap: unknown }).unwrap === "function" &&
+      typeof (value as { unwrapErr: unknown }).unwrapErr === "function" &&
+      ((value as { tag: unknown }).tag === "Ok" ||
+        (value as { tag: unknown }).tag === "Err")
+    );
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Safely stringifies a value for use in an error message.
  * Falls back to String() when JSON.stringify returns undefined or throws
@@ -87,17 +108,6 @@ export abstract class Result<T, E> {
    * ```
    */
   abstract isErrAnd(predicate: (error: E) => boolean): this is Err<T, E>;
-
-  /**
-   * Returns true if this result equals the other result by comparing
-   * both the variant (Ok/Err) and the contained value using strict equality.
-   */
-  equals(other: Result<T, E>): boolean {
-    if (this.isOk()) {
-      return other.isOk() && this.unwrap() === other.unwrap();
-    }
-    return other.isErr() && this.unwrapErr() === other.unwrapErr();
-  }
 
   /**
    * Returns the contained Ok value.
@@ -364,6 +374,39 @@ export abstract class Result<T, E> {
    * ```
    */
   abstract err(): OptionType<E>;
+
+  /**
+   * Returns true if the result equals another result (or Result-like object)
+   * by value. Both must be the same variant (`Ok`/`Err`) and contain strictly
+   * equal (`===`) values. Returns false for arguments that do not look like a
+   * Result, including missing or non-callable `unwrap`/`unwrapErr` methods or
+   * an invalid variant tag.
+   *
+   * @param other - Result (or Result-like object) to compare with
+   * @returns true if both results are equal, otherwise false
+   *
+   * @example
+   * ```typescript
+   * const ok1 = Result.ok(42);
+   * const ok2 = Result.ok(42);
+   * console.log(ok1.equals(ok2)); // true
+   *
+   * const err = Result.err<number, string>("error");
+   * console.log(ok1.equals(err)); // false
+   * ```
+   */
+  equals(other: Result<unknown, unknown>): boolean {
+    if (!isResult(other)) {
+      return false;
+    }
+    if (this.tag === "Ok" && other.tag === "Ok") {
+      return (this.unwrap() as unknown) === other.unwrap();
+    }
+    if (this.tag === "Err" && other.tag === "Err") {
+      return (this.unwrapErr() as unknown) === other.unwrapErr();
+    }
+    return false;
+  }
 
   /**
    * Creates an Err variant containing the given error.

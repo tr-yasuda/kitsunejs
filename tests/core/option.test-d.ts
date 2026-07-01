@@ -433,6 +433,28 @@ describe("Option type tests", () => {
     ).flatten();
     expectTypeOf(legacyFlattened).toEqualTypeOf<Option<number>>();
 
+    // --- equals ---
+
+    const equalsSome = Option.some(42).equals(Option.some(42));
+    expectTypeOf(equalsSome).toEqualTypeOf<boolean>();
+
+    const equalsNone = Option.none<number>().equals(Option.none<number>());
+    expectTypeOf(equalsNone).toEqualTypeOf<boolean>();
+
+    const equalsMixed = Option.some(42).equals(Option.none<number>());
+    expectTypeOf(equalsMixed).toEqualTypeOf<boolean>();
+
+    const equalsCrossType = Option.some(42).equals(Option.some("42"));
+    expectTypeOf(equalsCrossType).toEqualTypeOf<boolean>();
+
+    const legacyEquals = new LegacyOption(Option.some(42)).equals(
+      Option.some(42),
+    );
+    expectTypeOf(legacyEquals).toEqualTypeOf<boolean>();
+
+    // @ts-expect-error - other must be an Option
+    Option.some(42).equals(Result.ok(42));
+
     // --- Symbol.iterator ---
 
     const someIterator = Option.some(42)[Symbol.iterator]();

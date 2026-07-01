@@ -491,6 +491,34 @@ describe("Result type tests", () => {
     const anyFromReadonly = Result.any(readonlyAnyResults);
     expectTypeOf(anyFromReadonly).toEqualTypeOf<Result<number, string[]>>();
 
+    // --- equals ---
+
+    const equalsOk = Result.ok<number, string>(42).equals(Result.ok(42));
+    expectTypeOf(equalsOk).toEqualTypeOf<boolean>();
+
+    const equalsErr = Result.err<number, string>("error").equals(
+      Result.err("error"),
+    );
+    expectTypeOf(equalsErr).toEqualTypeOf<boolean>();
+
+    const equalsMixed = Result.ok<number, string>(42).equals(
+      Result.err("error"),
+    );
+    expectTypeOf(equalsMixed).toEqualTypeOf<boolean>();
+
+    const equalsCrossType = Result.ok<number, string>(42).equals(
+      Result.ok<number, number>(42),
+    );
+    expectTypeOf(equalsCrossType).toEqualTypeOf<boolean>();
+
+    const legacyEquals = new LegacyResult<number, string>(Result.ok(42)).equals(
+      Result.ok(42),
+    );
+    expectTypeOf(legacyEquals).toEqualTypeOf<boolean>();
+
+    // @ts-expect-error - other must be a Result
+    Result.ok(42).equals(Option.some(42));
+
     // --- Symbol.iterator ---
 
     const okIterator = Result.ok<number, string>(42)[Symbol.iterator]();

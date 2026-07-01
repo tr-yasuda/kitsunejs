@@ -718,6 +718,190 @@ describe("Result", () => {
     });
   });
 
+  describe("equals()", () => {
+    test("Ok equals Ok with same value", () => {
+      const result1 = Result.ok(1);
+      const result2 = Result.ok(1);
+      expect(result1.equals(result2)).toBe(true);
+    });
+
+    test("Ok does not equal Ok with different value", () => {
+      const result1 = Result.ok(1);
+      const result2 = Result.ok(2);
+      expect(result1.equals(result2)).toBe(false);
+    });
+
+    test("Ok does not equal Err", () => {
+      const ok = Result.ok<number, string>(1);
+      const err = Result.err<number, string>("error");
+      expect(ok.equals(err)).toBe(false);
+    });
+
+    test("Err equals Err with same error", () => {
+      const result1 = Result.err<number, string>("error");
+      const result2 = Result.err<number, string>("error");
+      expect(result1.equals(result2)).toBe(true);
+    });
+
+    test("Err does not equal Err with different error", () => {
+      const result1 = Result.err<number, string>("error1");
+      const result2 = Result.err<number, string>("error2");
+      expect(result1.equals(result2)).toBe(false);
+    });
+
+    test("Err does not equal Ok", () => {
+      const err = Result.err<number, string>("error");
+      const ok = Result.ok<number, string>(1);
+      expect(err.equals(ok)).toBe(false);
+    });
+
+    test("uses strict equality for Ok values", () => {
+      const result1 = Result.ok(1);
+      const result2 = Result.ok("1");
+      expect(result1.equals(result2)).toBe(false);
+    });
+
+    test("uses strict equality for Err values", () => {
+      const result1 = Result.err<number, string>("0");
+      const result2 = Result.err<number, number>(0);
+      expect(result1.equals(result2)).toBe(false);
+    });
+
+    test("compares object references, not structure", () => {
+      const value = { a: 1 };
+      const result1 = Result.ok(value);
+      const result2 = Result.ok({ a: 1 });
+      expect(result1.equals(result2)).toBe(false);
+      expect(result1.equals(Result.ok(value))).toBe(true);
+    });
+
+    test("compares array references, not structure", () => {
+      const value = [1, 2];
+      const result1 = Result.ok(value);
+      const result2 = Result.ok([1, 2]);
+      expect(result1.equals(result2)).toBe(false);
+      expect(result1.equals(Result.ok(value))).toBe(true);
+    });
+
+    test("NaN values are not equal", () => {
+      const result1 = Result.ok(Number.NaN);
+      const result2 = Result.ok(Number.NaN);
+      expect(result1.equals(result2)).toBe(false);
+    });
+
+    test("+0 and -0 are equal", () => {
+      const result1 = Result.ok(0);
+      const result2 = Result.ok(-0);
+      expect(result1.equals(result2)).toBe(true);
+    });
+
+    test("null contained values are equal", () => {
+      const result1 = Result.ok<number | null, string>(null);
+      const result2 = Result.ok<number | null, string>(null);
+      expect(result1.equals(result2)).toBe(true);
+    });
+
+    test("undefined contained values are equal", () => {
+      const result1 = Result.ok<number | undefined, string>(undefined);
+      const result2 = Result.ok<number | undefined, string>(undefined);
+      expect(result1.equals(result2)).toBe(true);
+    });
+
+    test("is reflexive", () => {
+      const ok = Result.ok<number, string>(42);
+      const err = Result.err<number, string>("error");
+      expect(ok.equals(ok)).toBe(true);
+      expect(err.equals(err)).toBe(true);
+    });
+
+    test("is symmetric for mixed variants", () => {
+      const ok = Result.ok<number, string>(1);
+      const err = Result.err<number, string>("error");
+      expect(ok.equals(err)).toBe(false);
+      expect(err.equals(ok)).toBe(false);
+    });
+
+    test("returns false for non-Result arguments", () => {
+      const ok = Result.ok(1);
+      expect(ok.equals(null as unknown as Result<never, never>)).toBe(false);
+      expect(ok.equals(undefined as unknown as Result<never, never>)).toBe(
+        false,
+      );
+      expect(ok.equals({ tag: "Ok" } as unknown as Result<never, never>)).toBe(
+        false,
+      );
+    });
+
+    test("compares structurally compatible Result-like objects", () => {
+      const ok = Result.ok(1);
+      const resultLike = {
+        tag: "Ok" as const,
+        unwrap: () => 1,
+        unwrapErr: () => {
+          throw new Error("not err");
+        },
+      };
+      expect(ok.equals(resultLike as unknown as Result<number, never>)).toBe(
+        true,
+      );
+
+      const err = Result.err<number, string>("error");
+      const errLike = {
+        tag: "Err" as const,
+        unwrap: () => {
+          throw new Error("not ok");
+        },
+        unwrapErr: () => "error",
+      };
+      expect(err.equals(errLike as unknown as Result<number, string>)).toBe(
+        true,
+      );
+    });
+
+    test("returns false for malformed Result-like objects", () => {
+      const ok = Result.ok(1);
+      expect(
+        ok.equals({ tag: "Ok", unwrap: 1, unwrapErr: 1 } as unknown as Result<
+          number,
+          string
+        >),
+      ).toBe(false);
+      expect(
+        ok.equals({ tag: "Ok", unwrap: () => 1 } as unknown as Result<
+          number,
+          string
+        >),
+      ).toBe(false);
+
+      const err = Result.err<number, string>("error");
+      expect(
+        err.equals({ tag: "Err", unwrap: 1, unwrapErr: 1 } as unknown as Result<
+          number,
+          string
+        >),
+      ).toBe(false);
+
+      expect(
+        ok.equals({
+          get tag() {
+            throw new Error("throwing tag");
+          },
+          unwrap: () => 1,
+          unwrapErr: () => "error",
+        } as unknown as Result<number, string>),
+      ).toBe(false);
+      expect(
+        ok.equals({
+          tag: "Ok",
+          get unwrap() {
+            throw new Error("throwing unwrap");
+          },
+          unwrapErr: () => "error",
+        } as unknown as Result<number, string>),
+      ).toBe(false);
+    });
+  });
+
   describe("transpose()", () => {
     test("Ok(Some(value)): returns Some(Ok(value))", () => {
       const result = Result.ok<Option<number>, string>(Option.some(42));

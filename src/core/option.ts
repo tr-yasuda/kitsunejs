@@ -9,6 +9,25 @@ const EMPTY_ITERATOR: IterableIterator<never> = Object.freeze({
   },
 });
 
+function isOption(value: unknown): value is Option<unknown> {
+  if (value instanceof Option) {
+    return true;
+  }
+  try {
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      "tag" in value &&
+      "unwrap" in value &&
+      typeof (value as { unwrap: unknown }).unwrap === "function" &&
+      ((value as { tag: unknown }).tag === "Some" ||
+        (value as { tag: unknown }).tag === "None")
+    );
+  } catch {
+    return false;
+  }
+}
+
 export abstract class Option<T> {
   abstract readonly tag: "Some" | "None";
 
@@ -34,17 +53,6 @@ export abstract class Option<T> {
    * Returns true if the option is None, otherwise returns the predicate result for the contained Some value.
    */
   abstract isNoneOr(predicate: (value: T) => boolean): boolean;
-
-  /**
-   * Returns true if this option equals the other option by comparing
-   * both the variant (Some/None) and the contained value using strict equality.
-   */
-  equals(other: Option<T>): boolean {
-    if (this.isSome()) {
-      return other.isSome() && this.unwrap() === other.unwrap();
-    }
-    return other.isNone();
-  }
 
   /**
    * Returns the contained Some value.
@@ -270,6 +278,39 @@ export abstract class Option<T> {
    * Converts from Option<T> to Result<T, E> by computing the error from a function.
    */
   abstract toResultElse<E>(fn: () => E): ResultType<T, E>;
+
+  /**
+   * Returns true if the option equals another option (or Option-like object)
+   * by value. Both must be `Some` with strictly equal (`===`) values, or both
+   * must be `None`. Returns false for arguments that do not look like an
+   * Option, including missing or non-callable `unwrap` or an invalid variant
+   * tag.
+   *
+   * @param other - Option (or Option-like object) to compare with
+   * @returns true if both options are equal, otherwise false
+   *
+   * @example
+   * ```typescript
+   * const some1 = Option.some(42);
+   * const some2 = Option.some(42);
+   * console.log(some1.equals(some2)); // true
+   *
+   * const none = Option.none<number>();
+   * console.log(some1.equals(none)); // false
+   * ```
+   */
+  equals(other: Option<unknown>): boolean {
+    if (!isOption(other)) {
+      return false;
+    }
+    if (this.tag === "Some" && other.tag === "Some") {
+      return (this.unwrap() as unknown) === other.unwrap();
+    }
+    if (this.tag === "None" && other.tag === "None") {
+      return true;
+    }
+    return false;
+  }
 
   /**
    * Creates a Some variant containing the given value.

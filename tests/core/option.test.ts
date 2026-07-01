@@ -1010,6 +1010,18 @@ describe("Option", () => {
       };
       expect(none.equals(noneLike as unknown as Option<number>)).toBe(true);
     });
+
+    test("returns false for malformed Option-like objects", () => {
+      const some = Option.some(1);
+      expect(
+        some.equals({ tag: "Some", unwrap: 1 } as unknown as Option<number>),
+      ).toBe(false);
+
+      const none = Option.none<number>();
+      expect(
+        none.equals({ tag: "None", unwrap: 1 } as unknown as Option<number>),
+      ).toBe(false);
+    });
   });
 
   describe("Option.fromNullable()", () => {

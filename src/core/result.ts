@@ -19,6 +19,8 @@ function isResult(value: unknown): value is Result<unknown, unknown> {
     "tag" in value &&
     "unwrap" in value &&
     "unwrapErr" in value &&
+    typeof (value as { unwrap: unknown }).unwrap === "function" &&
+    typeof (value as { unwrapErr: unknown }).unwrapErr === "function" &&
     ((value as { tag: unknown }).tag === "Ok" ||
       (value as { tag: unknown }).tag === "Err")
   );

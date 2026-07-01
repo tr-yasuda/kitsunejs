@@ -18,6 +18,7 @@ function isOption(value: unknown): value is Option<unknown> {
     value !== null &&
     "tag" in value &&
     "unwrap" in value &&
+    typeof (value as { unwrap: unknown }).unwrap === "function" &&
     ((value as { tag: unknown }).tag === "Some" ||
       (value as { tag: unknown }).tag === "None")
   );

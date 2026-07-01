@@ -857,6 +857,30 @@ describe("Result", () => {
         true,
       );
     });
+
+    test("returns false for malformed Result-like objects", () => {
+      const ok = Result.ok(1);
+      expect(
+        ok.equals({ tag: "Ok", unwrap: 1, unwrapErr: 1 } as unknown as Result<
+          number,
+          string
+        >),
+      ).toBe(false);
+      expect(
+        ok.equals({ tag: "Ok", unwrap: () => 1 } as unknown as Result<
+          number,
+          string
+        >),
+      ).toBe(false);
+
+      const err = Result.err<number, string>("error");
+      expect(
+        err.equals({ tag: "Err", unwrap: 1, unwrapErr: 1 } as unknown as Result<
+          number,
+          string
+        >),
+      ).toBe(false);
+    });
   });
 
   describe("transpose()", () => {

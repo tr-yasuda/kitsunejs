@@ -343,6 +343,7 @@ Below is a quick reference of available methods. For detailed documentation with
 - `map(fn)`, `mapErr(fn)` - Transform values
 - `and(other)`, `or(other)` - Combine Results
 - `andThen(fn)`, `orElse(fn)` - Chain operations
+- `equals(other)` - Value equality comparison using strict equality
 - `toOption()` - Convert to Option
 
 ### Result Static Methods
@@ -362,6 +363,7 @@ Below is a quick reference of available methods. For detailed documentation with
 - `and(other)`, `or(other)` - Combine Options
 - `andThen(fn)` - Chain operations
 - `filter(predicate)` - Filter values
+- `equals(other)` - Value equality comparison using strict equality
 - `toResult(error)`, `toResultElse(fn)` - Convert to Result
 
 ### Option Static Methods

@@ -28,6 +28,10 @@ describe("Option type tests", () => {
         return this.inner.isNoneOr(predicate);
       }
 
+      equals(other: Option<T>): boolean {
+        return this.inner.equals(other);
+      }
+
       unwrap(): T {
         return this.inner.unwrap();
       }
@@ -138,6 +142,16 @@ describe("Option type tests", () => {
 
     const noneOrResult = maybeNumber.isNoneOr((n) => n > 0);
     expectTypeOf(noneOrResult).toEqualTypeOf<boolean>();
+
+    // --- equals ---
+
+    const equalsOption = Option.some(42).equals(Option.some(42));
+    expectTypeOf(equalsOption).toEqualTypeOf<boolean>();
+
+    const equalsLegacyOption = new LegacyOption(Option.some(42)).equals(
+      Option.some(42),
+    );
+    expectTypeOf(equalsLegacyOption).toEqualTypeOf<boolean>();
 
     // --- Type transformations with map / andThen / filter ---
 

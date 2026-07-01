@@ -9,6 +9,20 @@ const EMPTY_ITERATOR: IterableIterator<never> = Object.freeze({
   },
 });
 
+function isOption(value: unknown): value is Option<unknown> {
+  if (value instanceof Option) {
+    return true;
+  }
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "tag" in value &&
+    "unwrap" in value &&
+    ((value as { tag: unknown }).tag === "Some" ||
+      (value as { tag: unknown }).tag === "None")
+  );
+}
+
 export abstract class Option<T> {
   abstract readonly tag: "Some" | "None";
 
@@ -258,11 +272,11 @@ export abstract class Option<T> {
    * ```
    */
   equals<U>(other: Option<U>): boolean {
-    if (!(other instanceof Option)) {
+    if (!isOption(other)) {
       return false;
     }
     if (this.tag === "Some" && other.tag === "Some") {
-      return (this.unwrap() as unknown as U) === other.unwrap();
+      return (this.unwrap() as unknown) === other.unwrap();
     }
     if (this.tag === "None" && other.tag === "None") {
       return true;

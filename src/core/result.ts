@@ -9,6 +9,21 @@ const EMPTY_ITERATOR: IterableIterator<never> = Object.freeze({
   },
 });
 
+function isResult(value: unknown): value is Result<unknown, unknown> {
+  if (value instanceof Result) {
+    return true;
+  }
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "tag" in value &&
+    "unwrap" in value &&
+    "unwrapErr" in value &&
+    ((value as { tag: unknown }).tag === "Ok" ||
+      (value as { tag: unknown }).tag === "Err")
+  );
+}
+
 /**
  * Safely stringifies a value for use in an error message.
  * Falls back to String() when JSON.stringify returns undefined or throws
@@ -352,14 +367,14 @@ export abstract class Result<T, E> {
    * ```
    */
   equals<U, F>(other: Result<U, F>): boolean {
-    if (!(other instanceof Result)) {
+    if (!isResult(other)) {
       return false;
     }
     if (this.tag === "Ok" && other.tag === "Ok") {
-      return (this.unwrap() as unknown as U) === other.unwrap();
+      return (this.unwrap() as unknown) === other.unwrap();
     }
     if (this.tag === "Err" && other.tag === "Err") {
-      return (this.unwrapErr() as unknown as F) === other.unwrapErr();
+      return (this.unwrapErr() as unknown) === other.unwrapErr();
     }
     return false;
   }

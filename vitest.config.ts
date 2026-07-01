@@ -1,5 +1,5 @@
 import path from "node:path";
-import { defineConfig } from "vitest/config";
+import { defaultExclude, defineConfig } from "vitest/config";
 
 export default defineConfig({
   resolve: {
@@ -8,8 +8,10 @@ export default defineConfig({
     },
   },
   test: {
+    exclude: [".worktrees/**", ...defaultExclude],
     typecheck: {
       enabled: true,
+      exclude: [".worktrees/**", ...defaultExclude],
     },
     coverage: {
       provider: "v8",

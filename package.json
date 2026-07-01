@@ -32,6 +32,9 @@
     "url": "https://github.com/tr-yasuda/kitsunejs/issues"
   },
   "packageManager": "pnpm@10.20.0",
+  "engines": {
+    "node": ">=22"
+  },
   "publishConfig": {
     "provenance": true
   },

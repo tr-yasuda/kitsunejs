@@ -73,16 +73,16 @@ const value = Result.err<number, string>('error').mapOrElse(
 console.log(value); // 5
 
 // Inspect without changing the Result
-Result.err<number, string>('error')
+Result.err('error')
   .inspectErr((e) => console.error(e))
   .unwrapOr(0);
 
 // Extract Err as Option
-const maybeError = Result.err<number, string>('error').err();
+const maybeError = Result.err('error').err();
 console.log(maybeError.unwrap()); // 'error'
 
 // Extract Err value with custom message if Ok
-const error = Result.err<number, string>('error').expectErr('Expected Err');
+const error = Result.err('error').expectErr('Expected Err');
 console.log(error); // 'error'
 ```
 

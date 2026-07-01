@@ -1,5 +1,5 @@
 import { describe, expectTypeOf, test } from "vitest";
-import { type None, Option, type Some } from "@/core/option.js";
+import { type None, Option, Some } from "@/core/option.js";
 import { Result, type Result as ResultType } from "@/core/result.js";
 
 describe("Option type tests", () => {
@@ -36,11 +36,11 @@ describe("Option type tests", () => {
         return this.inner.expect(message);
       }
 
-      unwrapOr(defaultValue: T): T {
+      unwrapOr<U>(defaultValue: U): T | U {
         return this.inner.unwrapOr(defaultValue);
       }
 
-      unwrapOrElse(fn: () => T): T {
+      unwrapOrElse<U>(fn: () => U): T | U {
         return this.inner.unwrapOrElse(fn);
       }
 
@@ -236,9 +236,34 @@ describe("Option type tests", () => {
     expectTypeOf(someForUnwrap.unwrapOr(0)).toEqualTypeOf<number>();
     expectTypeOf(someForUnwrap.unwrapOrElse(() => 0)).toEqualTypeOf<number>();
 
+    // Some with a mismatched fallback still returns the contained type
+    const concreteSome = new Some(42);
+    expectTypeOf(concreteSome.unwrapOr("fallback")).toEqualTypeOf<number>();
+    expectTypeOf(
+      concreteSome.unwrapOrElse(() => "fallback"),
+    ).toEqualTypeOf<number>();
+
     const noneForUnwrap = Option.none<number>();
     expectTypeOf(noneForUnwrap.unwrapOr(0)).toEqualTypeOf<number>();
     expectTypeOf(noneForUnwrap.unwrapOrElse(() => 0)).toEqualTypeOf<number>();
+
+    // unwrapOr / unwrapOrElse: fresh None accepts any fallback
+    const freshNone = Option.none();
+    expectTypeOf(freshNone.unwrapOr(0)).toEqualTypeOf<number>();
+    expectTypeOf(freshNone.unwrapOrElse(() => 0)).toEqualTypeOf<number>();
+    expectTypeOf(freshNone.unwrapOr("fallback")).toEqualTypeOf<string>();
+    expectTypeOf(
+      freshNone.unwrapOrElse(() => "fallback"),
+    ).toEqualTypeOf<string>();
+
+    // Polymorphic Option uses the abstract T | U return type
+    const maybeOption: Option<number> = Option.some(42);
+    expectTypeOf(maybeOption.unwrapOr("fallback")).toEqualTypeOf<
+      number | string
+    >();
+    expectTypeOf(maybeOption.unwrapOrElse(() => "fallback")).toEqualTypeOf<
+      number | string
+    >();
 
     // --- toResultElse ---
 

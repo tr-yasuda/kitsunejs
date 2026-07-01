@@ -64,12 +64,12 @@ export abstract class Option<T> {
   /**
    * Returns the contained Some value or a provided default.
    */
-  abstract unwrapOr(defaultValue: T): T;
+  abstract unwrapOr<U>(defaultValue: U): T | U;
 
   /**
    * Returns the contained Some value or computes it from a function.
    */
-  abstract unwrapOrElse(fn: () => T): T;
+  abstract unwrapOrElse<U>(fn: () => U): T | U;
 
   /**
    * Maps an Option<T> to Option<U> by applying a function to a contained Some value.
@@ -356,11 +356,11 @@ export class Some<T> extends Option<T> {
     yield this.value;
   }
 
-  unwrapOr(_defaultValue: T): T {
+  unwrapOr<U>(_defaultValue: U): T {
     return this.value;
   }
 
-  unwrapOrElse(_fn: () => T): T {
+  unwrapOrElse<U>(_fn: () => U): T {
     return this.value;
   }
 
@@ -449,11 +449,11 @@ export class None<T = never> extends Option<T> {
     return EMPTY_ITERATOR as IterableIterator<T>;
   }
 
-  unwrapOr(defaultValue: T): T {
+  unwrapOr<U>(defaultValue: U): T | U {
     return defaultValue;
   }
 
-  unwrapOrElse(fn: () => T): T {
+  unwrapOrElse<U>(fn: () => U): T | U {
     return fn();
   }
 

@@ -44,11 +44,11 @@ describe("Result type tests", () => {
         return this.inner.expectErr(message);
       }
 
-      unwrapOr(defaultValue: T): T {
+      unwrapOr<U>(defaultValue: U): T | U {
         return this.inner.unwrapOr(defaultValue);
       }
 
-      unwrapOrElse(fn: (error: E) => T): T {
+      unwrapOrElse<U>(fn: (error: E) => U): T | U {
         return this.inner.unwrapOrElse(fn);
       }
 
@@ -223,6 +223,31 @@ describe("Result type tests", () => {
       "message",
     );
     expectTypeOf(expectedErr).toEqualTypeOf<string>();
+
+    // unwrapOr / unwrapOrElse: fresh Err accepts any fallback
+    const errFallback = Result.err("error");
+    expectTypeOf(errFallback.unwrapOr(0)).toEqualTypeOf<number>();
+    expectTypeOf(errFallback.unwrapOrElse(() => 0)).toEqualTypeOf<number>();
+    expectTypeOf(errFallback.unwrapOr("fallback")).toEqualTypeOf<string>();
+    expectTypeOf(
+      errFallback.unwrapOrElse(() => "fallback"),
+    ).toEqualTypeOf<string>();
+
+    // Ok with a mismatched fallback still returns the contained type
+    const concreteOk = new Ok<number, string>(42);
+    expectTypeOf(concreteOk.unwrapOr("fallback")).toEqualTypeOf<number>();
+    expectTypeOf(
+      concreteOk.unwrapOrElse(() => "fallback"),
+    ).toEqualTypeOf<number>();
+
+    // Polymorphic Result uses the abstract T | U return type
+    const maybeResultForUnwrap: Result<number, string> = Result.ok(42);
+    expectTypeOf(maybeResultForUnwrap.unwrapOr("fallback")).toEqualTypeOf<
+      number | string
+    >();
+    expectTypeOf(
+      maybeResultForUnwrap.unwrapOrElse(() => "fallback"),
+    ).toEqualTypeOf<number | string>();
 
     // match: returns unified type U
     const matchOk = Result.ok<number, string>(42).match(

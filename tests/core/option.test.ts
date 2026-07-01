@@ -139,6 +139,11 @@ describe("Option", () => {
       const option = Option.none<number>();
       expect(option.unwrapOr(0)).toBe(0);
     });
+
+    test("None case without generic annotation returns the default value", () => {
+      const option = Option.none();
+      expect(option.unwrapOr(0)).toBe(0);
+    });
   });
 
   describe("unwrapOrElse()", () => {
@@ -149,6 +154,11 @@ describe("Option", () => {
 
     test("None case: returns the function result", () => {
       const option = Option.none<number>();
+      expect(option.unwrapOrElse(() => 100)).toBe(100);
+    });
+
+    test("None case without generic annotation returns the function result", () => {
+      const option = Option.none();
       expect(option.unwrapOrElse(() => 100)).toBe(100);
     });
   });

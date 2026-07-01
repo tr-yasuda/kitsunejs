@@ -46,3 +46,6 @@ Follow Conventional Commits such as `feat(result): add flatten method` or
 related issues when applicable, and update docs or examples when public APIs
 change. Fill out the PR template and ensure local checks pass before requesting
 review.
+
+Write PR descriptions in English so the project stays consistent and accessible
+to all contributors.

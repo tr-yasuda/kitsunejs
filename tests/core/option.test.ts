@@ -992,6 +992,24 @@ describe("Option", () => {
         false,
       );
     });
+
+    test("compares structurally compatible Option-like objects", () => {
+      const some = Option.some(1);
+      const optionLike = {
+        tag: "Some" as const,
+        unwrap: () => 1,
+      };
+      expect(some.equals(optionLike as unknown as Option<number>)).toBe(true);
+
+      const none = Option.none<number>();
+      const noneLike = {
+        tag: "None" as const,
+        unwrap: () => {
+          throw new Error("none");
+        },
+      };
+      expect(none.equals(noneLike as unknown as Option<number>)).toBe(true);
+    });
   });
 
   describe("Option.fromNullable()", () => {

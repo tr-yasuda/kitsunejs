@@ -831,6 +831,32 @@ describe("Result", () => {
         false,
       );
     });
+
+    test("compares structurally compatible Result-like objects", () => {
+      const ok = Result.ok(1);
+      const resultLike = {
+        tag: "Ok" as const,
+        unwrap: () => 1,
+        unwrapErr: () => {
+          throw new Error("not err");
+        },
+      };
+      expect(ok.equals(resultLike as unknown as Result<number, never>)).toBe(
+        true,
+      );
+
+      const err = Result.err<number, string>("error");
+      const errLike = {
+        tag: "Err" as const,
+        unwrap: () => {
+          throw new Error("not ok");
+        },
+        unwrapErr: () => "error",
+      };
+      expect(err.equals(errLike as unknown as Result<number, string>)).toBe(
+        true,
+      );
+    });
   });
 
   describe("transpose()", () => {

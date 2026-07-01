@@ -1377,4 +1377,110 @@ describe("Result", () => {
       expect([...result]).toEqual([[1, 2, 3]]);
     });
   });
+
+  describe("equals()", () => {
+    test("Ok(1).equals(Ok(1)) returns true", () => {
+      const result1 = Result.ok(1);
+      const result2 = Result.ok(1);
+      expect(result1.equals(result2)).toBe(true);
+    });
+
+    test("Ok(1).equals(Ok(2)) returns false", () => {
+      const result1 = Result.ok(1);
+      const result2 = Result.ok(2);
+      expect(result1.equals(result2)).toBe(false);
+    });
+
+    test("Ok(1).equals(Err(...)) returns false", () => {
+      const result1 = Result.ok<number, string>(1);
+      const result2 = Result.err<number, string>("error");
+      expect(result1.equals(result2)).toBe(false);
+    });
+
+    test("Err(error).equals(Err(error)) returns true", () => {
+      const result1 = Result.err<number, string>("error");
+      const result2 = Result.err<number, string>("error");
+      expect(result1.equals(result2)).toBe(true);
+    });
+
+    test("Err(error1).equals(Err(error2)) returns false", () => {
+      const result1 = Result.err<number, string>("error1");
+      const result2 = Result.err<number, string>("error2");
+      expect(result1.equals(result2)).toBe(false);
+    });
+
+    test("Err(error).equals(Ok(...)) returns false", () => {
+      const result1 = Result.err<number, string>("error");
+      const result2 = Result.ok<number, string>(1);
+      expect(result1.equals(result2)).toBe(false);
+    });
+
+    test("Ok(null).equals(Ok(null)) returns true", () => {
+      const result1 = Result.ok<null, string>(null);
+      const result2 = Result.ok<null, string>(null);
+      expect(result1.equals(result2)).toBe(true);
+    });
+
+    test("Ok(undefined).equals(Ok(undefined)) returns true", () => {
+      const result1 = Result.ok<undefined, string>(undefined);
+      const result2 = Result.ok<undefined, string>(undefined);
+      expect(result1.equals(result2)).toBe(true);
+    });
+
+    test("object reference equality: same reference returns true", () => {
+      const obj = { a: 1 };
+      const result1 = Result.ok(obj);
+      const result2 = Result.ok(obj);
+      expect(result1.equals(result2)).toBe(true);
+    });
+
+    test("object reference equality: different references with same content returns false", () => {
+      const result1 = Result.ok({ a: 1 });
+      const result2 = Result.ok({ a: 1 });
+      expect(result1.equals(result2)).toBe(false);
+    });
+
+    test("Err(null).equals(Err(null)) returns true", () => {
+      const result1 = Result.err<number, null>(null);
+      const result2 = Result.err<number, null>(null);
+      expect(result1.equals(result2)).toBe(true);
+    });
+
+    test("Err(undefined).equals(Err(undefined)) returns true", () => {
+      const result1 = Result.err<number, undefined>(undefined);
+      const result2 = Result.err<number, undefined>(undefined);
+      expect(result1.equals(result2)).toBe(true);
+    });
+
+    test("Err object reference equality: same reference returns true", () => {
+      const error = { a: 1 };
+      const result1 = Result.err<number, typeof error>(error);
+      const result2 = Result.err<number, typeof error>(error);
+      expect(result1.equals(result2)).toBe(true);
+    });
+
+    test("Err object reference equality: different references with same content returns false", () => {
+      const result1 = Result.err<number, { a: number }>({ a: 1 });
+      const result2 = Result.err<number, { a: number }>({ a: 1 });
+      expect(result1.equals(result2)).toBe(false);
+    });
+
+    test("Ok(1).equals(Err(1)) returns false despite same numeric value", () => {
+      const result1 = Result.ok<number, number>(1);
+      const result2 = Result.err<number, number>(1);
+      expect(result1.equals(result2)).toBe(false);
+    });
+
+    test("NaN payloads are not equal under strict equality", () => {
+      const result1 = Result.ok<number, string>(Number.NaN);
+      const result2 = Result.ok<number, string>(Number.NaN);
+      expect(result1.equals(result2)).toBe(false);
+    });
+
+    test("-0 and +0 are equal under strict equality", () => {
+      const result1 = Result.ok<number, string>(-0);
+      const result2 = Result.ok<number, string>(+0);
+      expect(result1.equals(result2)).toBe(true);
+    });
+  });
 });

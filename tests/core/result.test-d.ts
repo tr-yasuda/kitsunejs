@@ -28,7 +28,7 @@ describe("Result type tests", () => {
         return this.inner.isErrAnd(predicate);
       }
 
-      equals<U, F>(other: Result<U, F>): boolean {
+      equals(other: Result<T, E>): boolean {
         return this.inner.equals(other);
       }
 

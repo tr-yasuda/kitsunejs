@@ -299,7 +299,7 @@ export abstract class Option<T> {
    * console.log(some1.equals(none)); // false
    * ```
    */
-  equals<U>(other: Option<U>): boolean {
+  equals(other: Option<unknown>): boolean {
     if (!isOption(other)) {
       return false;
     }

@@ -28,7 +28,7 @@ describe("Option type tests", () => {
         return this.inner.isNoneOr(predicate);
       }
 
-      equals<U>(other: Option<U>): boolean {
+      equals(other: Option<T>): boolean {
         return this.inner.equals(other);
       }
 

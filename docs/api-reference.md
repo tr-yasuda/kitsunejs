@@ -885,7 +885,7 @@ const noneError = ok.err();
 console.log(noneError.isNone()); // true
 ```
 
-##### `equals<U, F>(other: Result<U, F>): boolean`
+##### `equals(other: Result<unknown, unknown>): boolean`
 
 Returns `true` if the result equals another result (or Result-like object).
 Both must be the same variant (`Ok`/`Err`) and their contained values must be strictly equal (`===`).
@@ -895,7 +895,7 @@ Returns `false` for arguments that do not look like a Result (for example, missi
 Note: Because the comparison uses `===`, `Result.ok(NaN).equals(Result.ok(NaN))` returns `false`, while `Result.ok(+0).equals(Result.ok(-0))` returns `true`.
 
 **Parameters**:
-- `other: Result<U, F>` - Result or Result-like object to compare with
+- `other: Result<unknown, unknown>` - Result or Result-like object to compare with
 
 **Returns**: `boolean` - true if both results are equal, otherwise false
 
@@ -1736,7 +1736,7 @@ console.log(err.isErr()); // true
 console.log(err.unwrapErr()); // 'No value'
 ```
 
-##### `equals<U>(other: Option<U>): boolean`
+##### `equals(other: Option<unknown>): boolean`
 
 Returns `true` if the option equals another option (or Option-like object).
 Both must be `Some` with strictly equal (`===`) values, or both must be `None`.
@@ -1746,7 +1746,7 @@ Returns `false` for arguments that do not look like an Option (for example, miss
 Note: Because the comparison uses `===`, `Option.some(NaN).equals(Option.some(NaN))` returns `false`, while `Option.some(+0).equals(Option.some(-0))` returns `true`.
 
 **Parameters**:
-- `other: Option<U>` - Option or Option-like object to compare with
+- `other: Option<unknown>` - Option or Option-like object to compare with
 
 **Returns**: `boolean` - true if both options are equal, otherwise false
 

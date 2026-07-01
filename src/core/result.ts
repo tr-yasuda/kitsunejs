@@ -395,7 +395,7 @@ export abstract class Result<T, E> {
    * console.log(ok1.equals(err)); // false
    * ```
    */
-  equals<U, F>(other: Result<U, F>): boolean {
+  equals(other: Result<unknown, unknown>): boolean {
     if (!isResult(other)) {
       return false;
     }

@@ -309,6 +309,73 @@ describe("Option", () => {
     });
   });
 
+  describe("tap()", () => {
+    test("Some case: calls fn with self and returns same instance", () => {
+      let received: Option<number> | null = null;
+
+      const option = Option.some<number>(42);
+      const tapped = option.tap((o) => {
+        received = o;
+      });
+
+      expect(received).toBe(option);
+      expect(tapped).toBe(option);
+    });
+
+    test("None case: calls fn with self and returns same instance", () => {
+      let received: Option<number> | null = null;
+
+      const option = Option.none<number>();
+      const tapped = option.tap((o) => {
+        received = o;
+      });
+
+      expect(received).toBe(option);
+      expect(tapped).toBe(option);
+    });
+
+    test("calls fn exactly once", () => {
+      let called = 0;
+
+      const option = Option.some<number>(42);
+      option.tap(() => {
+        called++;
+      });
+
+      expect(called).toBe(1);
+    });
+
+    test("propagates a thrown callback error", () => {
+      const option = Option.some<number>(42);
+
+      expect(() =>
+        option.tap(() => {
+          throw new Error("tap error");
+        }),
+      ).toThrow("tap error");
+    });
+
+    test("Some case: can be chained without changing the Option", () => {
+      const option = Option.some<number>(21)
+        .tap((o) => {
+          expect(o.unwrap()).toBe(21);
+        })
+        .map((value) => value * 2);
+
+      expect(option.unwrap()).toBe(42);
+    });
+
+    test("None case: can be chained without changing the Option", () => {
+      const option = Option.none<number>()
+        .tap((o) => {
+          expect(o.isNone()).toBe(true);
+        })
+        .map((value) => value * 2);
+
+      expect(option.isNone()).toBe(true);
+    });
+  });
+
   describe("and()", () => {
     test("Some.and(other): returns other", () => {
       const option1 = Option.some(42);

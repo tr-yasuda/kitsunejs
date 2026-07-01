@@ -175,6 +175,25 @@ describe("Option type tests", () => {
     const inspectedNone = Option.none<number>().inspect((_value) => {});
     expectTypeOf(inspectedNone).toEqualTypeOf<Option<number>>();
 
+    // tap: returns self unchanged regardless of variant
+    const tappedSome = Option.some(42).tap((_o) => {});
+    expectTypeOf(tappedSome).toEqualTypeOf<Option<number>>();
+
+    const tappedNone = Option.none<number>().tap((_o) => {});
+    expectTypeOf(tappedNone).toEqualTypeOf<Option<number>>();
+
+    const legacyTapped = new LegacyOption(Option.some(42)).tap((_o) => {});
+    expectTypeOf(legacyTapped).toEqualTypeOf<LegacyOption<number>>();
+
+    // tap callback receives Option<T>
+    Option.some(42).tap((o) => {
+      expectTypeOf(o).toEqualTypeOf<Option<number>>();
+    });
+    type OptionTapCallback = Parameters<Option<number>["tap"]>[0];
+    expectTypeOf<OptionTapCallback>().toEqualTypeOf<
+      (option: Option<number>) => void
+    >();
+
     // andThen: number → string → boolean
     const chained = Option.some(42)
       .andThen((n) => Option.some(n.toString()))

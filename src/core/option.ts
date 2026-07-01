@@ -118,6 +118,27 @@ export abstract class Option<T> {
   }
 
   /**
+   * Calls a function with self regardless of whether the option is Some or None,
+   * then returns self unchanged.
+   *
+   * @param fn - Function to call with the Option
+   * @returns Self, unchanged
+   *
+   * @example
+   * ```typescript
+   * const option = Option.some(42)
+   *   .tap((o) => console.log("option:", o.tag))
+   *   .map((value) => value + 1);
+   *
+   * console.log(option.unwrap()); // 43
+   * ```
+   */
+  tap(fn: (option: Option<T>) => void): this {
+    fn(this);
+    return this;
+  }
+
+  /**
    * Returns None if the option is None, otherwise returns other.
    */
   abstract and<U>(other: Option<U>): Option<U>;

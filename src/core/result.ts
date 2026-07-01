@@ -252,6 +252,27 @@ export abstract class Result<T, E> {
   abstract inspectErr(fn: (error: E) => void): this;
 
   /**
+   * Calls a function with self regardless of whether the result is Ok or Err,
+   * then returns self unchanged.
+   *
+   * @param fn - Function to call with the Result
+   * @returns Self, unchanged
+   *
+   * @example
+   * ```typescript
+   * const result = Result.ok<number, string>(42)
+   *   .tap((r) => console.log("result:", r.tag))
+   *   .map((v) => v + 1);
+   *
+   * console.log(result.unwrap()); // 43
+   * ```
+   */
+  tap(fn: (result: Result<T, E>) => void): this {
+    fn(this);
+    return this;
+  }
+
+  /**
    * Returns the argument if the result is Ok, otherwise returns the Err value of self.
    */
   abstract and<U>(other: Result<U, E>): Result<U, E>;

@@ -1267,4 +1267,73 @@ describe("Option", () => {
       expect([...option]).toEqual([[1, 2, 3]]);
     });
   });
+
+  describe("equals()", () => {
+    test("Some(1).equals(Some(1)) returns true", () => {
+      const option1 = Option.some(1);
+      const option2 = Option.some(1);
+      expect(option1.equals(option2)).toBe(true);
+    });
+
+    test("Some(1).equals(Some(2)) returns false", () => {
+      const option1 = Option.some(1);
+      const option2 = Option.some(2);
+      expect(option1.equals(option2)).toBe(false);
+    });
+
+    test("Some(1).equals(None) returns false", () => {
+      const option1 = Option.some<number>(1);
+      const option2 = Option.none<number>();
+      expect(option1.equals(option2)).toBe(false);
+    });
+
+    test("None.equals(None) returns true", () => {
+      const option1 = Option.none<number>();
+      const option2 = Option.none<number>();
+      expect(option1.equals(option2)).toBe(true);
+    });
+
+    test("None.equals(Some(...)) returns false", () => {
+      const option1 = Option.none<number>();
+      const option2 = Option.some(1);
+      expect(option1.equals(option2)).toBe(false);
+    });
+
+    test("Some(null).equals(Some(null)) returns true", () => {
+      const option1 = Option.some<null>(null);
+      const option2 = Option.some<null>(null);
+      expect(option1.equals(option2)).toBe(true);
+    });
+
+    test("Some(undefined).equals(Some(undefined)) returns true", () => {
+      const option1 = Option.some<undefined>(undefined);
+      const option2 = Option.some<undefined>(undefined);
+      expect(option1.equals(option2)).toBe(true);
+    });
+
+    test("object reference equality: same reference returns true", () => {
+      const obj = { a: 1 };
+      const option1 = Option.some(obj);
+      const option2 = Option.some(obj);
+      expect(option1.equals(option2)).toBe(true);
+    });
+
+    test("object reference equality: different references with same content returns false", () => {
+      const option1 = Option.some({ a: 1 });
+      const option2 = Option.some({ a: 1 });
+      expect(option1.equals(option2)).toBe(false);
+    });
+
+    test("NaN payloads are not equal under strict equality", () => {
+      const option1 = Option.some(Number.NaN);
+      const option2 = Option.some(Number.NaN);
+      expect(option1.equals(option2)).toBe(false);
+    });
+
+    test("-0 and +0 are equal under strict equality", () => {
+      const option1 = Option.some(-0);
+      const option2 = Option.some(+0);
+      expect(option1.equals(option2)).toBe(true);
+    });
+  });
 });

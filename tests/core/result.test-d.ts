@@ -28,6 +28,10 @@ describe("Result type tests", () => {
         return this.inner.isErrAnd(predicate);
       }
 
+      equals(other: Result<T, E>): boolean {
+        return this.inner.equals(other);
+      }
+
       unwrap(): T {
         return this.inner.unwrap();
       }
@@ -159,6 +163,18 @@ describe("Result type tests", () => {
       expectTypeOf(maybeErrAnd).toEqualTypeOf<Err<number, string>>();
       expectTypeOf(maybeErrAnd.unwrapErr()).toEqualTypeOf<string>();
     }
+
+    // --- equals ---
+
+    const equalsResult = Result.ok<number, string>(42).equals(
+      Result.ok<number, string>(42),
+    );
+    expectTypeOf(equalsResult).toEqualTypeOf<boolean>();
+
+    const equalsLegacyResult = new LegacyResult<number, string>(
+      Result.ok(42),
+    ).equals(Result.ok<number, string>(42));
+    expectTypeOf(equalsLegacyResult).toEqualTypeOf<boolean>();
 
     // --- map / mapErr / andThen ---
 

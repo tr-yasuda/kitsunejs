@@ -501,10 +501,6 @@ export class Ok<T, E = never> extends Result<T, E> {
     return false;
   }
 
-  equals(other: Result<T, E>): boolean {
-    return other.isOk() && this.value === other.unwrap();
-  }
-
   unwrap(): T {
     return this.value;
   }
@@ -625,10 +621,6 @@ export class Err<T = never, E = unknown> extends Result<T, E> {
 
   isErrAnd(predicate: (error: E) => boolean): this is Err<T, E> {
     return predicate(this.error);
-  }
-
-  equals(other: Result<T, E>): boolean {
-    return other.isErr() && this.error === other.unwrapErr();
   }
 
   unwrap(): never {

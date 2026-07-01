@@ -89,6 +89,17 @@ export abstract class Result<T, E> {
   abstract isErrAnd(predicate: (error: E) => boolean): this is Err<T, E>;
 
   /**
+   * Returns true if this result equals the other result by comparing
+   * both the variant (Ok/Err) and the contained value using strict equality.
+   */
+  equals(other: Result<T, E>): boolean {
+    if (this.isOk()) {
+      return other.isOk() && this.unwrap() === other.unwrap();
+    }
+    return other.isErr() && this.unwrapErr() === other.unwrapErr();
+  }
+
+  /**
    * Returns the contained Ok value.
    * Throws an UnwrapError if the value is Err.
    */
@@ -490,6 +501,10 @@ export class Ok<T, E = never> extends Result<T, E> {
     return false;
   }
 
+  equals(other: Result<T, E>): boolean {
+    return other.isOk() && this.value === other.unwrap();
+  }
+
   unwrap(): T {
     return this.value;
   }
@@ -610,6 +625,10 @@ export class Err<T = never, E = unknown> extends Result<T, E> {
 
   isErrAnd(predicate: (error: E) => boolean): this is Err<T, E> {
     return predicate(this.error);
+  }
+
+  equals(other: Result<T, E>): boolean {
+    return other.isErr() && this.error === other.unwrapErr();
   }
 
   unwrap(): never {

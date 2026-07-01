@@ -36,6 +36,17 @@ export abstract class Option<T> {
   abstract isNoneOr(predicate: (value: T) => boolean): boolean;
 
   /**
+   * Returns true if this option equals the other option by comparing
+   * both the variant (Some/None) and the contained value using strict equality.
+   */
+  equals(other: Option<T>): boolean {
+    if (this.isSome()) {
+      return other.isSome() && this.unwrap() === other.unwrap();
+    }
+    return other.isNone();
+  }
+
+  /**
    * Returns the contained Some value.
    * Throws an UnwrapError if the value is None.
    */
@@ -344,6 +355,10 @@ export class Some<T> extends Option<T> {
     return predicate(this.value);
   }
 
+  equals(other: Option<T>): boolean {
+    return other.isSome() && this.value === other.unwrap();
+  }
+
   unwrap(): T {
     return this.value;
   }
@@ -435,6 +450,10 @@ export class None<T = never> extends Option<T> {
 
   isNoneOr(_predicate: (value: T) => boolean): boolean {
     return true;
+  }
+
+  equals(other: Option<T>): boolean {
+    return other.isNone();
   }
 
   unwrap(): T {

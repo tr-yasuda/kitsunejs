@@ -330,6 +330,27 @@ if (result.isErrAnd((e) => e.length > 0)) {
 }
 ```
 
+##### `equals(other: Result<T, E>): boolean`
+
+Returns `true` if this Result equals `other` by comparing both the variant (Ok/Err) and the contained value using strict equality (`===`).
+
+**Parameters**:
+- `other: Result<T, E>` - Result to compare with
+
+**Returns**: `boolean` - true if both the variant and value are equal
+
+**Example**:
+```typescript
+const ok1 = Result.ok(42);
+const ok2 = Result.ok(42);
+const err = Result.err('error');
+
+console.log(ok1.equals(ok2)); // true
+console.log(ok1.equals(err)); // false
+```
+
+**Note**: This method follows JavaScript's strict equality semantics. For example, `Result.ok(NaN).equals(Result.ok(NaN))` returns `false`, and object comparison uses reference equality.
+
 #### Extraction
 
 ##### `unwrap(): T`
@@ -1102,6 +1123,27 @@ const option = Option.fromNullable(process.env.DEBUG);
 // true if not set, otherwise checks if it equals "1"
 const enabled = option.isNoneOr((v) => v === "1");
 ```
+
+##### `equals(other: Option<T>): boolean`
+
+Returns `true` if this Option equals `other` by comparing both the variant (Some/None) and the contained value using strict equality (`===`).
+
+**Parameters**:
+- `other: Option<T>` - Option to compare with
+
+**Returns**: `boolean` - true if both the variant and value are equal
+
+**Example**:
+```typescript
+const some1 = Option.some(42);
+const some2 = Option.some(42);
+const none = Option.none<number>();
+
+console.log(some1.equals(some2)); // true
+console.log(some1.equals(none)); // false
+```
+
+**Note**: This method follows JavaScript's strict equality semantics. For example, `Option.some(NaN).equals(Option.some(NaN))` returns `false`, and object comparison uses reference equality.
 
 #### Extraction
 

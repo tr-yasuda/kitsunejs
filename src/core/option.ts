@@ -50,17 +50,6 @@ export abstract class Option<T> {
   abstract isNoneOr(predicate: (value: T) => boolean): boolean;
 
   /**
-   * Returns true if this option equals the other option by comparing
-   * both the variant (Some/None) and the contained value using strict equality.
-   */
-  equals(other: Option<T>): boolean {
-    if (this.isSome()) {
-      return other.isSome() && this.unwrap() === other.unwrap();
-    }
-    return other.isNone();
-  }
-
-  /**
    * Returns the contained Some value.
    * Throws an UnwrapError if the value is None.
    */

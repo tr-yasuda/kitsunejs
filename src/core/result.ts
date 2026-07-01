@@ -104,17 +104,6 @@ export abstract class Result<T, E> {
   abstract isErrAnd(predicate: (error: E) => boolean): this is Err<T, E>;
 
   /**
-   * Returns true if this result equals the other result by comparing
-   * both the variant (Ok/Err) and the contained value using strict equality.
-   */
-  equals(other: Result<T, E>): boolean {
-    if (this.isOk()) {
-      return other.isOk() && this.unwrap() === other.unwrap();
-    }
-    return other.isErr() && this.unwrapErr() === other.unwrapErr();
-  }
-
-  /**
    * Returns the contained Ok value.
    * Throws an UnwrapError if the value is Err.
    */

@@ -435,7 +435,7 @@ This matches Rust's `IntoIterator` behavior for `Result`, where the Ok value is 
 const ok = Result.ok(42);
 console.log([...ok]); // [42]
 
-const err = Result.err<number, string>('error');
+const err = Result.err('error');
 console.log([...err]); // []
 
 for (const value of Result.ok(42)) {
@@ -1145,7 +1145,7 @@ Implements the JavaScript iterable protocol.
 const some = Option.some(42);
 console.log([...some]); // [42]
 
-const none = Option.none<number>();
+const none = Option.none();
 console.log([...none]); // []
 
 for (const value of Option.some(42)) {

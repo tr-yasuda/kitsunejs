@@ -13,6 +13,9 @@ export default defineConfig({
       enabled: true,
       exclude: [".worktrees/**", ...defaultExclude],
     },
+    benchmark: {
+      exclude: [".worktrees/**", ...defaultExclude],
+    },
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],

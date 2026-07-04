@@ -18,6 +18,8 @@ function getInputValue(): number {
 
 const okResult = Result.ok<number, string>(inputValue);
 const errResult = Result.err<number, string>(errorMessage);
+const benchmarkError = new Error(errorMessage);
+const emptyArray: number[] = [];
 
 const sizes = [10, 100, 1000];
 const resultArrays = sizes.map((size) =>
@@ -49,7 +51,7 @@ describe("Result.map vs native try/catch", () => {
 
   bench("native try/catch (error)", () => {
     try {
-      throw new Error(errorMessage);
+      throw benchmarkError;
     } catch {
       _sink = defaultValue;
     }
@@ -62,15 +64,15 @@ describe("Result.all", () => {
     const results = resultArrays[index];
 
     bench(`Result.all (${size} items)`, () => {
-      _sink = Result.all(results).unwrapOr([]).length;
+      _sink = Result.all(results).unwrap().length;
     });
   }
 
   bench("Result.all (empty)", () => {
-    _sink = Result.all([]).unwrapOr([]).length;
+    _sink = Result.all([]).unwrap().length;
   });
 
   bench("Result.all (early Err)", () => {
-    _sink = Result.all(earlyErrArray).unwrapOr([]).length;
+    _sink = Result.all(earlyErrArray).unwrapOr(emptyArray).length;
   });
 });

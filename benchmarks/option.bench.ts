@@ -28,6 +28,7 @@ const optionArrays = sizes.map((size) =>
 );
 
 const earlyNoneArray = [Option.none<number>(), Option.some(1), Option.some(2)];
+const emptyArray: number[] = [];
 
 describe("Option.map vs native null check", () => {
   bench("Option.some(...).map(...).unwrapOr(...)", () => {
@@ -40,12 +41,12 @@ describe("Option.map vs native null check", () => {
 
   bench("native null check (some)", () => {
     const value = getSomeInput();
-    _sink = value !== null && value !== undefined ? value * 2 : defaultValue;
+    _sink = value !== null ? value * 2 : defaultValue;
   });
 
   bench("native null check (none)", () => {
     const value = getNoneInput();
-    _sink = value !== null && value !== undefined ? value * 2 : defaultValue;
+    _sink = value !== null ? value * 2 : defaultValue;
   });
 });
 
@@ -55,15 +56,15 @@ describe("Option.all", () => {
     const options = optionArrays[index];
 
     bench(`Option.all (${size} items)`, () => {
-      _sink = Option.all(options).unwrapOr([]).length;
+      _sink = Option.all(options).unwrap().length;
     });
   }
 
   bench("Option.all (empty)", () => {
-    _sink = Option.all([]).unwrapOr([]).length;
+    _sink = Option.all([]).unwrap().length;
   });
 
   bench("Option.all (early None)", () => {
-    _sink = Option.all(earlyNoneArray).unwrapOr([]).length;
+    _sink = Option.all(earlyNoneArray).unwrapOr(emptyArray).length;
   });
 });

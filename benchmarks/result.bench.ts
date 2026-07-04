@@ -1,58 +1,72 @@
 import { bench, describe } from "vitest";
 import { Result } from "@/core/result.js";
 
+// Module-level sink to prevent the JIT from dead-code eliminating benchmark work.
+let _sink: number;
+
+const inputValue = 21;
+const defaultValue = 0;
+const errorMessage = "error";
+
+function double(value: number): number {
+  return value * 2;
+}
+
+const okResult = Result.ok<number, string>(inputValue);
+const errResult = Result.err<number, string>(errorMessage);
+
+const sizes = [10, 100, 1000];
+const resultArrays = sizes.map((size) =>
+  Array.from({ length: size }, (_, index) => Result.ok<number, string>(index)),
+);
+
+const earlyErrArray = [
+  Result.err<number, string>(errorMessage),
+  Result.ok<number, string>(1),
+  Result.ok<number, string>(2),
+];
+
 describe("Result.map vs native try/catch", () => {
   bench("Result.ok(...).map(...).unwrapOr(...)", () => {
-    Result.ok(21)
-      .map((value) => value * 2)
-      .unwrapOr(0);
+    _sink = okResult.map(double).unwrapOr(defaultValue);
   });
 
   bench("Result.err(...).map(...).unwrapOr(...)", () => {
-    Result.err<number, string>("error")
-      .map((value) => value * 2)
-      .unwrapOr(0);
+    _sink = errResult.map(double).unwrapOr(defaultValue);
   });
 
   bench("native try/catch (success)", () => {
-    let _value: number;
     try {
-      _value = 21 * 2;
+      _sink = inputValue * 2;
     } catch {
-      _value = 0;
+      _sink = defaultValue;
     }
   });
 
   bench("native try/catch (error)", () => {
-    let _value: number;
     try {
-      throw new Error("error");
+      throw new Error(errorMessage);
     } catch {
-      _value = 0;
+      _sink = defaultValue;
     }
   });
 });
 
 describe("Result.all", () => {
-  for (const size of [10, 100, 1000]) {
-    const results = Array.from({ length: size }, (_, index) =>
-      Result.ok<number, string>(index),
-    );
+  for (let index = 0; index < sizes.length; index++) {
+    const size = sizes[index];
+    const results = resultArrays[index];
 
     bench(`Result.all (${size} items)`, () => {
-      Result.all(results);
+      _sink = Result.all(results).unwrapOr([]).length;
     });
   }
 
   bench("Result.all (empty)", () => {
-    Result.all([]);
+    _sink = Result.all([]).unwrapOr([]).length;
   });
 
   bench("Result.all (early Err)", () => {
-    Result.all([
-      Result.err<number, string>("error"),
-      Result.ok<number, string>(1),
-      Result.ok<number, string>(2),
-    ]);
+    _sink = Result.all(earlyErrArray).unwrapOr([]).length;
   });
 });

@@ -128,13 +128,17 @@ describe("Result", () => {
     test("Err case with huge object: message is capped", () => {
       const big = { data: "x".repeat(2000) };
       const result = Result.err<number, typeof big>(big);
+      const prefix = "Called unwrap on an Err value: ";
       try {
         result.unwrap();
         throw new Error("Expected unwrap to throw");
       } catch (e) {
         expect(e).toBeInstanceOf(UnwrapError);
         if (e instanceof UnwrapError) {
-          expect(e.message.length).toBeLessThan(2000);
+          expect(e.message.startsWith(prefix)).toBe(true);
+          const serialized = e.message.slice(prefix.length);
+          expect(serialized.endsWith("...")).toBe(true);
+          expect(serialized.length).toBeLessThanOrEqual(512);
         }
       }
     });

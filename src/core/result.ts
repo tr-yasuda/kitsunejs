@@ -36,7 +36,8 @@ function truncateString(value: string): string {
   if (value.length <= MAX_STRINGIFY_LENGTH) {
     return value;
   }
-  return `${value.slice(0, MAX_STRINGIFY_LENGTH)}...`;
+  const suffix = "...";
+  return `${value.slice(0, MAX_STRINGIFY_LENGTH - suffix.length)}${suffix}`;
 }
 
 /**

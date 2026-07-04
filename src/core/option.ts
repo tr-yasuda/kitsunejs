@@ -334,11 +334,11 @@ export abstract class Option<T> {
    * Converts a nullable value to an Option.
    * Returns None if the value is null or undefined, otherwise returns Some(value).
    */
-  static fromNullable<T>(value: T | null | undefined): Option<T> {
+  static fromNullable<T>(value: T | null | undefined): Option<NonNullable<T>> {
     if (value === null || value === undefined) {
-      return Option.none<T>();
+      return Option.none<NonNullable<T>>();
     }
-    return Option.some(value);
+    return Option.some<NonNullable<T>>(value);
   }
 
   /**

@@ -1062,6 +1062,11 @@ describe("Result", () => {
       expect(result.isOk()).toBe(true);
       expect(result.unwrap()).toBe("");
     });
+
+    test("null with union generic → Err", () => {
+      const result = Result.fromNullable<string | null, string>(null, "error");
+      expect(result.isErr()).toBe(true);
+    });
   });
 
   describe("Result.try()", () => {

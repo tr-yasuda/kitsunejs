@@ -115,7 +115,7 @@ describe("Option type tests", () => {
 
     // fromNullable
     const fromNullable = Option.fromNullable<number | null>(42);
-    expectTypeOf(fromNullable).toEqualTypeOf<Option<number | null>>();
+    expectTypeOf(fromNullable).toEqualTypeOf<Option<number>>();
 
     // --- Narrowing with isSome / isNone ---
 

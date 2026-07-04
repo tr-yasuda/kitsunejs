@@ -447,11 +447,11 @@ export abstract class Result<T, E> {
   static fromNullable<T, E>(
     value: T | null | undefined,
     error: E,
-  ): Result<T, E> {
+  ): Result<NonNullable<T>, E> {
     if (value === null || value === undefined) {
-      return Result.err<T, E>(error);
+      return Result.err<NonNullable<T>, E>(error);
     }
-    return Result.ok<T, E>(value);
+    return Result.ok<NonNullable<T>, E>(value);
   }
 
   /**

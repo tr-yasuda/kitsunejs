@@ -1086,6 +1086,17 @@ describe("Option", () => {
       expect(option.isSome()).toBe(true);
       expect(option.unwrap()).toBe(false);
     });
+
+    test("value with union generic → Some without null", () => {
+      const option = Option.fromNullable<string | null>("hello");
+      expect(option.isSome()).toBe(true);
+      expect(option.unwrap()).toBe("hello");
+    });
+
+    test("null with union generic → None", () => {
+      const option = Option.fromNullable<string | null>(null);
+      expect(option.isNone()).toBe(true);
+    });
   });
 
   describe("edge cases", () => {

@@ -128,26 +128,23 @@ describe("Result", () => {
     test("Err case with huge object: message is capped", () => {
       const big = { data: "x".repeat(2000) };
       const result = Result.err<number, typeof big>(big);
-      let thrown = false;
-      let message = "";
       try {
         result.unwrap();
+        throw new Error("Expected unwrap to throw");
       } catch (e) {
-        thrown = true;
+        expect(e).toBeInstanceOf(UnwrapError);
         if (e instanceof UnwrapError) {
-          message = e.message;
+          expect(e.message.length).toBeLessThan(2000);
         }
       }
-      expect(thrown).toBe(true);
-      expect(message.length).toBeLessThan(2000);
     });
 
     test("Err case with Error value: UnwrapError preserves cause", () => {
       const original = new Error("deep failure");
       const result = Result.err<number, Error>(original);
-      expect(() => result.unwrap()).toThrow(UnwrapError);
       try {
         result.unwrap();
+        throw new Error("Expected unwrap to throw");
       } catch (e) {
         expect(e).toBeInstanceOf(UnwrapError);
         if (e instanceof UnwrapError) {

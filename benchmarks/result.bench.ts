@@ -12,6 +12,10 @@ function double(value: number): number {
   return value * 2;
 }
 
+function getInputValue(): number {
+  return inputValue;
+}
+
 const okResult = Result.ok<number, string>(inputValue);
 const errResult = Result.err<number, string>(errorMessage);
 
@@ -37,7 +41,7 @@ describe("Result.map vs native try/catch", () => {
 
   bench("native try/catch (success)", () => {
     try {
-      _sink = inputValue * 2;
+      _sink = getInputValue() * 2;
     } catch {
       _sink = defaultValue;
     }

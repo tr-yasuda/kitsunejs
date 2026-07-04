@@ -14,8 +14,13 @@ function double(value: number): number {
 const someOption = Option.some(inputValue);
 const noneOption = Option.none<number>();
 
-const someInput: number | null = inputValue;
-const noneInput: number | null = null;
+function getSomeInput(): number | null {
+  return inputValue;
+}
+
+function getNoneInput(): number | null {
+  return null;
+}
 
 const sizes = [10, 100, 1000];
 const optionArrays = sizes.map((size) =>
@@ -34,17 +39,13 @@ describe("Option.map vs native null check", () => {
   });
 
   bench("native null check (some)", () => {
-    _sink =
-      someInput !== null && someInput !== undefined
-        ? someInput * 2
-        : defaultValue;
+    const value = getSomeInput();
+    _sink = value !== null && value !== undefined ? value * 2 : defaultValue;
   });
 
   bench("native null check (none)", () => {
-    _sink =
-      noneInput !== null && noneInput !== undefined
-        ? noneInput * 2
-        : defaultValue;
+    const value = getNoneInput();
+    _sink = value !== null && value !== undefined ? value * 2 : defaultValue;
   });
 });
 

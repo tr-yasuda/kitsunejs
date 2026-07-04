@@ -56,13 +56,16 @@ export abstract class Option<T> {
 
   /**
    * Returns the contained Some value.
-   * Throws an UnwrapError if the value is None.
+   * Throws an UnwrapError if the value is None. The thrown error may include
+   * an optional `cause` property depending on the implementation.
    */
   abstract unwrap(): T;
 
   /**
    * Returns the contained Some value with a custom error message.
-   * Throws an UnwrapError with the provided message if the value is None.
+   * Throws an UnwrapError with the provided message if the value is None. The
+   * thrown error may include an optional `cause` property depending on the
+   * implementation.
    */
   abstract expect(message: string): T;
 
@@ -284,7 +287,7 @@ export abstract class Option<T> {
    * by value. Both must be `Some` with strictly equal (`===`) values, or both
    * must be `None`. Returns false for arguments that do not look like an
    * Option, including missing or non-callable `unwrap` or an invalid variant
-   * tag.
+   * tag. If the other object's `unwrap` throws, the comparison returns false.
    *
    * @param other - Option (or Option-like object) to compare with
    * @returns true if both options are equal, otherwise false
@@ -303,15 +306,16 @@ export abstract class Option<T> {
     if (!isOption(other)) {
       return false;
     }
-    try {
-      if (this.tag === "Some" && other.tag === "Some") {
-        return (this.unwrap() as unknown) === other.unwrap();
+    if (this.tag === "Some" && other.tag === "Some") {
+      const value = this.unwrap() as unknown;
+      try {
+        return value === other.unwrap();
+      } catch {
+        return false;
       }
-      if (this.tag === "None" && other.tag === "None") {
-        return true;
-      }
-    } catch {
-      return false;
+    }
+    if (this.tag === "None" && other.tag === "None") {
+      return true;
     }
     return false;
   }

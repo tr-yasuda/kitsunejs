@@ -1,5 +1,7 @@
 /**
- * Error thrown when unwrapping a None value or the wrong Result variant.
+ * Error thrown by `unwrap`, `expect`, `unwrapErr`, and `expectErr` when a
+ * container does not hold the requested variant. The optional `cause` option
+ * may contain the value that caused the failure.
  */
 export class UnwrapError extends Error {
   constructor(message: string, options?: { cause?: unknown }) {

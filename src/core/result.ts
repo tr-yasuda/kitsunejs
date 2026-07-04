@@ -42,12 +42,21 @@ function truncateString(
   if (value.length <= maxLength) {
     return value;
   }
+
   const suffix = "...";
-  const chars = Array.from(value);
-  if (chars.length <= maxLength) {
-    return value;
+  const limit = maxLength - suffix.length;
+  let result = "";
+  let count = 0;
+
+  for (const codePoint of value) {
+    if (count >= limit) {
+      break;
+    }
+    result += codePoint;
+    count++;
   }
-  return `${chars.slice(0, maxLength - suffix.length).join("")}${suffix}`;
+
+  return `${result}${suffix}`;
 }
 
 function isErrorLike(value: unknown): value is Error {
@@ -73,7 +82,7 @@ function createBudgetReplacer(
       return "[BigInt]";
     }
     if (typeof value === "string" && value.length > maxStringLength) {
-      return `${Array.from(value).slice(0, maxStringLength).join("")}...`;
+      return truncateString(value, maxStringLength);
     }
     if (Array.isArray(value) && value.length > maxArrayLength) {
       return value.slice(0, maxArrayLength).concat(["..."]);

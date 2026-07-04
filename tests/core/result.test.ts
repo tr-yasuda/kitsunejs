@@ -211,6 +211,35 @@ describe("Result", () => {
         }
       }
     });
+
+    test("Err case with small array: does not truncate array", () => {
+      const result = Result.err<number, number[]>([1, 2, 3]);
+      expect(() => result.unwrap()).toThrow("[1,2,3]");
+    });
+
+    test("Err case with shallow nested object: does not depth-truncate", () => {
+      const result = Result.err<number, { a: { b: { c: { d: number } } } }>({
+        a: { b: { c: { d: 1 } } },
+      });
+      expect(() => result.unwrap()).toThrow('"d":1');
+    });
+
+    test("Err case with Error containing circular enumerable property: falls back to String(error)", () => {
+      const error = Object.assign(new Error("circular error"), {
+        self: undefined as unknown,
+      });
+      error.self = error;
+      const result = Result.err<number, typeof error>(error);
+      try {
+        result.unwrap();
+        throw new Error("Expected unwrap to throw");
+      } catch (e) {
+        expect(e).toBeInstanceOf(UnwrapError);
+        if (e instanceof UnwrapError) {
+          expect(e.message).toContain("circular error");
+        }
+      }
+    });
   });
 
   describe("expect()", () => {
@@ -1641,6 +1670,27 @@ describe("Result", () => {
     test("Err returned iterator is itself iterable", () => {
       const iterator = Result.err<number, string>("error")[Symbol.iterator]();
       expect([...iterator]).toEqual([]);
+    });
+
+    test("Custom subclass inherits default iterator for Ok", () => {
+      const customOk = Object.create(Result.prototype) as Result<
+        number,
+        string
+      >;
+      (customOk as unknown as { tag: "Ok" }).tag = "Ok";
+      (customOk as unknown as { isOk: () => boolean }).isOk = () => true;
+      (customOk as unknown as { unwrap: () => number }).unwrap = () => 42;
+      expect([...customOk]).toEqual([42]);
+    });
+
+    test("Custom subclass inherits default iterator for Err", () => {
+      const customErr = Object.create(Result.prototype) as Result<
+        number,
+        string
+      >;
+      (customErr as unknown as { tag: "Err" }).tag = "Err";
+      (customErr as unknown as { isOk: () => boolean }).isOk = () => false;
+      expect([...customErr]).toEqual([]);
     });
 
     test("Ok works with array destructuring", () => {

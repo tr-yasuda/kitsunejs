@@ -1346,6 +1346,21 @@ describe("Option", () => {
       expect([...iterator]).toEqual([]);
     });
 
+    test("Custom subclass inherits default iterator for Some", () => {
+      const customSome = Object.create(Option.prototype) as Option<number>;
+      (customSome as unknown as { tag: "Some" }).tag = "Some";
+      (customSome as unknown as { isSome: () => boolean }).isSome = () => true;
+      (customSome as unknown as { unwrap: () => number }).unwrap = () => 42;
+      expect([...customSome]).toEqual([42]);
+    });
+
+    test("Custom subclass inherits default iterator for None", () => {
+      const customNone = Object.create(Option.prototype) as Option<number>;
+      (customNone as unknown as { tag: "None" }).tag = "None";
+      (customNone as unknown as { isSome: () => boolean }).isSome = () => false;
+      expect([...customNone]).toEqual([]);
+    });
+
     test("Some works with array destructuring", () => {
       const [value] = Option.some(42);
       expect(value).toBe(42);

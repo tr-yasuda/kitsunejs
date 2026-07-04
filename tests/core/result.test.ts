@@ -161,7 +161,7 @@ describe("Result", () => {
 
     test("Err case: throws an exception with custom message", () => {
       const result = Result.err("error");
-      expect(() => result.expect("custom message")).toThrow(UnwrapError);
+      expect(() => result.expect("custom message")).toThrow("custom message");
     });
   });
 
@@ -174,6 +174,13 @@ describe("Result", () => {
     test("Ok case: throws an exception", () => {
       const result = Result.ok(42);
       expect(() => result.unwrapErr()).toThrow(UnwrapError);
+    });
+
+    test("Ok case: throws the default message", () => {
+      const result = Result.ok(42);
+      expect(() => result.unwrapErr()).toThrow(
+        "Called unwrapErr on an Ok value",
+      );
     });
   });
 
@@ -395,6 +402,15 @@ describe("Result", () => {
       expect(called).toBe(0);
       expect(inspected).toBe(result);
     });
+
+    test("propagates a thrown callback error", () => {
+      const result = Result.ok<number, string>(42);
+      expect(() =>
+        result.inspect(() => {
+          throw new Error("inspect error");
+        }),
+      ).toThrow("inspect error");
+    });
   });
 
   describe("inspectErr()", () => {
@@ -420,6 +436,15 @@ describe("Result", () => {
 
       expect(called).toBe(0);
       expect(inspected).toBe(result);
+    });
+
+    test("propagates a thrown callback error", () => {
+      const result = Result.err<number, string>("error");
+      expect(() =>
+        result.inspectErr(() => {
+          throw new Error("inspectErr error");
+        }),
+      ).toThrow("inspectErr error");
     });
   });
 

@@ -114,6 +114,11 @@ describe("Option", () => {
       const option = Option.none();
       expect(() => option.unwrap()).toThrow(UnwrapError);
     });
+
+    test("None case: throws the default message", () => {
+      const option = Option.none();
+      expect(() => option.unwrap()).toThrow("Called unwrap on a None value");
+    });
   });
 
   describe("expect()", () => {
@@ -316,6 +321,15 @@ describe("Option", () => {
 
       expect(called).toBe(0);
       expect(inspected).toBe(option);
+    });
+
+    test("propagates a thrown callback error", () => {
+      const option = Option.some(42);
+      expect(() =>
+        option.inspect(() => {
+          throw new Error("inspect error");
+        }),
+      ).toThrow("inspect error");
     });
   });
 

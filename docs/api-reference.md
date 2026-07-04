@@ -78,7 +78,7 @@ console.log(result.unwrapOr(0)); // 0
 
 #### Conversion & Utility
 
-##### `Result.fromNullable<T, E>(value: T | null | undefined, error: E): Result<T, E>`
+##### `Result.fromNullable<T, E>(value: T | null | undefined, error: E): Result<NonNullable<T>, E>`
 
 Converts a nullable value to a `Result`. Returns `Err` if the value is `null` or `undefined`, otherwise returns `Ok`.
 
@@ -86,7 +86,7 @@ Converts a nullable value to a `Result`. Returns `Err` if the value is `null` or
 - `value: T | null | undefined` - Value to convert
 - `error: E` - Error value to use when null/undefined
 
-**Returns**: `Result<T, E>` - Ok or Err
+**Returns**: `Result<NonNullable<T>, E>` - Ok or Err
 
 **Example**:
 ```typescript
@@ -101,6 +101,8 @@ console.log(value2.isErr()); // true
 
 Executes a synchronous function that may throw an exception and converts the result to a `Result`.
 Returns `Ok` if the function executes successfully, otherwise returns `Err` with the caught error.
+
+**Note:** TypeScript cannot constrain the type of thrown values at runtime. The generic `E` is a compile-time assertion; the actual payload may be any value.
 
 **Parameters**:
 - `fn: () => T` - Function to execute
@@ -129,6 +131,8 @@ console.log(errorResult.isErr()); // true
 Executes a function that returns a Promise and converts the result to a `Promise<Result>`.
 Returns `Ok` if the Promise resolves successfully, otherwise returns `Err` if rejected.
 
+**Note:** TypeScript cannot constrain the type of rejected values at runtime. The generic `E` is a compile-time assertion; the actual payload may be any value.
+
 **Parameters**:
 - `fn: () => Promise<T>` - Async function to execute
 
@@ -154,6 +158,8 @@ async function fetchData() {
 
 Converts an existing Promise to a `Promise<Result>`.
 Returns `Ok` if the Promise resolves successfully, otherwise returns `Err` if rejected.
+
+**Note:** TypeScript cannot constrain the type of rejected values at runtime. The generic `E` is a compile-time assertion; the actual payload may be any value.
 
 This is useful when you already have a Promise (for example, from an external API or library) and want to convert it into a Result without wrapping it in an additional function.
 
@@ -997,14 +1003,14 @@ console.log(option.unwrapOr(0)); // 0
 
 #### Conversion & Utility
 
-##### `Option.fromNullable<T>(value: T | null | undefined): Option<T>`
+##### `Option.fromNullable<T>(value: T | null | undefined): Option<NonNullable<T>>`
 
 Converts a nullable value to an `Option`. Returns `None` if the value is `null` or `undefined`, otherwise returns `Some`.
 
 **Parameters**:
 - `value: T | null | undefined` - Value to convert
 
-**Returns**: `Option<T>` - Some or None
+**Returns**: `Option<NonNullable<T>>` - Some or None
 
 **Example**:
 ```typescript

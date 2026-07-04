@@ -399,11 +399,15 @@ export abstract class Result<T, E> {
     if (!isResult(other)) {
       return false;
     }
-    if (this.tag === "Ok" && other.tag === "Ok") {
-      return (this.unwrap() as unknown) === other.unwrap();
-    }
-    if (this.tag === "Err" && other.tag === "Err") {
-      return (this.unwrapErr() as unknown) === other.unwrapErr();
+    try {
+      if (this.tag === "Ok" && other.tag === "Ok") {
+        return (this.unwrap() as unknown) === other.unwrap();
+      }
+      if (this.tag === "Err" && other.tag === "Err") {
+        return (this.unwrapErr() as unknown) === other.unwrapErr();
+      }
+    } catch {
+      return false;
     }
     return false;
   }

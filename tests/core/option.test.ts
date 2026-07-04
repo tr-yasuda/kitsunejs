@@ -1039,6 +1039,17 @@ describe("Option", () => {
         } as unknown as Option<number>),
       ).toBe(false);
     });
+
+    test("returns false when Option-like unwrap throws", () => {
+      const some = Option.some(1);
+      const malicious = {
+        tag: "Some" as const,
+        unwrap: () => {
+          throw new Error("boom");
+        },
+      };
+      expect(some.equals(malicious as unknown as Option<unknown>)).toBe(false);
+    });
   });
 
   describe("Option.fromNullable()", () => {

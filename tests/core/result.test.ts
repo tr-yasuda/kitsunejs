@@ -900,6 +900,38 @@ describe("Result", () => {
         } as unknown as Result<number, string>),
       ).toBe(false);
     });
+
+    test("returns false when Result-like unwrap throws", () => {
+      const ok = Result.ok(1);
+      const malicious = {
+        tag: "Ok" as const,
+        unwrap: () => {
+          throw new Error("boom");
+        },
+        unwrapErr: () => {
+          throw new Error("not err");
+        },
+      };
+      expect(ok.equals(malicious as unknown as Result<unknown, unknown>)).toBe(
+        false,
+      );
+    });
+
+    test("returns false when Result-like unwrapErr throws", () => {
+      const err = Result.err<number, number>(1);
+      const malicious = {
+        tag: "Err" as const,
+        unwrap: () => {
+          throw new Error("not ok");
+        },
+        unwrapErr: () => {
+          throw new Error("boom");
+        },
+      };
+      expect(err.equals(malicious as unknown as Result<unknown, unknown>)).toBe(
+        false,
+      );
+    });
   });
 
   describe("transpose()", () => {

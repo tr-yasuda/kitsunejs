@@ -303,11 +303,15 @@ export abstract class Option<T> {
     if (!isOption(other)) {
       return false;
     }
-    if (this.tag === "Some" && other.tag === "Some") {
-      return (this.unwrap() as unknown) === other.unwrap();
-    }
-    if (this.tag === "None" && other.tag === "None") {
-      return true;
+    try {
+      if (this.tag === "Some" && other.tag === "Some") {
+        return (this.unwrap() as unknown) === other.unwrap();
+      }
+      if (this.tag === "None" && other.tag === "None") {
+        return true;
+      }
+    } catch {
+      return false;
     }
     return false;
   }

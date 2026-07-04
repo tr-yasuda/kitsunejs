@@ -32,6 +32,13 @@ function isResult(value: unknown): value is Result<unknown, unknown> {
 
 const MAX_STRINGIFY_LENGTH = 512;
 
+function truncateString(value: string): string {
+  if (value.length <= MAX_STRINGIFY_LENGTH) {
+    return value;
+  }
+  return `${value.slice(0, MAX_STRINGIFY_LENGTH)}...`;
+}
+
 /**
  * Safely stringifies a value for use in an error message.
  * Falls back to String() when JSON.stringify returns undefined or throws
@@ -53,14 +60,11 @@ function safeStringify(value: unknown): string {
   }
 
   if (serialized !== undefined) {
-    if (serialized.length <= MAX_STRINGIFY_LENGTH) {
-      return serialized;
-    }
-    return `${serialized.slice(0, MAX_STRINGIFY_LENGTH)}...`;
+    return truncateString(serialized);
   }
 
   try {
-    return String(value);
+    return truncateString(String(value));
   } catch {
     return "[unable to serialize error value]";
   }

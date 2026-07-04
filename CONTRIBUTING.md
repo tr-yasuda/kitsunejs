@@ -186,6 +186,7 @@ All code changes should include appropriate tests.
 
 - **Runtime tests**: `*.test.ts` (using [Vitest](https://vitest.dev/))
 - **Type tests**: `*.test-d.ts` (for type-level checks)
+- **Benchmarks**: `*.bench.ts` (using [Vitest](https://vitest.dev/))
 
 ### Running Tests
 
@@ -211,7 +212,7 @@ Example:
 
 ```typescript
 import { describe, it, expect } from "vitest";
-import { Result } from "../src/core/result";
+import { Result } from "../src/core/result.js";
 
 describe("Result.map", () => {
   it("should transform Ok value", () => {
@@ -225,6 +226,19 @@ describe("Result.map", () => {
   });
 });
 ```
+
+### Running Benchmarks
+
+The project includes Vitest benchmarks in the `benchmarks/` directory.
+Run them with:
+
+```bash
+pnpm bench
+```
+
+Benchmarks compare `Result` and `Option` operations against native
+try/catch and null-check equivalents to monitor overhead and catch
+regressions.
 
 ---
 
@@ -299,6 +313,7 @@ Please keep pull requests **small and focused**. Large PRs are harder to review 
    pnpm lint
    pnpm type-check
    pnpm test
+   pnpm bench
    pnpm build
    ```
 

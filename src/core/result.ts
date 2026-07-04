@@ -30,19 +30,33 @@ function isResult(value: unknown): value is Result<unknown, unknown> {
   }
 }
 
+const MAX_STRINGIFY_LENGTH = 512;
+
 /**
  * Safely stringifies a value for use in an error message.
  * Falls back to String() when JSON.stringify returns undefined or throws
  * (e.g. undefined, functions, symbols, BigInt, or circular references).
+ * Error instances are serialized via String(error) so the message is preserved.
+ * Output is truncated to MAX_STRINGIFY_LENGTH to avoid unbounded messages.
  */
 function safeStringify(value: unknown): string {
+  let serialized: string | undefined;
+
   try {
-    const serialized = JSON.stringify(value);
-    if (serialized !== undefined) {
-      return serialized;
+    if (value instanceof Error) {
+      serialized = String(value);
+    } else {
+      serialized = JSON.stringify(value);
     }
   } catch {
     // fall through to the fallback below
+  }
+
+  if (serialized !== undefined) {
+    if (serialized.length <= MAX_STRINGIFY_LENGTH) {
+      return serialized;
+    }
+    return `${serialized.slice(0, MAX_STRINGIFY_LENGTH)}...`;
   }
 
   try {

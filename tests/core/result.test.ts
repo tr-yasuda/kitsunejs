@@ -119,6 +119,25 @@ describe("Result", () => {
       const result = Result.err<number, undefined>(undefined);
       expect(() => result.unwrap()).toThrow(UnwrapError);
     });
+
+    test("Err case with Error value: message includes error details", () => {
+      const result = Result.err<number, Error>(new Error("connection failed"));
+      expect(() => result.unwrap()).toThrow("connection failed");
+    });
+
+    test("Err case with huge object: message is capped", () => {
+      const big = { data: "x".repeat(2000) };
+      const result = Result.err<number, typeof big>(big);
+      let message = "";
+      try {
+        result.unwrap();
+      } catch (e) {
+        if (e instanceof UnwrapError) {
+          message = e.message;
+        }
+      }
+      expect(message.length).toBeLessThan(2000);
+    });
   });
 
   describe("expect()", () => {

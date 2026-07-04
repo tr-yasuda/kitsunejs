@@ -138,6 +138,19 @@ describe("Result", () => {
       }
       expect(message.length).toBeLessThan(2000);
     });
+
+    test("Err case with Error value: UnwrapError preserves cause", () => {
+      const original = new Error("deep failure");
+      const result = Result.err<number, Error>(original);
+      try {
+        result.unwrap();
+      } catch (e) {
+        expect(e).toBeInstanceOf(UnwrapError);
+        if (e instanceof UnwrapError) {
+          expect(e.cause).toBe(original);
+        }
+      }
+    });
   });
 
   describe("expect()", () => {

@@ -687,6 +687,7 @@ export class Err<T = never, E = unknown> extends Result<T, E> {
   unwrap(): never {
     throw new UnwrapError(
       `Called unwrap on an Err value: ${safeStringify(this.error)}`,
+      { cause: this.error },
     );
   }
 

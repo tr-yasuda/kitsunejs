@@ -97,6 +97,11 @@ const value2 = Result.fromNullable(null, 'Value is null');
 console.log(value2.isErr()); // true
 ```
 
+**Migration note**: `fromNullable` narrows the `Ok` type to `NonNullable<T>`.
+If you previously typed the result as `Result<T | null, E>` or otherwise relied
+on the nullable type persisting in the success branch, update those annotations
+to `Result<T, E>` (or `Result<NonNullable<T>, E>`).
+
 ##### `Result.try<T, E = Error>(fn: () => T): Result<T, E>`
 
 Executes a synchronous function that may throw an exception and converts the result to a `Result`.

@@ -412,7 +412,10 @@ describe("Result type tests", () => {
     const fromNullableOk = Result.fromNullable(42, "error");
     expectTypeOf(fromNullableOk).toEqualTypeOf<Result<number, string>>();
 
-    const fromNullableErr = Result.fromNullable<number, string>(null, "error");
+    const fromNullableErr = Result.fromNullable<number | null, string>(
+      null,
+      "error",
+    );
     expectTypeOf(fromNullableErr).toEqualTypeOf<Result<number, string>>();
 
     const tryResult = Result.try(() => 42);

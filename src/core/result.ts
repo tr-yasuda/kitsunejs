@@ -30,23 +30,137 @@ function isResult(value: unknown): value is Result<unknown, unknown> {
   }
 }
 
+const MAX_STRINGIFY_LENGTH = 512;
+const MAX_STRINGIFY_DEPTH = 4;
+const MAX_STRINGIFY_ARRAY_LENGTH = 50;
+const MAX_STRINGIFY_STRING_LENGTH = 200;
+
+function truncateString(
+  value: string,
+  maxLength = MAX_STRINGIFY_LENGTH,
+): string {
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  const suffix = "...";
+  const limit = maxLength - suffix.length;
+  let result = "";
+  let count = 0;
+
+  for (const codePoint of value) {
+    if (count >= limit) {
+      break;
+    }
+    result += codePoint;
+    count++;
+  }
+
+  return `${result}${suffix}`;
+}
+
+function isErrorLike(value: unknown): value is Error {
+  return Object.prototype.toString.call(value) === "[object Error]";
+}
+
+function createBudgetReplacer(
+  maxDepth: number,
+  maxArrayLength: number,
+  maxStringLength: number,
+): (_key: string, value: unknown) => unknown {
+  const depthMap = new WeakMap<object, number>();
+
+  return function replacer(
+    this: unknown,
+    _key: string,
+    value: unknown,
+  ): unknown {
+    if (typeof value === "function") {
+      return "[Function]";
+    }
+    if (typeof value === "bigint") {
+      return "[BigInt]";
+    }
+    if (typeof value === "string" && value.length > maxStringLength) {
+      return truncateString(value, maxStringLength);
+    }
+    if (Array.isArray(value) && value.length > maxArrayLength) {
+      return value.slice(0, maxArrayLength).concat(["..."]);
+    }
+    if (value !== null && typeof value === "object") {
+      const parent =
+        this !== null && typeof this === "object"
+          ? (this as object)
+          : undefined;
+      const parentDepth =
+        parent === undefined ? 0 : (depthMap.get(parent) ?? 0);
+      const currentDepth = parent === undefined ? 0 : parentDepth + 1;
+      depthMap.set(value, currentDepth);
+      if (currentDepth > maxDepth) {
+        return "[...]";
+      }
+    }
+    return value;
+  };
+}
+
+const budgetReplacer = createBudgetReplacer(
+  MAX_STRINGIFY_DEPTH,
+  MAX_STRINGIFY_ARRAY_LENGTH,
+  MAX_STRINGIFY_STRING_LENGTH,
+);
+
 /**
  * Safely stringifies a value for use in an error message.
- * Falls back to String() when JSON.stringify returns undefined or throws
- * (e.g. undefined, functions, symbols, BigInt, or circular references).
+ * Functions are rendered as "[Function]", BigInt values as "[BigInt]",
+ * and Error-like objects (including those from other realms) are serialized
+ * via String(error) with their own enumerable properties appended.
+ * JSON.stringify output is bounded by depth, array length, and string length
+ * to avoid huge intermediate output. Falls back to String() when serialization
+ * returns undefined or throws (e.g. undefined, symbols, or circular references).
+ * Output is truncated to the supplied maxLength to avoid unbounded messages.
  */
-function safeStringify(value: unknown): string {
+function safeStringify(
+  value: unknown,
+  maxLength = MAX_STRINGIFY_LENGTH,
+): string {
+  if (typeof value === "function") {
+    return truncateString("[Function]", maxLength);
+  }
+
+  let serialized: string | undefined;
+
   try {
-    const serialized = JSON.stringify(value);
-    if (serialized !== undefined) {
-      return serialized;
+    if (isErrorLike(value)) {
+      const error = value as Error & Record<string, unknown>;
+      const errorMessage = String(error);
+      const enumerableKeys = Object.keys(error);
+      if (enumerableKeys.length === 0) {
+        serialized = errorMessage;
+      } else {
+        const props: Record<string, unknown> = {};
+        for (const key of enumerableKeys) {
+          props[key] = error[key];
+        }
+        try {
+          serialized = `${errorMessage} ${JSON.stringify(props, budgetReplacer)}`;
+        } catch {
+          serialized = errorMessage;
+        }
+      }
+    } else {
+      serialized = JSON.stringify(value, budgetReplacer);
     }
   } catch {
     // fall through to the fallback below
   }
 
+  if (serialized !== undefined) {
+    return truncateString(serialized, maxLength);
+  }
+
   try {
-    return String(value);
+    return truncateString(String(value), maxLength);
   } catch {
     return "[unable to serialize error value]";
   }
@@ -111,13 +225,15 @@ export abstract class Result<T, E> {
 
   /**
    * Returns the contained Ok value.
-   * Throws an UnwrapError if the value is Err.
+   * Throws an UnwrapError if the value is Err. The thrown error may include
+   * an optional `cause` property containing the Err value.
    */
   abstract unwrap(): T;
 
   /**
    * Returns the contained Ok value with a custom error message.
-   * Throws an UnwrapError with the provided message if the value is Err.
+   * Throws an UnwrapError with the provided message if the value is Err. The
+   * thrown error may include an optional `cause` property containing the Err value.
    */
   abstract expect(message: string): T;
 
@@ -137,13 +253,15 @@ export abstract class Result<T, E> {
 
   /**
    * Returns the contained Err value.
-   * Throws an UnwrapError if the value is Ok.
+   * Throws an UnwrapError if the value is Ok. The thrown error may include an
+   * optional `cause` property containing the Ok value.
    */
   abstract unwrapErr(): E;
 
   /**
    * Returns the contained Err value with a custom error message.
-   * Throws an UnwrapError with the provided message if the value is Ok.
+   * Throws an UnwrapError with the provided message if the value is Ok. The
+   * thrown error may include an optional `cause` property containing the Ok value.
    *
    * @param message - Message to display on error
    * @returns Err value if Err
@@ -253,7 +371,12 @@ export abstract class Result<T, E> {
    * console.log(result.unwrap()); // 43
    * ```
    */
-  abstract inspect(fn: (value: T) => void): this;
+  inspect(fn: (value: T) => void): this {
+    if (this.isOk()) {
+      fn(this.unwrap());
+    }
+    return this;
+  }
 
   /**
    * Calls a function with the Err value (if Err), then returns self unchanged.
@@ -270,7 +393,12 @@ export abstract class Result<T, E> {
    * console.log(result); // 0
    * ```
    */
-  abstract inspectErr(fn: (error: E) => void): this;
+  inspectErr(fn: (error: E) => void): this {
+    if (this.isErr()) {
+      fn(this.unwrapErr());
+    }
+    return this;
+  }
 
   /**
    * Calls a function with self regardless of whether the result is Ok or Err,
@@ -380,7 +508,8 @@ export abstract class Result<T, E> {
    * by value. Both must be the same variant (`Ok`/`Err`) and contain strictly
    * equal (`===`) values. Returns false for arguments that do not look like a
    * Result, including missing or non-callable `unwrap`/`unwrapErr` methods or
-   * an invalid variant tag.
+   * an invalid variant tag. If the other object's `unwrap` or `unwrapErr`
+   * throws, the comparison returns false.
    *
    * @param other - Result (or Result-like object) to compare with
    * @returns true if both results are equal, otherwise false
@@ -400,10 +529,20 @@ export abstract class Result<T, E> {
       return false;
     }
     if (this.tag === "Ok" && other.tag === "Ok") {
-      return (this.unwrap() as unknown) === other.unwrap();
+      const value = this.unwrap() as unknown;
+      try {
+        return value === other.unwrap();
+      } catch {
+        return false;
+      }
     }
     if (this.tag === "Err" && other.tag === "Err") {
-      return (this.unwrapErr() as unknown) === other.unwrapErr();
+      const error = this.unwrapErr() as unknown;
+      try {
+        return error === other.unwrapErr();
+      } catch {
+        return false;
+      }
     }
     return false;
   }
@@ -429,16 +568,19 @@ export abstract class Result<T, E> {
   static fromNullable<T, E>(
     value: T | null | undefined,
     error: E,
-  ): Result<T, E> {
+  ): Result<NonNullable<T>, E> {
     if (value === null || value === undefined) {
-      return Result.err<T, E>(error);
+      return Result.err<NonNullable<T>, E>(error);
     }
-    return Result.ok<T, E>(value);
+    return Result.ok<NonNullable<T>, E>(value);
   }
 
   /**
    * Executes a function that may throw an exception and converts it to a Result.
    * Returns Ok if the function executes successfully, otherwise returns Err with the caught error.
+   *
+   * **Note:** TypeScript cannot constrain the type of thrown values at runtime.
+   * The generic `E` is a compile-time assertion; the actual payload may be any value.
    */
   static try<T, E = Error>(fn: () => T): Result<T, E> {
     try {
@@ -451,6 +593,9 @@ export abstract class Result<T, E> {
   /**
    * Executes an async function that may throw an exception and converts it to a Promise<Result>.
    * Returns Ok if the function resolves successfully, otherwise returns Err with the caught error.
+   *
+   * **Note:** TypeScript cannot constrain the type of thrown or rejected values at runtime.
+   * The generic `E` is a compile-time assertion; the actual payload may be any value.
    */
   static async tryAsync<T, E = Error>(
     fn: () => Promise<T>,
@@ -466,6 +611,9 @@ export abstract class Result<T, E> {
   /**
    * Converts a Promise to a Promise<Result>.
    * Returns Ok if the Promise resolves successfully, otherwise returns Err with the caught error.
+   *
+   * **Note:** TypeScript cannot constrain the type of rejected values at runtime.
+   * The generic `E` is a compile-time assertion; the actual payload may be any value.
    */
   static fromPromise<T, E = Error>(promise: Promise<T>): Promise<Result<T, E>> {
     return Result.tryAsync<T, E>(() => promise);
@@ -482,7 +630,7 @@ export abstract class Result<T, E> {
 
     for (const r of results) {
       if (r.isErr()) {
-        // 型パラメータ T は配列版 (T[]) に変わるが、Err インスタンス自体はそのまま再利用して問題ない
+        // The type parameter T becomes T[] in the array variant, but the Err instance can be reused as-is.
         return r as unknown as Result<T[], E>;
       }
       values.push(r.unwrap());
@@ -501,11 +649,11 @@ export abstract class Result<T, E> {
 
     for (const r of results) {
       if (r.isOk()) {
-        // 型パラメータ E は配列版 (E[]) に変わるが、Ok インスタンス自体はそのまま再利用して問題ない
+        // The type parameter E becomes E[] in the array variant, but the Ok instance can be reused as-is.
         return r as unknown as Result<T, E[]>;
       }
-      // r は Err 側なので、unwrapOrElse のコールバックから error を取り出して蓄積する
-      // 戻り値 T は使わないため、適当な値を返している
+      // r is known to be Err here, so unwrap the error and accumulate it.
+      // The return value of unwrapOrElse is unused because we only care about the side effect.
       r.unwrapOrElse((e) => {
         errors.push(e);
         return undefined as never;
@@ -557,11 +705,13 @@ export class Ok<T, E = never> extends Result<T, E> {
   }
 
   unwrapErr(): never {
-    throw new UnwrapError("Called unwrapErr on an Ok value");
+    throw new UnwrapError("Called unwrapErr on an Ok value", {
+      cause: this.value,
+    });
   }
 
   expectErr(message: string): never {
-    throw new UnwrapError(message);
+    throw new UnwrapError(message, { cause: this.value });
   }
 
   unwrapOr<U>(_defaultValue: U): T {
@@ -586,15 +736,6 @@ export class Ok<T, E = never> extends Result<T, E> {
 
   mapErr<F>(_fn: (error: E) => F): Result<T, F> {
     return this as unknown as Result<T, F>;
-  }
-
-  inspect(fn: (value: T) => void): this {
-    fn(this.value);
-    return this;
-  }
-
-  inspectErr(_fn: (error: E) => void): this {
-    return this;
   }
 
   and<U>(other: Result<U, E>): Result<U, E> {
@@ -667,13 +808,15 @@ export class Err<T = never, E = unknown> extends Result<T, E> {
   }
 
   unwrap(): never {
+    const prefix = "Called unwrap on an Err value: ";
     throw new UnwrapError(
-      `Called unwrap on an Err value: ${safeStringify(this.error)}`,
+      `${prefix}${safeStringify(this.error, MAX_STRINGIFY_LENGTH - prefix.length)}`,
+      { cause: this.error },
     );
   }
 
   expect(message: string): never {
-    throw new UnwrapError(message);
+    throw new UnwrapError(message, { cause: this.error });
   }
 
   unwrapErr(): E {
@@ -710,15 +853,6 @@ export class Err<T = never, E = unknown> extends Result<T, E> {
 
   mapErr<F>(fn: (error: E) => F): Result<T, F> {
     return new Err(fn(this.error));
-  }
-
-  inspect(_fn: (value: T) => void): this {
-    return this;
-  }
-
-  inspectErr(fn: (error: E) => void): this {
-    fn(this.error);
-    return this;
   }
 
   and<U>(_other: Result<U, E>): Result<U, E> {

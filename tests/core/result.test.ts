@@ -119,6 +119,127 @@ describe("Result", () => {
       const result = Result.err<number, undefined>(undefined);
       expect(() => result.unwrap()).toThrow(UnwrapError);
     });
+
+    test("Err case with Error value: message includes error details", () => {
+      const result = Result.err<number, Error>(new Error("connection failed"));
+      expect(() => result.unwrap()).toThrow("connection failed");
+    });
+
+    test("Err case with huge object: message is capped", () => {
+      const big = { data: "x".repeat(2000) };
+      const result = Result.err<number, typeof big>(big);
+      const prefix = "Called unwrap on an Err value: ";
+      try {
+        result.unwrap();
+        throw new Error("Expected unwrap to throw");
+      } catch (e) {
+        expect(e).toBeInstanceOf(UnwrapError);
+        if (e instanceof UnwrapError) {
+          expect(e.message.startsWith(prefix)).toBe(true);
+          expect(e.message.length).toBeLessThanOrEqual(512);
+        }
+      }
+    });
+
+    test("Err case with Error value: UnwrapError preserves cause", () => {
+      const original = new Error("deep failure");
+      const result = Result.err<number, Error>(original);
+      try {
+        result.unwrap();
+        throw new Error("Expected unwrap to throw");
+      } catch (e) {
+        expect(e).toBeInstanceOf(UnwrapError);
+        if (e instanceof UnwrapError) {
+          expect(e.cause).toBe(original);
+        }
+      }
+    });
+
+    test("Err case with function value: renders [Function]", () => {
+      const fn = function namedFn() {
+        return 42;
+      };
+      const result = Result.err<number, typeof fn>(fn);
+      try {
+        result.unwrap();
+        throw new Error("Expected unwrap to throw");
+      } catch (e) {
+        expect(e).toBeInstanceOf(UnwrapError);
+        if (e instanceof UnwrapError) {
+          expect(e.message).toContain("[Function]");
+        }
+      }
+    });
+
+    test("Err case with cross-realm Error-like object: includes message", () => {
+      const errorLike = {
+        message: "cross-realm failure",
+        name: "Error",
+        toString: () => "Error: cross-realm failure",
+      };
+      const result = Result.err<number, typeof errorLike>(errorLike);
+      try {
+        result.unwrap();
+        throw new Error("Expected unwrap to throw");
+      } catch (e) {
+        expect(e).toBeInstanceOf(UnwrapError);
+        if (e instanceof UnwrapError) {
+          expect(e.message).toContain("cross-realm failure");
+        }
+      }
+    });
+
+    test("Err case when String(value) throws: falls back to [unable to serialize error value]", () => {
+      const badValue = {
+        toJSON: (): never => {
+          throw new Error("toJSON failed");
+        },
+        toString: (): never => {
+          throw new Error("toString failed");
+        },
+      };
+      const result = Result.err<number, typeof badValue>(badValue);
+      try {
+        result.unwrap();
+        throw new Error("Expected unwrap to throw");
+      } catch (e) {
+        expect(e).toBeInstanceOf(UnwrapError);
+        if (e instanceof UnwrapError) {
+          expect(e.message).toBe(
+            "Called unwrap on an Err value: [unable to serialize error value]",
+          );
+        }
+      }
+    });
+
+    test("Err case with small array: does not truncate array", () => {
+      const result = Result.err<number, number[]>([1, 2, 3]);
+      expect(() => result.unwrap()).toThrow("[1,2,3]");
+    });
+
+    test("Err case with shallow nested object: does not depth-truncate", () => {
+      const result = Result.err<number, { a: { b: { c: { d: number } } } }>({
+        a: { b: { c: { d: 1 } } },
+      });
+      expect(() => result.unwrap()).toThrow('"d":1');
+    });
+
+    test("Err case with Error containing circular enumerable property: falls back to String(error)", () => {
+      const error = Object.assign(new Error("circular error"), {
+        self: undefined as unknown,
+      });
+      error.self = error;
+      const result = Result.err<number, typeof error>(error);
+      try {
+        result.unwrap();
+        throw new Error("Expected unwrap to throw");
+      } catch (e) {
+        expect(e).toBeInstanceOf(UnwrapError);
+        if (e instanceof UnwrapError) {
+          expect(e.message).toContain("circular error");
+        }
+      }
+    });
   });
 
   describe("expect()", () => {
@@ -130,6 +251,21 @@ describe("Result", () => {
     test("Err case: throws an exception with custom message", () => {
       const result = Result.err("error");
       expect(() => result.expect("custom message")).toThrow(UnwrapError);
+      expect(() => result.expect("custom message")).toThrow("custom message");
+    });
+
+    test("Err case: UnwrapError preserves cause", () => {
+      const error = { reason: "failed" };
+      const result = Result.err<number, typeof error>(error);
+      try {
+        result.expect("custom message");
+        throw new Error("Expected expect to throw");
+      } catch (e) {
+        expect(e).toBeInstanceOf(UnwrapError);
+        if (e instanceof UnwrapError) {
+          expect(e.cause).toBe(error);
+        }
+      }
     });
   });
 
@@ -142,6 +278,27 @@ describe("Result", () => {
     test("Ok case: throws an exception", () => {
       const result = Result.ok(42);
       expect(() => result.unwrapErr()).toThrow(UnwrapError);
+    });
+
+    test("Ok case: throws the default message", () => {
+      const result = Result.ok(42);
+      expect(() => result.unwrapErr()).toThrow(
+        "Called unwrapErr on an Ok value",
+      );
+    });
+
+    test("Ok case: UnwrapError preserves cause", () => {
+      const value = { payload: 42 };
+      const result = Result.ok<typeof value, string>(value);
+      try {
+        result.unwrapErr();
+        throw new Error("Expected unwrapErr to throw");
+      } catch (e) {
+        expect(e).toBeInstanceOf(UnwrapError);
+        if (e instanceof UnwrapError) {
+          expect(e.cause).toBe(value);
+        }
+      }
     });
   });
 
@@ -157,6 +314,20 @@ describe("Result", () => {
       expect(() => result.expectErr("custom message")).toThrow(
         "custom message",
       );
+    });
+
+    test("Ok case: UnwrapError preserves cause", () => {
+      const value = { payload: 42 };
+      const result = Result.ok<typeof value, string>(value);
+      try {
+        result.expectErr("custom message");
+        throw new Error("Expected expectErr to throw");
+      } catch (e) {
+        expect(e).toBeInstanceOf(UnwrapError);
+        if (e instanceof UnwrapError) {
+          expect(e.cause).toBe(value);
+        }
+      }
     });
   });
 
@@ -363,6 +534,15 @@ describe("Result", () => {
       expect(called).toBe(0);
       expect(inspected).toBe(result);
     });
+
+    test("propagates a thrown callback error", () => {
+      const result = Result.ok<number, string>(42);
+      expect(() =>
+        result.inspect(() => {
+          throw new Error("inspect error");
+        }),
+      ).toThrow("inspect error");
+    });
   });
 
   describe("inspectErr()", () => {
@@ -388,6 +568,15 @@ describe("Result", () => {
 
       expect(called).toBe(0);
       expect(inspected).toBe(result);
+    });
+
+    test("propagates a thrown callback error", () => {
+      const result = Result.err<number, string>("error");
+      expect(() =>
+        result.inspectErr(() => {
+          throw new Error("inspectErr error");
+        }),
+      ).toThrow("inspectErr error");
     });
   });
 
@@ -900,6 +1089,38 @@ describe("Result", () => {
         } as unknown as Result<number, string>),
       ).toBe(false);
     });
+
+    test("returns false when Result-like unwrap throws", () => {
+      const ok = Result.ok(1);
+      const malicious = {
+        tag: "Ok" as const,
+        unwrap: () => {
+          throw new Error("boom");
+        },
+        unwrapErr: () => {
+          throw new Error("not err");
+        },
+      };
+      expect(ok.equals(malicious as unknown as Result<unknown, unknown>)).toBe(
+        false,
+      );
+    });
+
+    test("returns false when Result-like unwrapErr throws", () => {
+      const err = Result.err<number, number>(1);
+      const malicious = {
+        tag: "Err" as const,
+        unwrap: () => {
+          throw new Error("not ok");
+        },
+        unwrapErr: () => {
+          throw new Error("boom");
+        },
+      };
+      expect(err.equals(malicious as unknown as Result<unknown, unknown>)).toBe(
+        false,
+      );
+    });
   });
 
   describe("transpose()", () => {
@@ -998,6 +1219,37 @@ describe("Result", () => {
       expect(result.isOk()).toBe(true);
       expect(result.unwrap()).toBe("");
     });
+
+    test("null with union generic → Err", () => {
+      const result = Result.fromNullable<string | null, string>(null, "error");
+      expect(result.isErr()).toBe(true);
+    });
+
+    test("value with null union generic → Ok", () => {
+      const result = Result.fromNullable<string | null, string>(
+        "hello",
+        "error",
+      );
+      expect(result.isOk()).toBe(true);
+      expect(result.unwrap()).toBe("hello");
+    });
+
+    test("undefined with union generic → Err", () => {
+      const result = Result.fromNullable<string | undefined, string>(
+        undefined,
+        "error",
+      );
+      expect(result.isErr()).toBe(true);
+    });
+
+    test("value with undefined union generic → Ok", () => {
+      const result = Result.fromNullable<string | undefined, string>(
+        "hello",
+        "error",
+      );
+      expect(result.isOk()).toBe(true);
+      expect(result.unwrap()).toBe("hello");
+    });
   });
 
   describe("Result.try()", () => {
@@ -1059,6 +1311,21 @@ describe("Result", () => {
         throw new Error("test error");
       });
       expect(result.isErr()).toBe(true);
+    });
+
+    test("synchronous throw before await → Err", async () => {
+      const result = await Result.tryAsync<number, Error>(() => {
+        throw new Error("sync throw in async fn");
+      });
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        const error = result.unwrapOrElse((err) => {
+          expect(err).toBeInstanceOf(Error);
+          expect(err.message).toBe("sync throw in async fn");
+          return 0;
+        });
+        expect(error).toBe(0);
+      }
     });
 
     test("Promise rejects → Err (verify error content)", async () => {
@@ -1405,6 +1672,27 @@ describe("Result", () => {
       expect([...iterator]).toEqual([]);
     });
 
+    test("Custom subclass inherits default iterator for Ok", () => {
+      const customOk = Object.create(Result.prototype) as Result<
+        number,
+        string
+      >;
+      (customOk as unknown as { tag: "Ok" }).tag = "Ok";
+      (customOk as unknown as { isOk: () => boolean }).isOk = () => true;
+      (customOk as unknown as { unwrap: () => number }).unwrap = () => 42;
+      expect([...customOk]).toEqual([42]);
+    });
+
+    test("Custom subclass inherits default iterator for Err", () => {
+      const customErr = Object.create(Result.prototype) as Result<
+        number,
+        string
+      >;
+      (customErr as unknown as { tag: "Err" }).tag = "Err";
+      (customErr as unknown as { isOk: () => boolean }).isOk = () => false;
+      expect([...customErr]).toEqual([]);
+    });
+
     test("Ok works with array destructuring", () => {
       const [value] = Result.ok(42);
       expect(value).toBe(42);
@@ -1525,5 +1813,43 @@ describe("Result", () => {
       const result2 = Result.ok<number, string>(+0);
       expect(result1.equals(result2)).toBe(true);
     });
+  });
+});
+
+describe("Result.try() non-Error throws", () => {
+  test("catches thrown string and stores it as Err", () => {
+    const result = Result.try<number, string>(() => {
+      throw "not an error";
+    });
+    expect(result.isErr()).toBe(true);
+    expect(result.unwrapOrElse((e) => e)).toBe("not an error");
+  });
+
+  test("catches thrown number and stores it as Err", () => {
+    const result = Result.try<number, number>(() => {
+      throw 42;
+    });
+    expect(result.isErr()).toBe(true);
+    expect(result.unwrapOrElse((e) => e)).toBe(42);
+  });
+});
+
+describe("Result.tryAsync() non-Error throws", () => {
+  test("catches rejected string and stores it as Err", async () => {
+    const result = await Result.tryAsync<number, string>(async () => {
+      throw "async failure";
+    });
+    expect(result.isErr()).toBe(true);
+    expect(result.unwrapOrElse((e) => e)).toBe("async failure");
+  });
+});
+
+describe("Result.fromPromise() non-Error rejections", () => {
+  test("catches rejection with non-Error value", async () => {
+    const result = await Result.fromPromise<number, string>(
+      Promise.reject("rejected"),
+    );
+    expect(result.isErr()).toBe(true);
+    expect(result.unwrapOrElse((e) => e)).toBe("rejected");
   });
 });

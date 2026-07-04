@@ -114,6 +114,11 @@ describe("Option", () => {
       const option = Option.none();
       expect(() => option.unwrap()).toThrow(UnwrapError);
     });
+
+    test("None case: throws the default message", () => {
+      const option = Option.none();
+      expect(() => option.unwrap()).toThrow("Called unwrap on a None value");
+    });
   });
 
   describe("expect()", () => {
@@ -316,6 +321,15 @@ describe("Option", () => {
 
       expect(called).toBe(0);
       expect(inspected).toBe(option);
+    });
+
+    test("propagates a thrown callback error", () => {
+      const option = Option.some(42);
+      expect(() =>
+        option.inspect(() => {
+          throw new Error("inspect error");
+        }),
+      ).toThrow("inspect error");
     });
   });
 
@@ -1039,6 +1053,17 @@ describe("Option", () => {
         } as unknown as Option<number>),
       ).toBe(false);
     });
+
+    test("returns false when Option-like unwrap throws", () => {
+      const some = Option.some(1);
+      const malicious = {
+        tag: "Some" as const,
+        unwrap: () => {
+          throw new Error("boom");
+        },
+      };
+      expect(some.equals(malicious as unknown as Option<unknown>)).toBe(false);
+    });
   });
 
   describe("Option.fromNullable()", () => {
@@ -1074,6 +1099,28 @@ describe("Option", () => {
       const option = Option.fromNullable(false);
       expect(option.isSome()).toBe(true);
       expect(option.unwrap()).toBe(false);
+    });
+
+    test("value with union generic → Some without null", () => {
+      const option = Option.fromNullable<string | null>("hello");
+      expect(option.isSome()).toBe(true);
+      expect(option.unwrap()).toBe("hello");
+    });
+
+    test("null with union generic → None", () => {
+      const option = Option.fromNullable<string | null>(null);
+      expect(option.isNone()).toBe(true);
+    });
+
+    test("undefined with union generic → None", () => {
+      const option = Option.fromNullable<string | undefined>(undefined);
+      expect(option.isNone()).toBe(true);
+    });
+
+    test("value with undefined union generic → Some", () => {
+      const option = Option.fromNullable<string | undefined>("hello");
+      expect(option.isSome()).toBe(true);
+      expect(option.unwrap()).toBe("hello");
     });
   });
 
@@ -1297,6 +1344,21 @@ describe("Option", () => {
     test("None returned iterator is itself iterable", () => {
       const iterator = Option.none<number>()[Symbol.iterator]();
       expect([...iterator]).toEqual([]);
+    });
+
+    test("Custom subclass inherits default iterator for Some", () => {
+      const customSome = Object.create(Option.prototype) as Option<number>;
+      (customSome as unknown as { tag: "Some" }).tag = "Some";
+      (customSome as unknown as { isSome: () => boolean }).isSome = () => true;
+      (customSome as unknown as { unwrap: () => number }).unwrap = () => 42;
+      expect([...customSome]).toEqual([42]);
+    });
+
+    test("Custom subclass inherits default iterator for None", () => {
+      const customNone = Object.create(Option.prototype) as Option<number>;
+      (customNone as unknown as { tag: "None" }).tag = "None";
+      (customNone as unknown as { isSome: () => boolean }).isSome = () => false;
+      expect([...customNone]).toEqual([]);
     });
 
     test("Some works with array destructuring", () => {

@@ -128,20 +128,24 @@ describe("Result", () => {
     test("Err case with huge object: message is capped", () => {
       const big = { data: "x".repeat(2000) };
       const result = Result.err<number, typeof big>(big);
+      let thrown = false;
       let message = "";
       try {
         result.unwrap();
       } catch (e) {
+        thrown = true;
         if (e instanceof UnwrapError) {
           message = e.message;
         }
       }
+      expect(thrown).toBe(true);
       expect(message.length).toBeLessThan(2000);
     });
 
     test("Err case with Error value: UnwrapError preserves cause", () => {
       const original = new Error("deep failure");
       const result = Result.err<number, Error>(original);
+      expect(() => result.unwrap()).toThrow(UnwrapError);
       try {
         result.unwrap();
       } catch (e) {
@@ -161,6 +165,7 @@ describe("Result", () => {
 
     test("Err case: throws an exception with custom message", () => {
       const result = Result.err("error");
+      expect(() => result.expect("custom message")).toThrow(UnwrapError);
       expect(() => result.expect("custom message")).toThrow("custom message");
     });
   });

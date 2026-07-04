@@ -1111,6 +1111,17 @@ describe("Option", () => {
       const option = Option.fromNullable<string | null>(null);
       expect(option.isNone()).toBe(true);
     });
+
+    test("undefined with union generic → None", () => {
+      const option = Option.fromNullable<string | undefined>(undefined);
+      expect(option.isNone()).toBe(true);
+    });
+
+    test("value with undefined union generic → Some", () => {
+      const option = Option.fromNullable<string | undefined>("hello");
+      expect(option.isSome()).toBe(true);
+      expect(option.unwrap()).toBe("hello");
+    });
   });
 
   describe("edge cases", () => {

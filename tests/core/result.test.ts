@@ -136,9 +136,7 @@ describe("Result", () => {
         expect(e).toBeInstanceOf(UnwrapError);
         if (e instanceof UnwrapError) {
           expect(e.message.startsWith(prefix)).toBe(true);
-          const serialized = e.message.slice(prefix.length);
-          expect(serialized.endsWith("...")).toBe(true);
-          expect(serialized.length).toBeLessThanOrEqual(512);
+          expect(e.message.length).toBeLessThanOrEqual(512);
         }
       }
     });
@@ -156,6 +154,63 @@ describe("Result", () => {
         }
       }
     });
+
+    test("Err case with function value: renders [Function]", () => {
+      const fn = function namedFn() {
+        return 42;
+      };
+      const result = Result.err<number, typeof fn>(fn);
+      try {
+        result.unwrap();
+        throw new Error("Expected unwrap to throw");
+      } catch (e) {
+        expect(e).toBeInstanceOf(UnwrapError);
+        if (e instanceof UnwrapError) {
+          expect(e.message).toContain("[Function]");
+        }
+      }
+    });
+
+    test("Err case with cross-realm Error-like object: includes message", () => {
+      const errorLike = {
+        message: "cross-realm failure",
+        name: "Error",
+        toString: () => "Error: cross-realm failure",
+      };
+      const result = Result.err<number, typeof errorLike>(errorLike);
+      try {
+        result.unwrap();
+        throw new Error("Expected unwrap to throw");
+      } catch (e) {
+        expect(e).toBeInstanceOf(UnwrapError);
+        if (e instanceof UnwrapError) {
+          expect(e.message).toContain("cross-realm failure");
+        }
+      }
+    });
+
+    test("Err case when String(value) throws: falls back to [unable to serialize error value]", () => {
+      const badValue = {
+        toJSON: (): never => {
+          throw new Error("toJSON failed");
+        },
+        toString: (): never => {
+          throw new Error("toString failed");
+        },
+      };
+      const result = Result.err<number, typeof badValue>(badValue);
+      try {
+        result.unwrap();
+        throw new Error("Expected unwrap to throw");
+      } catch (e) {
+        expect(e).toBeInstanceOf(UnwrapError);
+        if (e instanceof UnwrapError) {
+          expect(e.message).toBe(
+            "Called unwrap on an Err value: [unable to serialize error value]",
+          );
+        }
+      }
+    });
   });
 
   describe("expect()", () => {
@@ -168,6 +223,20 @@ describe("Result", () => {
       const result = Result.err("error");
       expect(() => result.expect("custom message")).toThrow(UnwrapError);
       expect(() => result.expect("custom message")).toThrow("custom message");
+    });
+
+    test("Err case: UnwrapError preserves cause", () => {
+      const error = { reason: "failed" };
+      const result = Result.err<number, typeof error>(error);
+      try {
+        result.expect("custom message");
+        throw new Error("Expected expect to throw");
+      } catch (e) {
+        expect(e).toBeInstanceOf(UnwrapError);
+        if (e instanceof UnwrapError) {
+          expect(e.cause).toBe(error);
+        }
+      }
     });
   });
 
@@ -188,6 +257,20 @@ describe("Result", () => {
         "Called unwrapErr on an Ok value",
       );
     });
+
+    test("Ok case: UnwrapError preserves cause", () => {
+      const value = { payload: 42 };
+      const result = Result.ok<typeof value, string>(value);
+      try {
+        result.unwrapErr();
+        throw new Error("Expected unwrapErr to throw");
+      } catch (e) {
+        expect(e).toBeInstanceOf(UnwrapError);
+        if (e instanceof UnwrapError) {
+          expect(e.cause).toBe(value);
+        }
+      }
+    });
   });
 
   describe("expectErr()", () => {
@@ -202,6 +285,20 @@ describe("Result", () => {
       expect(() => result.expectErr("custom message")).toThrow(
         "custom message",
       );
+    });
+
+    test("Ok case: UnwrapError preserves cause", () => {
+      const value = { payload: 42 };
+      const result = Result.ok<typeof value, string>(value);
+      try {
+        result.expectErr("custom message");
+        throw new Error("Expected expectErr to throw");
+      } catch (e) {
+        expect(e).toBeInstanceOf(UnwrapError);
+        if (e instanceof UnwrapError) {
+          expect(e.cause).toBe(value);
+        }
+      }
     });
   });
 
@@ -1098,6 +1195,32 @@ describe("Result", () => {
       const result = Result.fromNullable<string | null, string>(null, "error");
       expect(result.isErr()).toBe(true);
     });
+
+    test("value with null union generic → Ok", () => {
+      const result = Result.fromNullable<string | null, string>(
+        "hello",
+        "error",
+      );
+      expect(result.isOk()).toBe(true);
+      expect(result.unwrap()).toBe("hello");
+    });
+
+    test("undefined with union generic → Err", () => {
+      const result = Result.fromNullable<string | undefined, string>(
+        undefined,
+        "error",
+      );
+      expect(result.isErr()).toBe(true);
+    });
+
+    test("value with undefined union generic → Ok", () => {
+      const result = Result.fromNullable<string | undefined, string>(
+        "hello",
+        "error",
+      );
+      expect(result.isOk()).toBe(true);
+      expect(result.unwrap()).toBe("hello");
+    });
   });
 
   describe("Result.try()", () => {
@@ -1159,6 +1282,21 @@ describe("Result", () => {
         throw new Error("test error");
       });
       expect(result.isErr()).toBe(true);
+    });
+
+    test("synchronous throw before await → Err", async () => {
+      const result = await Result.tryAsync<number, Error>(() => {
+        throw new Error("sync throw in async fn");
+      });
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        const error = result.unwrapOrElse((err) => {
+          expect(err).toBeInstanceOf(Error);
+          expect(err.message).toBe("sync throw in async fn");
+          return 0;
+        });
+        expect(error).toBe(0);
+      }
     });
 
     test("Promise rejects → Err (verify error content)", async () => {

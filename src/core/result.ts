@@ -267,7 +267,12 @@ export abstract class Result<T, E> {
    * console.log(result.unwrap()); // 43
    * ```
    */
-  abstract inspect(fn: (value: T) => void): this;
+  inspect(fn: (value: T) => void): this {
+    if (this.isOk()) {
+      fn(this.unwrap());
+    }
+    return this;
+  }
 
   /**
    * Calls a function with the Err value (if Err), then returns self unchanged.
@@ -284,7 +289,12 @@ export abstract class Result<T, E> {
    * console.log(result); // 0
    * ```
    */
-  abstract inspectErr(fn: (error: E) => void): this;
+  inspectErr(fn: (error: E) => void): this {
+    if (this.isErr()) {
+      fn(this.unwrapErr());
+    }
+    return this;
+  }
 
   /**
    * Calls a function with self regardless of whether the result is Ok or Err,
@@ -509,7 +519,7 @@ export abstract class Result<T, E> {
 
     for (const r of results) {
       if (r.isErr()) {
-        // 型パラメータ T は配列版 (T[]) に変わるが、Err インスタンス自体はそのまま再利用して問題ない
+        // The type parameter T becomes T[] in the array variant, but the Err instance can be reused as-is.
         return r as unknown as Result<T[], E>;
       }
       values.push(r.unwrap());
@@ -528,11 +538,11 @@ export abstract class Result<T, E> {
 
     for (const r of results) {
       if (r.isOk()) {
-        // 型パラメータ E は配列版 (E[]) に変わるが、Ok インスタンス自体はそのまま再利用して問題ない
+        // The type parameter E becomes E[] in the array variant, but the Ok instance can be reused as-is.
         return r as unknown as Result<T, E[]>;
       }
-      // r は Err 側なので、unwrapOrElse のコールバックから error を取り出して蓄積する
-      // 戻り値 T は使わないため、適当な値を返している
+      // r is known to be Err here, so unwrap the error and accumulate it.
+      // The return value of unwrapOrElse is unused because we only care about the side effect.
       r.unwrapOrElse((e) => {
         errors.push(e);
         return undefined as never;
@@ -613,15 +623,6 @@ export class Ok<T, E = never> extends Result<T, E> {
 
   mapErr<F>(_fn: (error: E) => F): Result<T, F> {
     return this as unknown as Result<T, F>;
-  }
-
-  inspect(fn: (value: T) => void): this {
-    fn(this.value);
-    return this;
-  }
-
-  inspectErr(_fn: (error: E) => void): this {
-    return this;
   }
 
   and<U>(other: Result<U, E>): Result<U, E> {
@@ -738,15 +739,6 @@ export class Err<T = never, E = unknown> extends Result<T, E> {
 
   mapErr<F>(fn: (error: E) => F): Result<T, F> {
     return new Err(fn(this.error));
-  }
-
-  inspect(_fn: (value: T) => void): this {
-    return this;
-  }
-
-  inspectErr(fn: (error: E) => void): this {
-    fn(this.error);
-    return this;
   }
 
   and<U>(_other: Result<U, E>): Result<U, E> {

@@ -1596,3 +1596,41 @@ describe("Result", () => {
     });
   });
 });
+
+describe("Result.try() non-Error throws", () => {
+  test("catches thrown string and stores it as Err", () => {
+    const result = Result.try<number, string>(() => {
+      throw "not an error";
+    });
+    expect(result.isErr()).toBe(true);
+    expect(result.unwrapOrElse((e) => e)).toBe("not an error");
+  });
+
+  test("catches thrown number and stores it as Err", () => {
+    const result = Result.try<number, number>(() => {
+      throw 42;
+    });
+    expect(result.isErr()).toBe(true);
+    expect(result.unwrapOrElse((e) => e)).toBe(42);
+  });
+});
+
+describe("Result.tryAsync() non-Error throws", () => {
+  test("catches rejected string and stores it as Err", async () => {
+    const result = await Result.tryAsync<number, string>(async () => {
+      throw "async failure";
+    });
+    expect(result.isErr()).toBe(true);
+    expect(result.unwrapOrElse((e) => e)).toBe("async failure");
+  });
+});
+
+describe("Result.fromPromise() non-Error rejections", () => {
+  test("catches rejection with non-Error value", async () => {
+    const result = await Result.fromPromise<number, string>(
+      Promise.reject("rejected"),
+    );
+    expect(result.isErr()).toBe(true);
+    expect(result.unwrapOrElse((e) => e)).toBe("rejected");
+  });
+});

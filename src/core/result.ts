@@ -457,6 +457,9 @@ export abstract class Result<T, E> {
   /**
    * Executes a function that may throw an exception and converts it to a Result.
    * Returns Ok if the function executes successfully, otherwise returns Err with the caught error.
+   *
+   * **Note:** TypeScript cannot constrain the type of thrown or rejected values at runtime.
+   * The generic `E` is a compile-time assertion; the actual payload may be any value.
    */
   static try<T, E = Error>(fn: () => T): Result<T, E> {
     try {
@@ -469,6 +472,9 @@ export abstract class Result<T, E> {
   /**
    * Executes an async function that may throw an exception and converts it to a Promise<Result>.
    * Returns Ok if the function resolves successfully, otherwise returns Err with the caught error.
+   *
+   * **Note:** TypeScript cannot constrain the type of thrown or rejected values at runtime.
+   * The generic `E` is a compile-time assertion; the actual payload may be any value.
    */
   static async tryAsync<T, E = Error>(
     fn: () => Promise<T>,
@@ -484,6 +490,9 @@ export abstract class Result<T, E> {
   /**
    * Converts a Promise to a Promise<Result>.
    * Returns Ok if the Promise resolves successfully, otherwise returns Err with the caught error.
+   *
+   * **Note:** TypeScript cannot constrain the type of thrown or rejected values at runtime.
+   * The generic `E` is a compile-time assertion; the actual payload may be any value.
    */
   static fromPromise<T, E = Error>(promise: Promise<T>): Promise<Result<T, E>> {
     return Result.tryAsync<T, E>(() => promise);

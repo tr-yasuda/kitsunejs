@@ -35,6 +35,8 @@ jobs:
           cache: 'pnpm'
       - name: install devDependencies
         run: pnpm install --frozen-lockfile
+      - name: audit production dependencies
+        run: pnpm audit --prod
       - name: type-check
         run: pnpm type-check
       - name: lint

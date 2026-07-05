@@ -10,7 +10,8 @@
     "test:coverage": "vitest run --coverage",
     "bench": "vitest bench",
     "lint": "biome check",
-    "format": "biome check --write"
+    "format": "biome check --write",
+    "audit:prod": "pnpm audit --prod"
   },
   "keywords": [
     "result",
@@ -40,13 +41,13 @@
     "provenance": true
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.1",
+    "@biomejs/biome": "2.5.2",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
     "@tsconfig/node22": "^22.0.5",
-    "@types/node": "^26.0.1",
+    "@types/node": "^22.20.0",
     "@vitest/coverage-v8": "4.1.9",
-    "conventional-changelog-conventionalcommits": "^10.2.0",
+    "conventional-changelog-conventionalcommits": "^10.2.1",
     "semantic-release": "^25.0.2",
     "tsup": "^8.5.1",
     "typescript": "^6.0.2",

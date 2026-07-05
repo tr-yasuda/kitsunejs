@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
-import { UnwrapError } from "@/core/errors.js";
-import { None, Option, Some } from "@/core/option.js";
-import { Result } from "@/core/result.js";
+import { UnwrapError } from "../../src/core/errors.js";
+import { None, Option, Some } from "../../src/core/option.js";
+import { Result } from "../../src/core/result.js";
 
 describe("Option", () => {
   describe("Option.some()", () => {

@@ -1,6 +1,6 @@
 import { describe, expectTypeOf, test } from "vitest";
-import { type None, Option, Some } from "@/core/option.js";
-import { Result, type Result as ResultType } from "@/core/result.js";
+import { type None, Option, Some } from "../../src/core/option.js";
+import { Result, type Result as ResultType } from "../../src/core/result.js";
 
 describe("Option type tests", () => {
   test("type behavior", () => {

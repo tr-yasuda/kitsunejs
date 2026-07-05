@@ -1,6 +1,6 @@
-import { UnwrapError } from "@/core/errors.js";
-import type { Option as OptionType } from "@/core/option.js";
-import { Option } from "@/core/option.js";
+import { UnwrapError } from "./errors.js";
+import type { Option as OptionType } from "./option.js";
+import { Option } from "./option.js";
 
 const EMPTY_ITERATOR: IterableIterator<never> = Object.freeze({
   next: (): IteratorResult<never> => ({ done: true, value: undefined }),

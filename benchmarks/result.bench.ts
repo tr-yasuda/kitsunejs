@@ -1,5 +1,5 @@
 import { bench, describe } from "vitest";
-import { Result } from "@/core/result.js";
+import { Result } from "../src/core/result.js";
 
 // Module-level sink to prevent the JIT from dead-code eliminating benchmark work.
 let _sink: number;

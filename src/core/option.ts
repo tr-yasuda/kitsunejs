@@ -1,6 +1,6 @@
-import { UnwrapError } from "@/core/errors.js";
-import type { Result as ResultType } from "@/core/result.js";
-import { Result } from "@/core/result.js";
+import { UnwrapError } from "./errors.js";
+import type { Result as ResultType } from "./result.js";
+import { Result } from "./result.js";
 
 const EMPTY_ITERATOR: IterableIterator<never> = Object.freeze({
   next: (): IteratorResult<never> => ({ done: true, value: undefined }),

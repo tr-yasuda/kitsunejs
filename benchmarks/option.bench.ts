@@ -1,5 +1,5 @@
 import { bench, describe } from "vitest";
-import { Option } from "@/core/option.js";
+import { Option } from "../src/core/option.js";
 
 // Module-level sink to prevent the JIT from dead-code eliminating benchmark work.
 let _sink: number;

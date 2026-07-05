@@ -7,4 +7,4 @@ overrides:
   rollup: "^4.62.2"
   vite: "^7.3.6"
   esbuild: "^0.28.1"
-  undici: ">=6.27.0"
+  undici: "^6.27.0"

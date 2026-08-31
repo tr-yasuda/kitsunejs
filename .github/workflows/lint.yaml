@@ -34,7 +34,7 @@ jobs:
           node-version: '22'
           cache: 'pnpm'
       - name: install devDependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
       - name: audit production dependencies
         run: pnpm audit --prod
       - name: type-check
@@ -64,7 +64,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'pnpm'
       - name: install devDependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
       - name: test
         run: pnpm test
 
@@ -86,7 +86,7 @@ jobs:
           node-version: '22'
           cache: 'pnpm'
       - name: install devDependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
       - name: build
         run: pnpm build
 
@@ -108,7 +108,7 @@ jobs:
           node-version: '22'
           cache: 'pnpm'
       - name: install devDependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
       - name: test with coverage
         run: pnpm test:coverage
       - name: upload coverage report

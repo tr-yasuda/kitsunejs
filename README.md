@@ -7,14 +7,6 @@
 
 Rust-inspired `Result` and `Option` types for TypeScript, enabling type-safe error handling and null safety.
 
-## Features
-
-- 🦀 **Rust-like API**: Familiar `Result<T, E>` and `Option<T>` types with methods like `map`, `andThen`, `unwrap`, etc.
-- 🔒 **Type-safe**: Full TypeScript support with proper type inference and narrowing
-- 🌳 **Tree-shakeable**: Fully ESM-ready with optional CJS support
-- 📦 **Zero dependencies**: Lightweight and self-contained
-- ⚡ **Async-ready**: Built-in support for `Promise` with `Result.tryAsync`
-
 ## Installation
 
 ```bash
@@ -27,6 +19,37 @@ pnpm add kitsunejs
 # yarn
 yarn add kitsunejs
 ```
+
+## Quick Start
+
+If you currently wrap `JSON.parse` in `try/catch`, return a `Result` from the
+parsing function. The caller can then handle both outcomes with `match`:
+
+```javascript
+import { Result } from 'kitsunejs';
+
+function parseSettings(json) {
+  return Result.try(() => JSON.parse(json));
+}
+
+for (const input of ['{"theme":"dark"}', '{broken']) {
+  parseSettings(input).match(
+    (settings) => console.log('Parsed settings:', settings),
+    (error) => console.error('Invalid settings:', error.message),
+  );
+}
+```
+
+Save this as `example.mjs` and run `node example.mjs`. The first input succeeds;
+the second produces an error that the caller handles without throwing.
+
+## Features
+
+- 🦀 **Rust-like API**: Familiar `Result<T, E>` and `Option<T>` types with methods like `map`, `andThen`, `unwrap`, etc.
+- 🔒 **Type-safe**: Full TypeScript support with proper type inference and narrowing
+- 🌳 **Tree-shakeable**: Fully ESM-ready with optional CJS support
+- 📦 **Zero dependencies**: Lightweight and self-contained
+- ⚡ **Async-ready**: Built-in support for `Promise` with `Result.tryAsync`
 
 ## Usage
 

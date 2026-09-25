@@ -52,8 +52,10 @@ There are many ways to contribute to kitsunejs:
 
 ### Prerequisites
 
-- **Node.js**: Version 22.x or higher
-- **pnpm**: Version 10.20.0 or higher (specified in `package.json`)
+- **mise**: Install it to use the project's development tool versions
+- **Node.js**: Version 22.x for local development (the library supports
+  version 22 or higher)
+- **pnpm**: Version 10.20.0, matching `package.json`
 
 ### Setup Steps
 
@@ -66,12 +68,20 @@ There are many ways to contribute to kitsunejs:
    cd kitsunejs
    ```
 
-3. **Install dependencies**
+3. **Install the development tools**
+   ```bash
+   mise install
+   ```
+
+   If mise is not activated in your shell, prefix the `pnpm` commands below
+   with `mise exec --` to use the versions installed by mise.
+
+4. **Install dependencies**
    ```bash
    pnpm install
    ```
 
-4. **Verify the setup**
+5. **Verify the setup**
    ```bash
    # Run type checking
    pnpm type-check

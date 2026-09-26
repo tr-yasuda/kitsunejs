@@ -30,22 +30,29 @@ type User = {
   name: string;
 };
 
-type ApiError = {
-  status: number;
-  message: string;
-};
+type ApiError =
+  | { type: 'http'; status: number; message: string }
+  | { type: 'unexpected'; cause: unknown };
 
 async function fetchUser(id: number): Promise<Result<User, ApiError>> {
-  return Result.tryAsync(async () => {
-    const response = await fetch(`/api/users/${id}`);
-    if (!response.ok) {
-      throw {
-        status: response.status,
-        message: await response.text(),
-      };
-    }
-    return await response.json();
-  });
+  const result = await Result.tryAsync<Result<User, ApiError>, unknown>(
+    async () => {
+      const response = await fetch(`/api/users/${id}`);
+      if (!response.ok) {
+        return Result.err<User, ApiError>({
+          type: 'http',
+          status: response.status,
+          message: await response.text(),
+        });
+      }
+      const user: User = await response.json();
+      return Result.ok<User, ApiError>(user);
+    },
+  );
+
+  return result
+    .mapErr((cause): ApiError => ({ type: 'unexpected', cause }))
+    .flatten();
 }
 
 // Usage example
@@ -56,10 +63,23 @@ async function main() {
     console.log('User:', userResult.unwrap());
   } else {
     const error = userResult.unwrapErr();
-    console.error(`Error ${error.status}: ${error.message}`);
+    if (error.type === 'http') {
+      console.error(`HTTP ${error.status}: ${error.message}`);
+    } else {
+      console.error('Unexpected failure:', error.cause);
+    }
   }
 }
 ```
+
+`tryAsync` preserves any thrown or rejected value; its error type parameter
+does not validate or convert that value. Capture failures as `unknown`, then
+normalize them with `mapErr`. HTTP errors are returned explicitly, while fetch,
+body-reading, and JSON parsing failures become `unexpected` errors with the
+original value preserved in `cause`. `flatten` removes the nested Result.
+
+This example assumes successful JSON responses have the `User` shape; validating
+response data is a separate concern.
 
 ### 1.2 Unifying Multiple Error Types
 
@@ -70,8 +90,8 @@ async function main() {
 **Solution**:
 ```typescript
 type ValidationError = { type: 'validation'; field: string; message: string };
-type NetworkError = { type: 'network'; status: number };
-type AppError = ValidationError | NetworkError;
+// ApiError is the normalized union from section 1.1.
+type AppError = ValidationError | ApiError;
 
 function validateUser(user: unknown): Result<User, ValidationError> {
   // Validation logic
@@ -85,7 +105,7 @@ function validateUser(user: unknown): Result<User, ValidationError> {
   return Result.ok(user as User);
 }
 
-function saveUser(user: User): Result<void, NetworkError> {
+function saveUser(user: User): Result<void, ApiError> {
   // Save logic (omitted)
   return Result.ok(undefined);
 }
@@ -190,13 +210,16 @@ type Data = {
 };
 
 async function loadData(): Promise<Result<Data, Error>> {
-  return Result.tryAsync(async () => {
+  const result = await Result.tryAsync<Data, unknown>(async () => {
     const response = await fetch('/api/data');
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
     return await response.json();
   });
+  return result.mapErr((cause) =>
+    cause instanceof Error ? cause : new Error('Failed to load data', { cause })
+  );
 }
 
 // Usage example
@@ -219,7 +242,10 @@ async function main() {
 
 **Solution**:
 ```typescript
-async function loadMultipleUsers(ids: number[]): Promise<Result<User[], Error>> {
+// Reuse fetchUser and its normalized ApiError from section 1.1.
+async function loadMultipleUsers(
+  ids: number[]
+): Promise<Result<User[], ApiError>> {
   const promises = ids.map((id) => fetchUser(id));
   const results = await Promise.all(promises);
   return Result.all(results);
@@ -250,7 +276,9 @@ import { Result, Option } from 'kitsunejs';
 
 type User = { id: number; name: string };
 type Profile = { bio: string };
-type ApiError = { status: number; message: string };
+type ApiError =
+  | { type: 'http'; status: number; message: string }
+  | { type: 'unexpected'; cause: unknown };
 
 async function fetchUser(id: number): Promise<Result<User, ApiError>> {
   // ...
@@ -303,7 +331,10 @@ async function fetchUser(id: number): Promise<Result<User, Error>> {
     }
     return response.json() as Promise<User>;
   });
-  return Result.fromPromise(userPromise);
+  const result = await Result.fromPromise<User, unknown>(userPromise);
+  return result.mapErr((cause) =>
+    cause instanceof Error ? cause : new Error('Failed to fetch user', { cause })
+  );
 }
 
 // Usage example
@@ -460,14 +491,23 @@ if (userResult.isOk()) {
 
 **Solution**:
 ```typescript
+async function fetchData(url: string): Promise<Result<Data, Error>> {
+  const result = await Result.tryAsync<Data, unknown>(() =>
+    fetch(url).then((response) => response.json())
+  );
+  return result.mapErr((cause) =>
+    cause instanceof Error ? cause : new Error('Request failed', { cause })
+  );
+}
+
 async function fetchFromMultipleServers(
   path: string
 ): Promise<Result<Data, Error[]>> {
   // Parallel requests to multiple servers
   const results = await Promise.all([
-    Result.tryAsync(() => fetch(`https://api1.example.com${path}`).then(r => r.json())),
-    Result.tryAsync(() => fetch(`https://api2.example.com${path}`).then(r => r.json())),
-    Result.tryAsync(() => fetch(`https://api3.example.com${path}`).then(r => r.json())),
+    fetchData(`https://api1.example.com${path}`),
+    fetchData(`https://api2.example.com${path}`),
+    fetchData(`https://api3.example.com${path}`),
   ]);
 
   // Result.any returns the first Ok. If all Err, returns Err<E[]>
@@ -664,10 +704,9 @@ import { Result } from 'kitsunejs';
 
 const app = express();
 
-type ApiError = {
-  status: number;
-  message: string;
-};
+type ApiError =
+  | { type: 'http'; status: number; message: string }
+  | { type: 'unexpected'; cause: unknown };
 
 async function fetchUser(id: number): Promise<Result<User, ApiError>> {
   // Implementation omitted
@@ -682,7 +721,11 @@ app.get('/users/:id', async (req, res) => {
     res.json(result.unwrap());
   } else {
     const error = result.unwrapErr();
-    res.status(error.status).json({ error: error.message });
+    if (error.type === 'http') {
+      res.status(error.status).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: 'Unexpected failure' });
+    }
   }
 });
 
@@ -729,7 +772,7 @@ function processUser(userId: number): Option<string> {
 
 **Bad example**:
 ```typescript
-const result = fetchUser(123);
+const result = await fetchUser(123);
 const user = result.unwrap(); // UnwrapError if Err
 ```
 
@@ -760,9 +803,11 @@ Especially for complex chains, specifying types improves readability.
 
 **Good example**:
 ```typescript
-const result: Result<User, ApiError> = fetchUser(123)
-  .andThen((user) => validateUser(user))
-  .andThen((user) => saveUser(user));
+// Reuse AppError from section 1.2 to include validation failures.
+const result: Result<void, AppError> = (await fetchUser(123))
+  .mapErr((error): AppError => error)
+  .andThen((user) => validateUser(user).mapErr((error): AppError => error))
+  .andThen((user) => saveUser(user).mapErr((error): AppError => error));
 
 const option: Option<string> = Option.fromNullable(getValue())
   .filter((v) => v.length > 0)
@@ -771,26 +816,34 @@ const option: Option<string> = Option.fromNullable(getValue())
 
 ### 4. Use Specific Error Types
 
-Don't leave error types as `unknown` or `Error`; define specific types.
+Prefer specific error types when you can guarantee their shape at runtime.
+For caught exceptions or Promise rejections, start with `unknown` and narrow or
+normalize the value before exposing a specific error type. Specifying an error
+type parameter or using a type assertion alone does not provide that guarantee.
+Keeping `unknown` is appropriate when callers will perform the narrowing.
 
 **Bad example**:
 ```typescript
-function fetchUser(id: number): Result<User, unknown> {
-  // ...
+type ParseError = { type: 'parse'; cause: unknown };
+
+function parseJson(input: string): Result<unknown, ParseError> {
+  // Unsafe: JSON.parse throws SyntaxError, not ParseError.
+  return Result.try<unknown, ParseError>(() => JSON.parse(input));
 }
 ```
 
 **Good example**:
 ```typescript
-type FetchError =
-  | { type: 'network'; status: number }
-  | { type: 'validation'; message: string }
-  | { type: 'not_found'; id: number };
+type ParseError = { type: 'parse'; cause: unknown };
 
-function fetchUser(id: number): Result<User, FetchError> {
-  // ...
+function parseJson(input: string): Result<unknown, ParseError> {
+  return Result.try<unknown, unknown>(() => JSON.parse(input))
+    .mapErr((cause): ParseError => ({ type: 'parse', cause }));
 }
 ```
+
+See section 1.1 for a normalized union that distinguishes HTTP errors from
+unexpected failures without inventing an HTTP status for other failures.
 
 ### 5. Distinguishing Between andThen and map
 
@@ -861,12 +914,16 @@ console.log(describeOption(Option.none())); // 'No value available'
 ```typescript
 import { Result } from 'kitsunejs';
 
-type ApiError = { status: number; message: string };
+type ApiError =
+  | { type: 'http'; status: number; message: string }
+  | { type: 'unexpected'; cause: unknown };
 
 function renderUserResult(result: Result<User, ApiError>): string {
   return result.match(
     (user) => `Welcome, ${user.name}!`,
-    (error) => `Error ${error.status}: ${error.message}`,
+    (error) => error.type === 'http'
+      ? `HTTP ${error.status}: ${error.message}`
+      : 'Unexpected failure',
   );
 }
 ```

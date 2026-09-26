@@ -26,7 +26,7 @@ Before opening a PR, run `pnpm lint && pnpm type-check && pnpm test && pnpm buil
 
 Use TypeScript with ESM imports and explicit `.js` extensions for local modules.
 Formatting is enforced by Biome and `.editorconfig`: 2-space indentation, LF,
-UTF-8, trailing newline, and 80-character lines. Prefer `type` over
+UTF-8, trailing newline, and 80-character lines (120 for Markdown). Prefer `type` over
 `interface`, `function` declarations over top-level arrow functions, and
 explicit return types on functions. Use `camelCase` for variables/functions,
 `PascalCase` for types/classes, and `UPPER_CASE` for constants.

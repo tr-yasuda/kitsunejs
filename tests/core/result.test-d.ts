@@ -670,6 +670,14 @@ describe("Result chaining error types", () => {
     cause: LookupError | ParseError;
   };
 
+  function branchCallback(
+    value: number,
+  ): Result<string, LookupError> | Result<string, ParseError> {
+    return value > 0
+      ? Result.ok<string, LookupError>(value.toString())
+      : Result.err<string, ParseError>({ kind: "parse" });
+  }
+
   test("should accept branches within an existing error union", () => {
     const source = Result.ok<number, string | number>(1);
     const result = source.andThen((value) =>
@@ -678,23 +686,15 @@ describe("Result chaining error types", () => {
 
     expectTypeOf(result).toEqualTypeOf<Result<never, string | number>>();
 
-    function callback(
-      value: number,
-    ): Result<string, LookupError> | Result<string, ParseError> {
-      return value > 0
-        ? Result.ok<string, LookupError>(value.toString())
-        : Result.err<string, ParseError>({ kind: "parse" });
-    }
-
     const tagged = Result.ok<number, LookupError | ParseError>(1);
-    const fromCallback = tagged.andThen(callback);
+    const fromCallback = tagged.andThen(branchCallback);
     const fromOk = new Ok<number, LookupError | ParseError>(1).andThen(
-      callback,
+      branchCallback,
     );
     const fromErr = new Err<number, LookupError | ParseError>({
       kind: "lookup",
-    }).andThen(callback);
-    const explicitOutput = tagged.andThen<string>(callback);
+    }).andThen(branchCallback);
+    const explicitOutput = tagged.andThen<string>(branchCallback);
     expectTypeOf(fromCallback).toEqualTypeOf<
       Result<string, LookupError | ParseError>
     >();
@@ -803,9 +803,7 @@ describe("Result chaining error types", () => {
     async function callback(
       value: number,
     ): Promise<Result<string, LookupError> | Result<string, ParseError>> {
-      return value > 0
-        ? Result.ok<string, LookupError>(value.toString())
-        : Result.err<string, ParseError>({ kind: "parse" });
+      return branchCallback(value);
     }
 
     const tagged = Result.ok<number, LookupError | ParseError>(1);

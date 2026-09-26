@@ -110,11 +110,26 @@ function saveUser(user: User): Result<void, ApiError> {
   return Result.ok(undefined);
 }
 
-// Convert to unified error type using mapErr
+// Infer the error union without converting either error
 function processUser(input: unknown): Result<void, AppError> {
-  return validateUser(input)
-    .mapErr((e): AppError => e)
-    .andThen((user) => saveUser(user).mapErr((e): AppError => e));
+  return validateUser(input).andThen(saveUser);
+}
+```
+
+`andThen` infers `ValidationError | ApiError`; `andThenAsync` infers error
+unions in the same way. Each additional step adds its possible errors to the
+union. To convert these errors to one application error shape, use `mapErr`
+explicitly after composition:
+
+```typescript
+type ProcessingError = { type: 'processing'; cause: AppError };
+
+function processUserWithCommonError(
+  input: unknown,
+): Result<void, ProcessingError> {
+  return processUser(input).mapErr(
+    (cause): ProcessingError => ({ type: 'processing', cause }),
+  );
 }
 ```
 

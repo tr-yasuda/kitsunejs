@@ -701,21 +701,52 @@ describe("Result", () => {
 
   describe("andThen()", () => {
     test("Ok.andThen(fn): returns fn result", () => {
-      const result = Result.ok(42);
-      const chained = result.andThen((value) => Result.ok(value * 2));
+      const result = Result.ok<number, string>(42);
+      const next = Result.ok<number, number>(84);
+      let called = 0;
+      const chained = result.andThen((value) => {
+        called++;
+        expect(value).toBe(42);
+        return next;
+      });
+      expect(called).toBe(1);
+      expect(chained).toBe(next);
       expect(chained.unwrap()).toBe(84);
     });
 
     test("Err.andThen(fn): returns self", () => {
       const result = Result.err<number, string>("error");
-      const chained = result.andThen((value) => Result.ok(value * 2));
+      let called = 0;
+      const chained = result.andThen((value) => {
+        called++;
+        return Result.ok<number, number>(value * 2);
+      });
+      expect(called).toBe(0);
+      expect(chained).toBe(result);
       expect(chained.isErr()).toBe(true);
     });
 
     test("Ok.andThen(fn) returns Err", () => {
       const result = Result.ok<number, string>(42);
-      const chained = result.andThen((_value) => Result.err("new error"));
+      const next = Result.err<number, number>(404);
+      const chained = result.andThen((_value) => next);
+      expect(chained).toBe(next);
       expect(chained.isErr()).toBe(true);
+    });
+
+    test("Ok.andThen(fn): propagates thrown callback errors", () => {
+      const result = Result.ok(42);
+      const error = new Error("callback error");
+      let caught: unknown;
+
+      try {
+        result.andThen(() => {
+          throw error;
+        });
+      } catch (thrown) {
+        caught = thrown;
+      }
+      expect(caught).toBe(error);
     });
 
     test("type conversion chain (number → string → boolean)", () => {
@@ -791,22 +822,28 @@ describe("Result", () => {
     describe("andThenAsync()", () => {
       test("Ok.andThenAsync: applies async fn and returns resulting Result", async () => {
         const result = Result.ok<number, string>(42);
-        const chained = await result.andThenAsync(async (value) =>
-          Result.ok(value * 2),
-        );
+        const next = Result.ok<number, number>(84);
+        let called = 0;
+        const chained = await result.andThenAsync(async (value) => {
+          called++;
+          expect(value).toBe(42);
+          return next;
+        });
 
+        expect(called).toBe(1);
+        expect(chained).toBe(next);
         expect(chained.isOk()).toBe(true);
         expect(chained.unwrap()).toBe(84);
       });
 
       test("Ok.andThenAsync: propagates Err returned by async fn", async () => {
         const result = Result.ok<number, string>(42);
-        const chained = await result.andThenAsync(async (_value) =>
-          Result.err<string, string>("new error"),
-        );
+        const next = Result.err<string, number>(404);
+        const chained = await result.andThenAsync(async (_value) => next);
 
+        expect(chained).toBe(next);
         expect(chained.isErr()).toBe(true);
-        expect(chained.unwrapOrElse((err) => err)).toBe("new error");
+        expect(chained.unwrapOrElse((err) => err)).toBe(404);
       });
 
       test("Err.andThenAsync: does not call fn and returns self", async () => {
@@ -814,21 +851,23 @@ describe("Result", () => {
         const result = Result.err<number, string>("error");
         const chained = await result.andThenAsync(async (_value) => {
           called++;
-          return Result.ok(0);
+          return Result.ok<number, number>(0);
         });
 
         expect(called).toBe(0);
+        expect(chained).toBe(result);
         expect(chained.isErr()).toBe(true);
         expect(chained.unwrapErr()).toBe("error");
       });
 
       test("Ok.andThenAsync: rejected promise propagates", async () => {
         const result = Result.ok<number, string>(42);
+        const error = new Error("async error");
         const chained = result.andThenAsync(async () => {
-          throw new Error("async error");
+          throw error;
         });
 
-        await expect(chained).rejects.toThrow("async error");
+        await expect(chained).rejects.toBe(error);
       });
     });
 

@@ -188,6 +188,15 @@ const age = findUser(1)
   .unwrapOr(0);
 ```
 
+`andThen` and `andThenAsync` also compose operations with different error
+types, inferring their union as `E | F`. Use `mapErr` to explicitly convert
+errors to a common type. Calls specifying only the output type use `F = E`;
+omit type arguments or specify both to compose different error types.
+Compatibility overloads preserve branch callbacks whose errors are already
+covered by `E`. Custom `Result` subclasses must expose both overloads in their
+chaining overrides to support the full API; see the
+[API reference](docs/api-reference.md).
+
 #### Combining Multiple Results
 
 ```typescript

@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/kitsunejs.svg)](https://www.npmjs.com/package/kitsunejs)
 [![npm downloads](https://img.shields.io/npm/dm/kitsunejs.svg)](https://www.npmjs.com/package/kitsunejs)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6.0-blue.svg)](https://www.typescriptlang.org/)
 
 Rust-inspired `Result` and `Option` types for TypeScript, enabling type-safe error handling and null safety.
 

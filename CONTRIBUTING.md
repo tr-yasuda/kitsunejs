@@ -106,7 +106,7 @@ If all commands complete successfully, you're ready to start contributing!
 
 We use a simple branching model:
 
-- **`main`**: The default branch containing stable code
+- **`master`**: The default branch containing stable code
 - **Feature branches**: Create a new branch for each feature or bug fix
 
 Branch naming conventions:

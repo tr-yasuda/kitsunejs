@@ -626,6 +626,173 @@ export abstract class Result<T, E> {
   }
 
   /**
+   * Extracts an Ok value with `yield*` inside a Result sequence.
+   * An Err is yielded unchanged so the sequence can exit early.
+   * This is separate from the value-enumerating Symbol.iterator protocol.
+   *
+   * @example
+   * ```typescript
+   * const result = Result.sequence(function* () {
+   *   const a = yield* Result.step(Result.ok(2));
+   *   const b = yield* Result.step(Result.ok(3));
+   *   return Result.ok(a + b);
+   * });
+   * ```
+   */
+  static *step<R extends Result<unknown, unknown>>(
+    result: R,
+  ): Generator<Err<never, ResultError<R>>, ResultValue<R>, unknown> {
+    if (result.isErr()) {
+      yield result as unknown as Err<never, ResultError<R>>;
+      throw new TypeError("Cannot resume a failed Result.step");
+    }
+    return result.unwrap() as ResultValue<R>;
+  }
+
+  /**
+   * Runs a generator that explicitly returns a Result.
+   * Returns the first Err yielded by a step, or the final returned Result.
+   * Infers the success type from the return and unions all step/return errors.
+   *
+   * On an Err, closes the generator and runs its finally blocks. An optional
+   * cleanup generator runs after the body and its finally blocks, even if the
+   * body throws. Both generators must explicitly return a Result.
+   * Cleanup Ok values are discarded. Cleanup Errs replace a body Ok, preserve
+   * a body Err, and cannot suppress a pending exception. A cleanup throw takes
+   * precedence over the body outcome and propagates unchanged.
+   *
+   * Do not yield from native finally blocks: a pending exception is opaque to
+   * the runner. Put fallible steps in the separate cleanup generator instead.
+   * Yields detected during closure cause a TypeError after outer finally
+   * blocks are closed. No exceptions are converted to Err automatically.
+   */
+  static sequence<
+    Y extends Err<never, unknown>,
+    R extends Result<unknown, unknown>,
+    CY extends Err<never, unknown> = never,
+    CR extends Result<unknown, unknown> = Result<never, never>,
+  >(
+    body: () => Generator<Y, R, unknown>,
+    cleanup?: () => Generator<CY, CR, unknown>,
+  ): Result<
+    ResultValue<R>,
+    ResultError<Y> | ResultError<R> | ResultError<CY> | ResultError<CR>
+  > {
+    let result: Result<unknown, unknown> | undefined;
+    try {
+      const generator = body();
+      const first = generator.next();
+      if (!first.done) {
+        const exitValue = first.value as unknown as R;
+        let closing = generator.return(exitValue);
+        const yieldedDuringClosure = !closing.done;
+        while (!closing.done) {
+          closing = generator.return(exitValue);
+        }
+        if (yieldedDuringClosure) {
+          throw new TypeError(
+            "Cannot yield from finally; use the cleanup argument",
+          );
+        }
+      }
+      result = first.value;
+    } finally {
+      if (cleanup) {
+        const cleanupResult = Result.sequence(cleanup);
+        if (result?.isOk() && cleanupResult.isErr()) {
+          result = cleanupResult;
+        }
+      }
+    }
+    return result as Result<
+      ResultValue<R>,
+      ResultError<Y> | ResultError<R> | ResultError<CY> | ResultError<CR>
+    >;
+  }
+
+  /**
+   * Extracts a success value with `yield*` inside Result.sequenceAsync.
+   * Accepts a Result or a promise-like Result without an explicit await at
+   * the call site. Rejected values propagate unchanged.
+   * Async generator delegation also awaits thenable success values.
+   */
+  static async *stepAsync<R extends Result<unknown, unknown>>(
+    result: R | PromiseLike<R>,
+  ): AsyncGenerator<
+    Err<never, ResultError<R>>,
+    Awaited<ResultValue<R>>,
+    unknown
+  > {
+    return yield* Result.step(await result);
+  }
+
+  /**
+   * Runs an async generator that explicitly returns a Result.
+   * The generator may return a Result or a promise resolving to a Result.
+   * Infers success and error types in the same way as Result.sequence.
+   *
+   * On an Err, waits for generator closure and all remaining finally blocks,
+   * then awaits the optional cleanup generator, even if the body threw or
+   * rejected. Cleanup outcome precedence is the same as Result.sequence.
+   * Throws and rejections propagate without automatic conversion to Err.
+   * Do not yield from native finally blocks; use the cleanup argument instead.
+   *
+   * @example
+   * ```typescript
+   * const result = await Result.sequenceAsync(async function* () {
+   *   const user = yield* Result.stepAsync(fetchUser(id));
+   *   const profile = yield* Result.stepAsync(fetchProfile(user));
+   *   return Result.ok({ user, profile });
+   * });
+   * ```
+   */
+  static async sequenceAsync<
+    Y extends Err<never, unknown>,
+    R extends Result<unknown, unknown>,
+    CY extends Err<never, unknown> = never,
+    CR extends Result<unknown, unknown> = Result<never, never>,
+  >(
+    body: () => AsyncGenerator<Y, R, unknown>,
+    cleanup?: () => AsyncGenerator<CY, CR, unknown>,
+  ): Promise<
+    Result<
+      ResultValue<R>,
+      ResultError<Y> | ResultError<R> | ResultError<CY> | ResultError<CR>
+    >
+  > {
+    let result: Result<unknown, unknown> | undefined;
+    try {
+      const generator = body();
+      const first = await generator.next();
+      if (!first.done) {
+        const exitValue = first.value as unknown as R;
+        let closing = await generator.return(exitValue);
+        const yieldedDuringClosure = !closing.done;
+        while (!closing.done) {
+          closing = await generator.return(exitValue);
+        }
+        if (yieldedDuringClosure) {
+          throw new TypeError(
+            "Cannot yield from finally; use the cleanup argument",
+          );
+        }
+      }
+      result = first.value;
+    } finally {
+      if (cleanup) {
+        const cleanupResult = await Result.sequenceAsync(cleanup);
+        if (result?.isOk() && cleanupResult.isErr()) {
+          result = cleanupResult;
+        }
+      }
+    }
+    return result as Result<
+      ResultValue<R>,
+      ResultError<Y> | ResultError<R> | ResultError<CY> | ResultError<CR>
+    >;
+  }
+
+  /**
    * Combines multiple Results into a single Result.
    * Returns Ok containing all values in input order if all Results are Ok.
    * Preserves the value types of fixed-length tuples.

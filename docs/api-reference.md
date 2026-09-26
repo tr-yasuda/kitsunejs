@@ -199,6 +199,133 @@ async function fetchData(): Promise<Result<Data, Error>> {
 }
 ```
 
+#### Sequential Processing
+
+##### `Result.sequence(body, cleanup?)`
+
+Runs a synchronous generator whose body explicitly returns a Result. Use
+`yield* Result.step(result)` to extract each Ok value. The first Err stops
+ordinary processing and is returned unchanged after generator cleanup.
+
+**Parameters**:
+- `body` - A factory for a synchronous generator using Result steps and returning a Result
+- `cleanup` - An optional factory for a separate synchronous generator using Result steps and returning a Result; runs after the body and its native finally blocks, including when the body throws
+
+**Returns**: `Result<T, ESteps | EReturn | ECleanup>`, where `T` is the body's
+final Result success type and the error type includes all step and final Result
+errors from both generators. Cleanup success values do not change `T`.
+Intermediate success values and the overall type are inferred without
+annotations on the generator or the sequencing call. Infallible sequences
+infer `never` as their error type.
+
+```typescript
+const result = Result.sequence(function* () {
+  const user = yield* Result.step(findUser(id));
+  const settings = yield* Result.step(parseSettings(user));
+  return Result.ok({ user, settings });
+});
+```
+
+The final return may be Ok or Err. Ordinary values are not automatically
+wrapped in Ok. A body with no steps returns its final Result unchanged.
+
+##### `Result.step(result)`
+
+The dedicated `yield*` helper for extracting an Ok value inside a sequence.
+It returns the success value through delegation and yields an Err only on
+failure. Use it inside `Result.sequence` or `Result.sequenceAsync`; resuming
+a failed helper without closing it throws a TypeError.
+
+The success and error types are inferred from the entire input Result type,
+including unions of Results with different success and error types. A function
+that returns `Result<number, never> | Result<string, never>` needs no return
+annotation: the extracted value is inferred as `number | string`.
+
+This helper does not change `[Symbol.iterator]()`: existing iteration still
+enumerates an Ok value once and enumerates nothing for Err. Delegating directly
+to a Result with `yield* result` does not provide sequencing behavior.
+
+##### `Result.sequenceAsync(body, cleanup?)`
+
+Runs an asynchronous generator using the same early-return rules as
+`Result.sequence`. The body must explicitly return a Result, or a Promise
+resolving to a Result. An optional cleanup factory produces a separate async
+generator, also explicitly returning a Result. The runner waits for it even
+when the body throws or rejects.
+The return type is `Promise<Result<T, ESteps | EReturn | ECleanup>>`,
+with all success and error types inferred as in the synchronous version.
+
+```typescript
+const result = await Result.sequenceAsync(async function* () {
+  const user = yield* Result.stepAsync(fetchUser(id));
+  const profile = yield* Result.stepAsync(fetchProfile(user));
+  return Result.ok({ user, profile });
+});
+```
+
+Steps run sequentially as the generator reaches them. This does not cancel
+operations that have already started or aggregate multiple errors.
+
+##### `Result.stepAsync(result)`
+
+The `yield*` helper for `Result.sequenceAsync`. Accepts a Result or a
+promise-like Result, so an explicit await is not needed at each step. Synchronous
+steps can also use `Result.step` inside the asynchronous body.
+Unions of input Results are inferred in the same way as `Result.step`, including
+when they arrive through a promise.
+
+Async generator delegation awaits thenable success values as well. For
+example, extracting `Result.ok(Promise.resolve(42))` produces a `number`.
+To retain a Promise as data, place it inside a non-thenable object.
+
+**Cleanup and exceptions**:
+
+On early Err, the sequence closes its generator and waits for all remaining
+native `finally` blocks, including awaited cleanup in the asynchronous version.
+After the body and its native finally blocks finish, the optional `cleanup`
+generator always runs, including on success or exception. Each generator's
+first Err stops its subsequent ordinary statements and runs its native finally
+blocks.
+
+Do not use `yield` or `yield* Result.step(...)` / `stepAsync(...)` in native
+`finally` blocks, in either generator. Closing a generator suspended there can
+overwrite an exception that the runner cannot observe. Fallible cleanup steps
+must use the separate `cleanup` argument. If a yield is detected during
+closure, the runner closes the remaining outer finally blocks and throws a
+TypeError. This check cannot detect every unsupported yield in native finally,
+such as one reached by an exception before the first step failure.
+
+```typescript
+const result = await Result.sequenceAsync(
+  async function* () {
+    const user = yield* Result.stepAsync(fetchUser(id));
+    return Result.ok(user);
+  },
+  async function* () {
+    yield* Result.stepAsync(releaseResources());
+    return Result.ok(undefined);
+  },
+);
+```
+
+| Body outcome | Cleanup outcome | Sequence outcome |
+|---|---|---|
+| Ok | Ok | The body's Ok is returned unchanged; cleanup success values are discarded |
+| Ok | Err | The cleanup Err is returned unchanged |
+| Err | Ok or Err | The body's original Err is returned unchanged |
+| Throw or rejection | Ok or Err | The body's thrown or rejected value propagates unchanged |
+| Any outcome | Throw or rejection | The cleanup's thrown or rejected value propagates unchanged |
+
+Native finally blocks use ordinary JavaScript control flow. On early Err, a
+normal completion or explicit return from native finally cannot replace that
+Err; a thrown or rejected value propagates instead. To compose multiple
+fallible cleanup scopes, nest calls to `sequence` or `sequenceAsync` with their
+own cleanup arguments, rather than yielding from nested native finally blocks.
+
+Ordinary throws and rejections also propagate unchanged. Sequences do not
+automatically convert exceptions to Err. Use `Result.try`, `Result.tryAsync`,
+or `Result.fromPromise` explicitly at boundaries that require that conversion.
+
 #### Aggregation & Combination
 
 ##### `Result.all(results)`

@@ -766,15 +766,40 @@ const err = Result.err('error');
 console.log(err.or(other).unwrap()); // 100
 ```
 
-##### `andThen<U>(fn: (value: T) => Result<U, E>): Result<U, E>`
+##### `andThen<U, F = E>(fn: (value: T) => Result<U, F>): Result<U, E | F>`
 
 If `Ok`, executes the function and chains to the next Result. If `Err`, returns unchanged.
 Similar to `map`, but differs in that the function returns a `Result` (also known as flatMap).
+Errors from both operations are preserved as a union, without conversion or wrapping.
+The returned Result is the original Err instance or the callback's Result instance.
+Thrown callback errors propagate unchanged; they are not converted to Err.
 
 **Parameters**:
-- `fn: (value: T) => Result<U, E>` - Function to generate the next Result from the Ok value
+- `fn: (value: T) => Result<U, F>` - Function to generate the next Result from the Ok value
 
-**Returns**: `Result<U, E>` - Chained Result
+**Returns**: `Result<U, E | F>` - Chained Result
+
+When type arguments are omitted, `U` and `F` are inferred from the callback.
+Specifying only `U`, as in `andThen<Output>(...)`, uses the default `F = E`.
+For a different callback error type, omit both type arguments or specify both.
+Identical error types remain unchanged, and `never` adds no errors to the union.
+
+**Compatibility overload**:
+```typescript
+andThen<U>(fn: (value: T) => Result<U, E>): Result<U, E>
+```
+
+This overload preserves callbacks that return different Result types in their
+branches when all of their errors are already covered by `E`. No additional
+type arguments or return type annotations are needed:
+
+```typescript
+const source = Result.ok<number, string | number>(1);
+const branched = source.andThen((value) =>
+  value > 0 ? Result.err('fail') : Result.err(404),
+);
+// Result<never, string | number>
+```
 
 **Example**:
 ```typescript
@@ -791,6 +816,30 @@ const result = Result.ok(10)
 
 console.log(result.isErr()); // true
 ```
+
+**Different error types**:
+```typescript
+type LookupError = { kind: 'lookup' };
+type ParseError = { kind: 'parse' };
+
+declare const lookup: Result<string, LookupError>;
+declare function parse(text: string): Result<number, ParseError>;
+
+const parsed = lookup.andThen(parse);
+// Result<number, LookupError | ParseError>
+
+const explicit = lookup.andThen<number, ParseError>(parse);
+// Result<number, LookupError | ParseError>
+
+const converted = parsed.mapErr((cause) => ({ kind: 'application', cause }));
+// Converts either error explicitly to a common error shape.
+```
+
+**Custom subclasses**: Legacy overrides restricted to `E` can still type-check,
+but do not expose chaining with an independent `F`. To expose the full API,
+declare both the compatibility overload and the independent-error overload
+shown above in the `andThen` override, then implement them with
+`<U, F = E>` and return `Result<U, E | F>`.
 
 ##### `orElse<F>(fn: (error: E) => Result<T, F>): Result<T, F>`
 
@@ -832,14 +881,32 @@ const mapped = await err.mapAsync(async (n) => n * 2);
 console.log(mapped.isErr()); // true
 ```
 
-##### `andThenAsync<U>(fn: (value: T) => Promise<Result<U, E>>): Promise<Result<U, E>>`
+##### `andThenAsync<U, F = E>(fn: (value: T) => Promise<Result<U, F>>): Promise<Result<U, E | F>>`
 
 Async version of `andThen`. If `Ok`, awaits the async function and chains to the next Result. If `Err`, returns unchanged.
+The resolved Result preserves the same instances and error union as `andThen`.
+Callback throws and Promise rejections reject the returned Promise unchanged;
+they are not converted to Err.
 
 **Parameters**:
-- `fn: (value: T) => Promise<Result<U, E>>` - Async function to generate the next Result from the Ok value
+- `fn: (value: T) => Promise<Result<U, F>>` - Async function to generate the next Result from the Ok value
 
-**Returns**: `Promise<Result<U, E>>` - Promise of chained Result
+**Returns**: `Promise<Result<U, E | F>>` - Promise of chained Result
+
+Type inference and the `F = E` default follow the same rules as `andThen`.
+The compatibility overload also accepts async callbacks whose branch errors
+are already covered by `E`:
+
+```typescript
+andThenAsync<U>(
+  fn: (value: T) => Promise<Result<U, E>>,
+): Promise<Result<U, E>>
+```
+
+To expose the full API, custom Result subclasses must also declare both
+overloads in their `andThenAsync` override and implement them with `<U, F = E>`
+and `Promise<Result<U, E | F>>`. Legacy overrides can still type-check but do
+not expose the independent error type.
 
 **Example**:
 ```typescript
@@ -847,7 +914,8 @@ async function fetchUser(id: number): Promise<Result<User, Error>> {
   // ...
 }
 
-const result = await Result.ok<number, Error>(42).andThenAsync(fetchUser);
+const result = await Result.ok<number, 'invalid-id'>(42).andThenAsync(fetchUser);
+// Result<User, 'invalid-id' | Error>
 ```
 
 ##### `orElseAsync<F>(fn: (error: E) => Promise<Result<T, F>>): Promise<Result<T, F>>`

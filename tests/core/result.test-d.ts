@@ -90,7 +90,9 @@ describe("Result type tests", () => {
         return this.inner.or(other);
       }
 
-      andThen<U>(fn: (value: T) => Result<U, E>): Result<U, E> {
+      andThen<U>(fn: (value: T) => Result<U, E>): Result<U, E>;
+      andThen<U, F = E>(fn: (value: T) => Result<U, F>): Result<U, E | F>;
+      andThen<U, F = E>(fn: (value: T) => Result<U, F>): Result<U, E | F> {
         return this.inner.andThen(fn);
       }
 
@@ -104,7 +106,13 @@ describe("Result type tests", () => {
 
       andThenAsync<U>(
         fn: (value: T) => Promise<Result<U, E>>,
-      ): Promise<Result<U, E>> {
+      ): Promise<Result<U, E>>;
+      andThenAsync<U, F = E>(
+        fn: (value: T) => Promise<Result<U, F>>,
+      ): Promise<Result<U, E | F>>;
+      andThenAsync<U, F = E>(
+        fn: (value: T) => Promise<Result<U, F>>,
+      ): Promise<Result<U, E | F>> {
         return this.inner.andThenAsync(fn);
       }
 
@@ -290,6 +298,38 @@ describe("Result type tests", () => {
       .andThen((s) => Result.ok<boolean, string>(s.length > 0));
     expectTypeOf(chained).toEqualTypeOf<Result<boolean, string>>();
 
+    // Updated subclasses accept the same error unions as Result.
+    const subclassChained = new LegacyResult<number, string>(
+      Result.ok(42),
+    ).andThen((value) => Result.ok<string, number>(value.toString()));
+    expectTypeOf(subclassChained).toEqualTypeOf<
+      Result<string, string | number>
+    >();
+    const subclassBranched = new LegacyResult<number, string | number>(
+      Result.ok(42),
+    ).andThen((value) => (value > 0 ? Result.err("fail") : Result.err(404)));
+    expectTypeOf(subclassBranched).toEqualTypeOf<
+      Result<never, string | number>
+    >();
+
+    abstract class PreviousSyncResult<T, E> extends Result<T, E> {
+      abstract andThen<U>(fn: (value: T) => Result<U, E>): Result<U, E>;
+    }
+    expectTypeOf<PreviousSyncResult<number, string>>().toExtend<
+      Result<number, string>
+    >();
+    const previousAndThen: PreviousSyncResult<number, string>["andThen"] = (
+      fn,
+    ) => fn(42);
+    const previousChained = previousAndThen((value) =>
+      Result.ok<string, string>(value.toString()),
+    );
+    expectTypeOf(previousChained).toEqualTypeOf<Result<string, string>>();
+    // @ts-expect-error - an old override does not expose independent F
+    previousAndThen<string, number>((value) =>
+      Result.ok<string, number>(value.toString()),
+    );
+
     // --- async methods ---
 
     // mapAsync: number → string
@@ -338,6 +378,46 @@ describe("Result type tests", () => {
     expectTypeOf(legacyAndThenAsync).toEqualTypeOf<
       Promise<Result<string, string>>
     >();
+
+    const subclassChainedAsync = new LegacyResult<number, string>(
+      Result.ok(42),
+    ).andThenAsync(async (value) =>
+      Result.ok<string, number>(value.toString()),
+    );
+    expectTypeOf(subclassChainedAsync).toEqualTypeOf<
+      Promise<Result<string, string | number>>
+    >();
+    const subclassBranchedAsync = new LegacyResult<number, string | number>(
+      Result.ok(42),
+    ).andThenAsync(async (value) =>
+      value > 0 ? Result.err("fail") : Result.err(404),
+    );
+    expectTypeOf(subclassBranchedAsync).toEqualTypeOf<
+      Promise<Result<never, string | number>>
+    >();
+
+    abstract class PreviousAsyncResult<T, E> extends Result<T, E> {
+      abstract andThenAsync<U>(
+        fn: (value: T) => Promise<Result<U, E>>,
+      ): Promise<Result<U, E>>;
+    }
+    expectTypeOf<PreviousAsyncResult<number, string>>().toExtend<
+      Result<number, string>
+    >();
+    const previousAndThenAsync: PreviousAsyncResult<
+      number,
+      string
+    >["andThenAsync"] = (fn) => fn(42);
+    const previousChainedAsync = previousAndThenAsync(async (value) =>
+      Result.ok<string, string>(value.toString()),
+    );
+    expectTypeOf(previousChainedAsync).toEqualTypeOf<
+      Promise<Result<string, string>>
+    >();
+    // @ts-expect-error - an old override does not expose independent F
+    previousAndThenAsync<string, number>(async (value) =>
+      Result.ok<string, number>(value.toString()),
+    );
 
     const legacyOrElseAsync = new LegacyResult<number, string>(
       Result.err<number, string>("error"),
@@ -577,5 +657,275 @@ describe("Result type tests", () => {
       Symbol.iterator
     ]();
     expectTypeOf(legacyIterator).toEqualTypeOf<IterableIterator<number>>();
+  });
+});
+
+describe("Result chaining error types", () => {
+  type LookupError = { kind: "lookup" };
+  type ParseError = { kind: "parse" };
+  type SaveError = { kind: "save" };
+  type PublishError = { kind: "publish" };
+  type ApplicationError = {
+    kind: "application";
+    cause: LookupError | ParseError;
+  };
+
+  test("should accept branches within an existing error union", () => {
+    const source = Result.ok<number, string | number>(1);
+    const result = source.andThen((value) =>
+      value > 0 ? Result.err("fail") : Result.err(404),
+    );
+
+    expectTypeOf(result).toEqualTypeOf<Result<never, string | number>>();
+
+    function callback(
+      value: number,
+    ): Result<string, LookupError> | Result<string, ParseError> {
+      return value > 0
+        ? Result.ok<string, LookupError>(value.toString())
+        : Result.err<string, ParseError>({ kind: "parse" });
+    }
+
+    const tagged = Result.ok<number, LookupError | ParseError>(1);
+    const fromCallback = tagged.andThen(callback);
+    const fromOk = new Ok<number, LookupError | ParseError>(1).andThen(
+      callback,
+    );
+    const fromErr = new Err<number, LookupError | ParseError>({
+      kind: "lookup",
+    }).andThen(callback);
+    const explicitOutput = tagged.andThen<string>(callback);
+    expectTypeOf(fromCallback).toEqualTypeOf<
+      Result<string, LookupError | ParseError>
+    >();
+    expectTypeOf(fromOk).toEqualTypeOf<
+      Result<string, LookupError | ParseError>
+    >();
+    expectTypeOf(fromErr).toEqualTypeOf<
+      Result<string, LookupError | ParseError>
+    >();
+    expectTypeOf(explicitOutput).toEqualTypeOf<
+      Result<string, LookupError | ParseError>
+    >();
+  });
+
+  test("should infer the union of different error types", () => {
+    const lookup = Result.ok<number, LookupError>(42);
+    const result = lookup.andThen((value) =>
+      Result.ok<string, ParseError>(value.toString()),
+    );
+
+    expectTypeOf(result).toEqualTypeOf<
+      Result<string, LookupError | ParseError>
+    >();
+
+    const converted = result.mapErr(
+      (cause): ApplicationError => ({ kind: "application", cause }),
+    );
+    expectTypeOf(converted).toEqualTypeOf<Result<string, ApplicationError>>();
+
+    const accumulated = result
+      .andThen((value) => Result.ok<boolean, SaveError>(value.length > 0))
+      .andThen((value) => Result.ok<number, PublishError>(Number(value)));
+    expectTypeOf(accumulated).toEqualTypeOf<
+      Result<number, LookupError | ParseError | SaveError | PublishError>
+    >();
+
+    const concreteOk = new Ok<number, LookupError>(42).andThen((value) =>
+      Result.ok<string, ParseError>(value.toString()),
+    );
+    const concreteErr = new Err<number, LookupError>({
+      kind: "lookup",
+    }).andThen((value) => Result.ok<string, ParseError>(value.toString()));
+    expectTypeOf(concreteOk).toEqualTypeOf<
+      Result<string, LookupError | ParseError>
+    >();
+    expectTypeOf(concreteErr).toEqualTypeOf<
+      Result<string, LookupError | ParseError>
+    >();
+
+    const sameError = lookup.andThen((value) =>
+      Result.ok<string, LookupError>(value.toString()),
+    );
+    expectTypeOf(sameError).toEqualTypeOf<Result<string, LookupError>>();
+
+    const leftNever = Result.ok(42).andThen((value) =>
+      Result.ok<string, ParseError>(value.toString()),
+    );
+    const rightNever = lookup.andThen((value) => Result.ok(value.toString()));
+    const bothNever = Result.ok(42).andThen((value) =>
+      Result.ok(value.toString()),
+    );
+    expectTypeOf(leftNever).toEqualTypeOf<Result<string, ParseError>>();
+    expectTypeOf(rightNever).toEqualTypeOf<Result<string, LookupError>>();
+    expectTypeOf(bothNever).toEqualTypeOf<Result<string, never>>();
+
+    const onlyErr = lookup.andThen(() =>
+      Result.err<never, ParseError>({ kind: "parse" }),
+    );
+    expectTypeOf(onlyErr).toEqualTypeOf<
+      Result<never, LookupError | ParseError>
+    >();
+
+    const explicitOutput = lookup.andThen<string>((value) =>
+      Result.ok<string, LookupError>(value.toString()),
+    );
+    const explicitOutputNever = lookup.andThen<string>((value) =>
+      Result.ok(value.toString()),
+    );
+    const explicitBoth = lookup.andThen<string, ParseError>((value) =>
+      Result.ok<string, ParseError>(value.toString()),
+    );
+    expectTypeOf(explicitOutput).toEqualTypeOf<Result<string, LookupError>>();
+    expectTypeOf(explicitOutputNever).toEqualTypeOf<
+      Result<string, LookupError>
+    >();
+    expectTypeOf(explicitBoth).toEqualTypeOf<
+      Result<string, LookupError | ParseError>
+    >();
+
+    lookup.andThen<string>(
+      // @ts-expect-error - specifying only U uses F = LookupError
+      (value) => Result.ok<string, ParseError>(value.toString()),
+    );
+  });
+
+  test("should accept async branches within an existing error union", () => {
+    const source = Result.ok<number, string | number>(1);
+    const result = source.andThenAsync(async (value) =>
+      value > 0 ? Result.err("fail") : Result.err(404),
+    );
+
+    expectTypeOf(result).toEqualTypeOf<
+      Promise<Result<never, string | number>>
+    >();
+
+    async function callback(
+      value: number,
+    ): Promise<Result<string, LookupError> | Result<string, ParseError>> {
+      return value > 0
+        ? Result.ok<string, LookupError>(value.toString())
+        : Result.err<string, ParseError>({ kind: "parse" });
+    }
+
+    const tagged = Result.ok<number, LookupError | ParseError>(1);
+    const fromCallback = tagged.andThenAsync(callback);
+    const fromOk = new Ok<number, LookupError | ParseError>(1).andThenAsync(
+      callback,
+    );
+    const fromErr = new Err<number, LookupError | ParseError>({
+      kind: "lookup",
+    }).andThenAsync(callback);
+    const explicitOutput = tagged.andThenAsync<string>(callback);
+    expectTypeOf(fromCallback).toEqualTypeOf<
+      Promise<Result<string, LookupError | ParseError>>
+    >();
+    expectTypeOf(fromOk).toEqualTypeOf<
+      Promise<Result<string, LookupError | ParseError>>
+    >();
+    expectTypeOf(fromErr).toEqualTypeOf<
+      Promise<Result<string, LookupError | ParseError>>
+    >();
+    expectTypeOf(explicitOutput).toEqualTypeOf<
+      Promise<Result<string, LookupError | ParseError>>
+    >();
+  });
+
+  test("should infer the union of different async error types", async () => {
+    const lookup = Result.ok<number, LookupError>(42);
+    const result = lookup.andThenAsync(async (value) =>
+      Result.ok<string, ParseError>(value.toString()),
+    );
+
+    expectTypeOf(result).toEqualTypeOf<
+      Promise<Result<string, LookupError | ParseError>>
+    >();
+
+    const parsed = await result;
+    const converted = parsed.mapErr(
+      (cause): ApplicationError => ({ kind: "application", cause }),
+    );
+    expectTypeOf(converted).toEqualTypeOf<Result<string, ApplicationError>>();
+    const saved = await parsed.andThenAsync(async (value) =>
+      Result.ok<boolean, SaveError>(value.length > 0),
+    );
+    const accumulated = saved.andThenAsync(async (value) =>
+      Result.ok<number, PublishError>(Number(value)),
+    );
+    expectTypeOf(accumulated).toEqualTypeOf<
+      Promise<
+        Result<number, LookupError | ParseError | SaveError | PublishError>
+      >
+    >();
+
+    const concreteOk = new Ok<number, LookupError>(42).andThenAsync(
+      async (value) => Result.ok<string, ParseError>(value.toString()),
+    );
+    const concreteErr = new Err<number, LookupError>({
+      kind: "lookup",
+    }).andThenAsync(async (value) =>
+      Result.ok<string, ParseError>(value.toString()),
+    );
+    expectTypeOf(concreteOk).toEqualTypeOf<
+      Promise<Result<string, LookupError | ParseError>>
+    >();
+    expectTypeOf(concreteErr).toEqualTypeOf<
+      Promise<Result<string, LookupError | ParseError>>
+    >();
+
+    const sameError = lookup.andThenAsync(async (value) =>
+      Result.ok<string, LookupError>(value.toString()),
+    );
+    expectTypeOf(sameError).toEqualTypeOf<
+      Promise<Result<string, LookupError>>
+    >();
+
+    const leftNever = Result.ok(42).andThenAsync(async (value) =>
+      Result.ok<string, ParseError>(value.toString()),
+    );
+    const rightNever = lookup.andThenAsync(async (value) =>
+      Result.ok(value.toString()),
+    );
+    const bothNever = Result.ok(42).andThenAsync(async (value) =>
+      Result.ok(value.toString()),
+    );
+    expectTypeOf(leftNever).toEqualTypeOf<
+      Promise<Result<string, ParseError>>
+    >();
+    expectTypeOf(rightNever).toEqualTypeOf<
+      Promise<Result<string, LookupError>>
+    >();
+    expectTypeOf(bothNever).toEqualTypeOf<Promise<Result<string, never>>>();
+
+    const onlyErr = lookup.andThenAsync(async () =>
+      Result.err<never, ParseError>({ kind: "parse" }),
+    );
+    expectTypeOf(onlyErr).toEqualTypeOf<
+      Promise<Result<never, LookupError | ParseError>>
+    >();
+
+    const explicitOutput = lookup.andThenAsync<string>(async (value) =>
+      Result.ok<string, LookupError>(value.toString()),
+    );
+    const explicitOutputNever = lookup.andThenAsync<string>(async (value) =>
+      Result.ok(value.toString()),
+    );
+    const explicitBoth = lookup.andThenAsync<string, ParseError>(
+      async (value) => Result.ok<string, ParseError>(value.toString()),
+    );
+    expectTypeOf(explicitOutput).toEqualTypeOf<
+      Promise<Result<string, LookupError>>
+    >();
+    expectTypeOf(explicitOutputNever).toEqualTypeOf<
+      Promise<Result<string, LookupError>>
+    >();
+    expectTypeOf(explicitBoth).toEqualTypeOf<
+      Promise<Result<string, LookupError | ParseError>>
+    >();
+
+    lookup.andThenAsync<string>(
+      // @ts-expect-error - specifying only U uses F = LookupError
+      async (value) => Result.ok<string, ParseError>(value.toString()),
+    );
   });
 });

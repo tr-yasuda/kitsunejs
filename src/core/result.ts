@@ -439,8 +439,12 @@ export abstract class Result<T, E> {
 
   /**
    * Calls fn if the result is Ok, otherwise returns the Err value of self.
+   * Preserves errors from either operation as E | F without converting them.
+   * If only U is specified, F defaults to E.
+   * The same-error overload also accepts branches whose errors are within E.
    */
   abstract andThen<U>(fn: (value: T) => Result<U, E>): Result<U, E>;
+  abstract andThen<U, F = E>(fn: (value: T) => Result<U, F>): Result<U, E | F>;
 
   /**
    * Calls fn if the result is Err, otherwise returns the Ok value of self.
@@ -454,10 +458,16 @@ export abstract class Result<T, E> {
 
   /**
    * Calls an async function if the result is Ok, otherwise returns the Err value of self.
+   * Preserves errors from either operation as E | F without converting them.
+   * If only U is specified, F defaults to E.
+   * The same-error overload also accepts branches whose errors are within E.
    */
   abstract andThenAsync<U>(
     fn: (value: T) => Promise<Result<U, E>>,
   ): Promise<Result<U, E>>;
+  abstract andThenAsync<U, F = E>(
+    fn: (value: T) => Promise<Result<U, F>>,
+  ): Promise<Result<U, E | F>>;
 
   /**
    * Calls an async function if the result is Err, otherwise returns the Ok value of self.
@@ -763,7 +773,9 @@ export class Ok<T, E = never> extends Result<T, E> {
     return this as unknown as Result<T, F>;
   }
 
-  andThen<U>(fn: (value: T) => Result<U, E>): Result<U, E> {
+  andThen<U>(fn: (value: T) => Result<U, E>): Result<U, E>;
+  andThen<U, F = E>(fn: (value: T) => Result<U, F>): Result<U, E | F>;
+  andThen<U, F = E>(fn: (value: T) => Result<U, F>): Result<U, E | F> {
     return fn(this.value);
   }
 
@@ -775,9 +787,15 @@ export class Ok<T, E = never> extends Result<T, E> {
     return new Ok(await fn(this.value));
   }
 
-  async andThenAsync<U>(
+  andThenAsync<U>(
     fn: (value: T) => Promise<Result<U, E>>,
-  ): Promise<Result<U, E>> {
+  ): Promise<Result<U, E>>;
+  andThenAsync<U, F = E>(
+    fn: (value: T) => Promise<Result<U, F>>,
+  ): Promise<Result<U, E | F>>;
+  async andThenAsync<U, F = E>(
+    fn: (value: T) => Promise<Result<U, F>>,
+  ): Promise<Result<U, E | F>> {
     return fn(this.value);
   }
 
@@ -880,8 +898,10 @@ export class Err<T = never, E = unknown> extends Result<T, E> {
     return other;
   }
 
-  andThen<U>(_fn: (value: T) => Result<U, E>): Result<U, E> {
-    return this as unknown as Result<U, E>;
+  andThen<U>(fn: (value: T) => Result<U, E>): Result<U, E>;
+  andThen<U, F = E>(fn: (value: T) => Result<U, F>): Result<U, E | F>;
+  andThen<U, F = E>(_fn: (value: T) => Result<U, F>): Result<U, E | F> {
+    return this as unknown as Result<U, E | F>;
   }
 
   orElse<F>(fn: (error: E) => Result<T, F>): Result<T, F> {
@@ -892,10 +912,16 @@ export class Err<T = never, E = unknown> extends Result<T, E> {
     return this as unknown as Result<U, E>;
   }
 
-  async andThenAsync<U>(
-    _fn: (value: T) => Promise<Result<U, E>>,
-  ): Promise<Result<U, E>> {
-    return this as unknown as Result<U, E>;
+  andThenAsync<U>(
+    fn: (value: T) => Promise<Result<U, E>>,
+  ): Promise<Result<U, E>>;
+  andThenAsync<U, F = E>(
+    fn: (value: T) => Promise<Result<U, F>>,
+  ): Promise<Result<U, E | F>>;
+  async andThenAsync<U, F = E>(
+    _fn: (value: T) => Promise<Result<U, F>>,
+  ): Promise<Result<U, E | F>> {
+    return this as unknown as Result<U, E | F>;
   }
 
   async orElseAsync<F>(

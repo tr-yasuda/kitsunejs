@@ -116,7 +116,7 @@ function processUser(input: unknown): Result<void, AppError> {
 }
 ```
 
-`andThen` infers `ValidationError | NetworkError`; `andThenAsync` infers error
+`andThen` infers `ValidationError | ApiError`; `andThenAsync` infers error
 unions in the same way. Each additional step adds its possible errors to the
 union. To convert these errors to one application error shape, use `mapErr`
 explicitly after composition:

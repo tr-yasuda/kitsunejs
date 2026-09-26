@@ -295,6 +295,76 @@ async function getDisplayName(): Promise<Option<string>> {
 }
 ```
 
+#### Keeping intermediate values in an async Result sequence
+
+When later operations need earlier success values, a generator avoids nested
+callbacks and repeated awaits between Result-returning operations:
+
+```typescript
+function loadUserWithProfile(
+  id: number,
+): Promise<Result<{ user: User; profile: Profile }, ApiError>> {
+  return Result.sequenceAsync(async function* () {
+    const user = yield* Result.stepAsync(fetchUser(id));
+    const profile = yield* Result.stepAsync(fetchProfile(user));
+    return Result.ok({ user, profile });
+  });
+}
+```
+
+The first Err stops later operations. The body must return a Result explicitly;
+different error types from the steps and final return are inferred as a union.
+For synchronous operations, use `Result.sequence` with `function*` and
+`yield* Result.step(...)`.
+
+Cleanup can use ordinary `finally` blocks:
+
+```typescript
+function loadAndRelease(
+  id: number,
+  release: () => Promise<void>,
+): Promise<Result<Profile, ApiError>> {
+  return Result.sequenceAsync(async function* () {
+    try {
+      const user = yield* Result.stepAsync(fetchUser(id));
+      const profile = yield* Result.stepAsync(fetchProfile(user));
+      return Result.ok(profile);
+    } finally {
+      await release();
+    }
+  });
+}
+```
+
+On early Err, cleanup completes before the sequence settles. A cleanup throw
+or rejection propagates unchanged instead of returning that Err. Do not yield
+Result steps inside native `finally` blocks. For cleanup operations that return
+a Result, use the separate cleanup argument:
+
+```typescript
+function loadAndReleaseWithResult(
+  id: number,
+  release: () => Promise<Result<void, ReleaseError>>,
+): Promise<Result<Profile, ApiError | ReleaseError>> {
+  return Result.sequenceAsync(
+    async function* () {
+      const user = yield* Result.stepAsync(fetchUser(id));
+      const profile = yield* Result.stepAsync(fetchProfile(user));
+      return Result.ok(profile);
+    },
+    async function* () {
+      yield* Result.stepAsync(release());
+      return Result.ok(undefined);
+    },
+  );
+}
+```
+
+The cleanup generator runs even if the body throws or rejects. Its first Err
+skips later ordinary statements and closes its native finally blocks. That Err
+preserves a body Err or exception, and replaces a body Ok. A cleanup throw or
+rejection takes precedence over the body outcome.
+
 ### 3.4 Converting an Existing Promise to Result
 
 > Use case: When you already have a Promise from an external API or library and want to handle it as a Result

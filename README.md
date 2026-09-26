@@ -188,6 +188,39 @@ const age = findUser(1)
   .unwrapOr(0);
 ```
 
+#### Sequential Processing with Early Return
+
+Use `yield* Result.step(...)` to keep success values in local variables and
+stop at the first Err. The body must explicitly return a Result.
+
+```typescript
+const result = Result.sequence(function* () {
+  const user = yield* Result.step(findUser(1));
+  const age = yield* Result.step(getAge(user));
+  return Result.ok({ user, age });
+});
+```
+
+For asynchronous operations, use `Result.sequenceAsync` with `async function*`
+and `yield* Result.stepAsync(...)`. The helper accepts both a Result and a
+promise resolving to a Result, without an `await` at each step.
+
+```typescript
+const result = await Result.sequenceAsync(async function* () {
+  const user = yield* Result.stepAsync(fetchUser(1));
+  const displayName = user.name.toUpperCase();
+  return Result.ok({ user, displayName });
+});
+```
+
+Early return closes the generator and waits for `finally` cleanup. Cleanup
+that uses Result steps belongs in an optional second `cleanup` generator;
+do not yield from native `finally` blocks. A cleanup Err preserves a body Err
+or exception and replaces a body Ok. Cleanup throws and rejections take
+precedence and propagate unchanged. Existing Result iteration is unchanged.
+See [the API reference](./docs/api-reference.md#sequential-processing) for the
+full cleanup and type inference rules.
+
 #### Combining Multiple Results
 
 ```typescript

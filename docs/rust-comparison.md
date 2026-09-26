@@ -34,6 +34,7 @@ kitsunejs faithfully reproduces Rust's Result/Option API as much as possible, bu
 | `and(res)`           | `and(res)`                          |                                                                                    |
 | `or(res)`            | `or(res)`                           |                                                                                    |
 | `and_then(fn)`       | `andThen(fn)`                       | Also known as flatMap                                                              |
+| `result?`            | `yield* Result.step(result)` inside `Result.sequence` | Returns the first Err early; async operations use `sequenceAsync` and `stepAsync` |
 | `or_else(fn)`        | `orElse(fn)`                        |                                                                                    |
 | `transpose()`        | `transpose()`                       | `Result<Option<T>, E>` ↔ `Option<Result<T, E>>`                                   |
 | `flatten()`          | `flatten()`                         | Flattens one level of nested `Result`                                              |

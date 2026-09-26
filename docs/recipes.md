@@ -392,6 +392,7 @@ import { Result } from 'kitsunejs';
 
 type ValidationError = { field: string; message: string };
 type UserInput = { name: string; age: string; email: string };
+type User = { name: string; age: number; email: string };
 
 function validateName(name: string): Result<string, ValidationError> {
   if (name.length < 2) {
@@ -417,14 +418,12 @@ function validateEmail(email: string): Result<string, ValidationError> {
 
 // Execute all validations and create user only if all succeed
 function createUser(input: UserInput): Result<User, ValidationError> {
-  const results = [
+  // Pass the values as a tuple so each validated field keeps its type.
+  return Result.all([
     validateName(input.name),
     validateAge(input.age),
     validateEmail(input.email),
-  ];
-
-  // Result.all returns Ok<T[]> if all Ok, otherwise returns the first Err
-  return Result.all(results).map(([name, age, email]) => ({
+  ]).map(([name, age, email]) => ({
     name,
     age,
     email,

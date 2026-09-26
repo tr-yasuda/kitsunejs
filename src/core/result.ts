@@ -30,6 +30,12 @@ function isResult(value: unknown): value is Result<unknown, unknown> {
   }
 }
 
+type ResultValue<R> = R extends Result<infer T, infer _E> ? T : never;
+type ResultError<R> = R extends Result<infer _T, infer E> ? E : never;
+type AllValues<R extends readonly unknown[]> = {
+  -readonly [K in keyof R]: ResultValue<R[K]>;
+};
+
 const MAX_STRINGIFY_LENGTH = 512;
 const MAX_STRINGIFY_DEPTH = 4;
 const MAX_STRINGIFY_ARRAY_LENGTH = 50;
@@ -621,22 +627,33 @@ export abstract class Result<T, E> {
 
   /**
    * Combines multiple Results into a single Result.
-   * Returns Ok containing an array of all values if all Results are Ok.
+   * Returns Ok containing all values in input order if all Results are Ok.
+   * Preserves the value types of fixed-length tuples.
    * Returns the first Err if any Result is Err.
    * Returns Ok([]) for an empty array.
    */
-  static all<T, E>(results: readonly Result<T, E>[]): Result<T[], E> {
-    const values: T[] = [];
+  // Infer factory defaults before checking that every input is a Result.
+  static all<const R extends readonly unknown[]>(
+    results: R & (R[number] extends Result<unknown, unknown> ? unknown : never),
+  ): Result<AllValues<R>, ResultError<R[number]>>;
+  // Generic callers can already constrain their inputs to Results.
+  static all<const R extends readonly Result<unknown, unknown>[]>(
+    results: R,
+  ): Result<AllValues<R>, ResultError<R[number]>>;
+  static all<T, E>(results: readonly Result<T, E>[]): Result<T[], E>;
+  static all(
+    results: readonly Result<unknown, unknown>[],
+  ): Result<unknown[], unknown> {
+    const values: unknown[] = [];
 
     for (const r of results) {
       if (r.isErr()) {
-        // The type parameter T becomes T[] in the array variant, but the Err instance can be reused as-is.
-        return r as unknown as Result<T[], E>;
+        return r as Result<unknown[], unknown>;
       }
       values.push(r.unwrap());
     }
 
-    return Result.ok<T[], E>(values);
+    return Result.ok(values);
   }
 
   /**

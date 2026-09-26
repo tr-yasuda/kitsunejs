@@ -461,6 +461,12 @@ describe("Result type tests", () => {
     const allCombinedWithErr = Result.all(allWithErr);
     expectTypeOf(allCombinedWithErr).toEqualTypeOf<Result<number[], string>>();
 
+    // Result.all: explicit type arguments remain available for arrays
+    const allWithExplicitTypes = Result.all<number, string>(allWithErr);
+    expectTypeOf(allWithExplicitTypes).toEqualTypeOf<
+      Result<number[], string>
+    >();
+
     // Result.all: readonly array
     const readonlyResults: readonly Result<number, string>[] = [
       Result.ok(1),
@@ -468,6 +474,43 @@ describe("Result type tests", () => {
     ];
     const allFromReadonly = Result.all(readonlyResults);
     expectTypeOf(allFromReadonly).toEqualTypeOf<Result<number[], string>>();
+
+    // Result.all: mixed tuple preserves each value and error type
+    const mixedCombined = Result.all([
+      Result.ok<string, "name-error">("Alice"),
+      Result.ok<number, "age-error">(25),
+      Result.ok<string, "email-error">("alice@example.com"),
+    ]);
+    expectTypeOf(mixedCombined).toEqualTypeOf<
+      Result<
+        [string, number, string],
+        "name-error" | "age-error" | "email-error"
+      >
+    >();
+
+    // Result.all: inline factories retain their default type arguments
+    const inlineOk = Result.all([Result.ok(1)]);
+    expectTypeOf(inlineOk).toEqualTypeOf<Result<[number], never>>();
+
+    const inlineErr = Result.all([Result.ok(1), Result.err("failure")]);
+    expectTypeOf(inlineErr).toEqualTypeOf<Result<[number, never], string>>();
+
+    const contextualAll: Result<number[], string> = Result.all([Result.ok(1)]);
+    expectTypeOf(contextualAll).toEqualTypeOf<Result<number[], string>>();
+
+    // Result.all: generic callers preserve tuple value and error types
+    function collectResults<R extends readonly Result<unknown, unknown>[]>(
+      results: R,
+    ): ReturnType<typeof Result.all<R>> {
+      return Result.all(results);
+    }
+    const genericTuple = collectResults([
+      Result.ok<string, "name-error">("Alice"),
+      Result.ok<number, "age-error">(25),
+    ] as const);
+    expectTypeOf(genericTuple).toEqualTypeOf<
+      Result<[string, number], "name-error" | "age-error">
+    >();
 
     // Result.any: returns first Ok
     const anyOk = [

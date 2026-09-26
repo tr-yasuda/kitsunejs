@@ -201,15 +201,19 @@ async function fetchData(): Promise<Result<Data, Error>> {
 
 #### Aggregation & Combination
 
-##### `Result.all<T, E>(results: readonly Result<T, E>[]): Result<T[], E>`
+##### `Result.all(results)`
 
-Combines multiple `Result`s. Returns `Ok<T[]>` containing all values if all `Result`s are `Ok`.
-Returns the first `Err` if any `Result` is `Err`. Returns `Ok([])` for an empty array.
+Combines multiple `Result`s. For a fixed-length tuple (including an inline array
+literal), the result preserves each value's position and type. For an ordinary
+array, it returns `Result<T[], E>`. If input errors have different types, the
+result error type is their union. Returns the first `Err` if any `Result` is
+`Err`. Returns `Ok([])` for an empty array.
 
 **Parameters**:
-- `results: readonly Result<T, E>[]` - Array of Results
+- `results` - Readonly tuple or array of Results
 
-**Returns**: `Result<T[], E>` - Ok<T[]> if all succeed, otherwise the first Err
+**Returns**: A Result containing the tuple or array of values if all succeed,
+otherwise the first Err
 
 **Example**:
 ```typescript
@@ -221,6 +225,12 @@ const results = [
 
 const combined = Result.all(results);
 console.log(combined.unwrap()); // [1, 2, 3]
+
+const mixed = Result.all([
+  Result.ok<string, 'name-error'>('Alice'),
+  Result.ok<number, 'age-error'>(25),
+]);
+// Result<[string, number], 'name-error' | 'age-error'>
 
 const resultsWithError = [
   Result.ok(1),

@@ -2,6 +2,8 @@ import { UnwrapError } from "./errors.js";
 import type { Option as OptionType } from "./option.js";
 import { Option } from "./option.js";
 
+const MAX_FINALLY_UNWIND_ATTEMPTS = 64;
+
 const EMPTY_ITERATOR: IterableIterator<never> = Object.freeze({
   next: (): IteratorResult<never> => ({ done: true, value: undefined }),
   [Symbol.iterator](): IterableIterator<never> {
@@ -669,8 +671,10 @@ export abstract class Result<T, E> {
    *
    * Do not yield from native finally blocks: a pending exception is opaque to
    * the runner. Put operations whose Err should be returned in the body.
-   * Yields detected during closure cause a TypeError after outer finally
-   * blocks are closed. No exceptions are converted to Err automatically.
+   * Yields detected during closure trigger at most 64 throw() attempts to
+   * unwind reachable outer finally blocks, then a TypeError. A delegate that
+   * keeps yielding can prevent outer cleanup. This does not time out user
+   * code or pending promises. No exceptions are converted to Err automatically.
    */
   static sequence<
     Y extends Err<never, unknown>,
@@ -683,15 +687,19 @@ export abstract class Result<T, E> {
     if (!first.done) {
       const exitValue = first.value as unknown as R;
       let closing = generator.return(exitValue);
-      const yieldedDuringClosure = !closing.done;
-      // Even unsupported yields must not prevent outer resource release.
-      while (!closing.done) {
-        closing = generator.return(exitValue);
-      }
-      if (yieldedDuringClosure) {
-        throw new TypeError(
+      if (!closing.done) {
+        const closureError = new TypeError(
           "Cannot yield from finally; put fallible Result steps in the body",
         );
+        // Throwing also unwinds delegates that never finish on return().
+        for (
+          let attempt = 0;
+          !closing.done && attempt < MAX_FINALLY_UNWIND_ATTEMPTS;
+          attempt++
+        ) {
+          closing = generator.throw(closureError);
+        }
+        throw closureError;
       }
     }
     return first.value as Result<
@@ -730,6 +738,8 @@ export abstract class Result<T, E> {
    * unchanged instead, as with Result.sequence.
    * Throws and rejections propagate without automatic conversion to Err.
    * Do not yield from native finally blocks; put fallible steps in the body.
+   * Unsupported yields use the same bounded unwinding as Result.sequence;
+   * each attempt awaits throw(), without a timeout on cleanup promises.
    *
    * @example
    * ```typescript
@@ -751,15 +761,19 @@ export abstract class Result<T, E> {
     if (!first.done) {
       const exitValue = first.value as unknown as R;
       let closing = await generator.return(exitValue);
-      const yieldedDuringClosure = !closing.done;
-      // Even unsupported yields must not prevent outer resource release.
-      while (!closing.done) {
-        closing = await generator.return(exitValue);
-      }
-      if (yieldedDuringClosure) {
-        throw new TypeError(
+      if (!closing.done) {
+        const closureError = new TypeError(
           "Cannot yield from finally; put fallible Result steps in the body",
         );
+        // Throwing also unwinds delegates that never finish on return().
+        for (
+          let attempt = 0;
+          !closing.done && attempt < MAX_FINALLY_UNWIND_ATTEMPTS;
+          attempt++
+        ) {
+          closing = await generator.throw(closureError);
+        }
+        throw closureError;
       }
     }
     return first.value as Result<

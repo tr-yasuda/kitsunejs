@@ -288,9 +288,17 @@ as ordinary Result steps.
 Do not use `yield` or `yield* Result.step(...)` / `stepAsync(...)` in native
 `finally` blocks. Closing a generator suspended there can overwrite an
 exception that the runner cannot observe. If a yield is detected during
-closure, the runner closes the remaining outer finally blocks and throws a
-TypeError. This check cannot detect every unsupported yield in native finally,
-such as one reached by an exception before the first step failure.
+closure, the runner injects a TypeError through `generator.throw()` to unwind
+reachable outer finally blocks. It makes at most 64 such attempts and throws a
+TypeError even if the generator handles the injected error. Cleanup throws
+and rejections still propagate unchanged.
+
+A delegate that keeps yielding in response to `throw()` can prevent remaining
+outer finally blocks from running. At the attempt limit, the runner stops
+resuming the generator. This limit bounds protocol calls; it does not interrupt
+blocking user code or time out pending cleanup promises. The check also cannot
+detect every unsupported yield in native finally, such as one reached by an
+exception before the first step failure.
 
 ```typescript
 const result = await Result.sequenceAsync(async function* () {

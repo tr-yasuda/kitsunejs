@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { Result } from "../../src/index.js";
+import { Err, Result } from "../../src/index.js";
 
 describe("Result.sequence", () => {
   test("should preserve intermediate success values", () => {
@@ -200,6 +200,108 @@ describe("Result.sequenceAsync", () => {
 });
 
 describe("Result sequences and exceptions", () => {
+  test.each([false, true])(
+    "should bound attempts when a finally delegate also keeps yielding on throw: async=%s",
+    async (asynchronous) => {
+      const cleanup = new Err("unsupported cleanup");
+      let throwAttempts = 0;
+      let released = false;
+      const delegate: IterableIterator<typeof cleanup, undefined, unknown> = {
+        [Symbol.iterator]() {
+          return this;
+        },
+        next() {
+          return { done: false, value: cleanup };
+        },
+        return() {
+          return { done: false, value: cleanup };
+        },
+        throw() {
+          // Keep a regression from hanging the test process.
+          if (++throwAttempts > 128) {
+            throw new Error("Closure did not terminate");
+          }
+          return { done: false, value: cleanup };
+        },
+      };
+      function* body() {
+        try {
+          try {
+            yield* Result.step(Result.err("original"));
+            return Result.ok(42);
+          } finally {
+            yield* delegate;
+          }
+        } finally {
+          released = true;
+        }
+      }
+
+      if (asynchronous) {
+        await expect(
+          Result.sequenceAsync(async function* () {
+            return yield* body();
+          }),
+        ).rejects.toThrow(TypeError);
+      } else {
+        expect(() => Result.sequence(body)).toThrow(TypeError);
+      }
+      expect(throwAttempts).toBeGreaterThan(0);
+      expect(throwAttempts).toBeLessThanOrEqual(64);
+      // An uncooperative delegate makes outer finally unreachable.
+      expect(released).toBe(false);
+    },
+  );
+
+  test.each([false, true])(
+    "should unwind a finally delegate whose return keeps yielding: async=%s",
+    async (asynchronous) => {
+      const events: string[] = [];
+      const cleanup = new Err("unsupported cleanup");
+      let returnAttempts = 0;
+      const delegate: IterableIterator<typeof cleanup, undefined, unknown> = {
+        [Symbol.iterator]() {
+          return this;
+        },
+        next() {
+          return { done: false, value: cleanup };
+        },
+        return() {
+          // Keep a regression from hanging the test process.
+          if (++returnAttempts > 128) {
+            throw new Error("Closure did not terminate");
+          }
+          return { done: false, value: cleanup };
+        },
+      };
+      function* body() {
+        try {
+          try {
+            yield* Result.step(Result.err("original"));
+            return Result.ok(42);
+          } finally {
+            yield* delegate;
+            events.push("later cleanup");
+          }
+        } finally {
+          events.push("outer");
+        }
+      }
+
+      if (asynchronous) {
+        await expect(
+          Result.sequenceAsync(async function* () {
+            return yield* body();
+          }),
+        ).rejects.toThrow(TypeError);
+      } else {
+        expect(() => Result.sequence(body)).toThrow(TypeError);
+      }
+      expect(returnAttempts).toBe(1);
+      expect(events).toEqual(["outer"]);
+    },
+  );
+
   test.each([false, true])(
     "should reject a step yielded from finally during closure: async=%s",
     async (asynchronous) => {

@@ -654,59 +654,39 @@ export abstract class Result<T, E> {
    * Returns the first Err yielded by a step, or the final returned Result.
    * Infers the success type from the return and unions all step/return errors.
    *
-   * On an Err, closes the generator and runs its finally blocks. An optional
-   * cleanup generator runs after the body and its finally blocks, even if the
-   * body throws. Both generators must explicitly return a Result.
-   * Cleanup Ok values are discarded. Cleanup Errs replace a body Ok, preserve
-   * a body Err, and cannot suppress a pending exception. A cleanup throw takes
-   * precedence over the body outcome and propagates unchanged.
+   * On an Err, closes the generator and runs its finally blocks before
+   * returning the original Err. A thrown value propagates unchanged instead.
    *
    * Do not yield from native finally blocks: a pending exception is opaque to
-   * the runner. Put fallible steps in the separate cleanup generator instead.
+   * the runner. Put operations whose Err should be returned in the body.
    * Yields detected during closure cause a TypeError after outer finally
    * blocks are closed. No exceptions are converted to Err automatically.
    */
   static sequence<
     Y extends Err<never, unknown>,
     R extends Result<unknown, unknown>,
-    CY extends Err<never, unknown> = never,
-    CR extends Result<unknown, unknown> = Result<never, never>,
   >(
     body: () => Generator<Y, R, unknown>,
-    cleanup?: () => Generator<CY, CR, unknown>,
-  ): Result<
-    ResultValue<R>,
-    ResultError<Y> | ResultError<R> | ResultError<CY> | ResultError<CR>
-  > {
-    let result: Result<unknown, unknown> | undefined;
-    try {
-      const generator = body();
-      const first = generator.next();
-      if (!first.done) {
-        const exitValue = first.value as unknown as R;
-        let closing = generator.return(exitValue);
-        const yieldedDuringClosure = !closing.done;
-        while (!closing.done) {
-          closing = generator.return(exitValue);
-        }
-        if (yieldedDuringClosure) {
-          throw new TypeError(
-            "Cannot yield from finally; use the cleanup argument",
-          );
-        }
+  ): Result<ResultValue<R>, ResultError<Y> | ResultError<R>> {
+    const generator = body();
+    const first = generator.next();
+    if (!first.done) {
+      const exitValue = first.value as unknown as R;
+      let closing = generator.return(exitValue);
+      const yieldedDuringClosure = !closing.done;
+      // Even unsupported yields must not prevent outer resource release.
+      while (!closing.done) {
+        closing = generator.return(exitValue);
       }
-      result = first.value;
-    } finally {
-      if (cleanup) {
-        const cleanupResult = Result.sequence(cleanup);
-        if (result?.isOk() && cleanupResult.isErr()) {
-          result = cleanupResult;
-        }
+      if (yieldedDuringClosure) {
+        throw new TypeError(
+          "Cannot yield from finally; put fallible Result steps in the body",
+        );
       }
     }
-    return result as Result<
+    return first.value as Result<
       ResultValue<R>,
-      ResultError<Y> | ResultError<R> | ResultError<CY> | ResultError<CR>
+      ResultError<Y> | ResultError<R>
     >;
   }
 
@@ -731,11 +711,11 @@ export abstract class Result<T, E> {
    * The generator may return a Result or a promise resolving to a Result.
    * Infers success and error types in the same way as Result.sequence.
    *
-   * On an Err, waits for generator closure and all remaining finally blocks,
-   * then awaits the optional cleanup generator, even if the body threw or
-   * rejected. Cleanup outcome precedence is the same as Result.sequence.
+   * On an Err, waits for generator closure and all remaining finally blocks
+   * before returning the original Err. A cleanup throw or rejection propagates
+   * unchanged instead, as with Result.sequence.
    * Throws and rejections propagate without automatic conversion to Err.
-   * Do not yield from native finally blocks; use the cleanup argument instead.
+   * Do not yield from native finally blocks; put fallible steps in the body.
    *
    * @example
    * ```typescript
@@ -749,46 +729,28 @@ export abstract class Result<T, E> {
   static async sequenceAsync<
     Y extends Err<never, unknown>,
     R extends Result<unknown, unknown>,
-    CY extends Err<never, unknown> = never,
-    CR extends Result<unknown, unknown> = Result<never, never>,
   >(
     body: () => AsyncGenerator<Y, R, unknown>,
-    cleanup?: () => AsyncGenerator<CY, CR, unknown>,
-  ): Promise<
-    Result<
-      ResultValue<R>,
-      ResultError<Y> | ResultError<R> | ResultError<CY> | ResultError<CR>
-    >
-  > {
-    let result: Result<unknown, unknown> | undefined;
-    try {
-      const generator = body();
-      const first = await generator.next();
-      if (!first.done) {
-        const exitValue = first.value as unknown as R;
-        let closing = await generator.return(exitValue);
-        const yieldedDuringClosure = !closing.done;
-        while (!closing.done) {
-          closing = await generator.return(exitValue);
-        }
-        if (yieldedDuringClosure) {
-          throw new TypeError(
-            "Cannot yield from finally; use the cleanup argument",
-          );
-        }
+  ): Promise<Result<ResultValue<R>, ResultError<Y> | ResultError<R>>> {
+    const generator = body();
+    const first = await generator.next();
+    if (!first.done) {
+      const exitValue = first.value as unknown as R;
+      let closing = await generator.return(exitValue);
+      const yieldedDuringClosure = !closing.done;
+      // Even unsupported yields must not prevent outer resource release.
+      while (!closing.done) {
+        closing = await generator.return(exitValue);
       }
-      result = first.value;
-    } finally {
-      if (cleanup) {
-        const cleanupResult = await Result.sequenceAsync(cleanup);
-        if (result?.isOk() && cleanupResult.isErr()) {
-          result = cleanupResult;
-        }
+      if (yieldedDuringClosure) {
+        throw new TypeError(
+          "Cannot yield from finally; put fallible Result steps in the body",
+        );
       }
     }
-    return result as Result<
+    return first.value as Result<
       ResultValue<R>,
-      ResultError<Y> | ResultError<R> | ResultError<CY> | ResultError<CR>
+      ResultError<Y> | ResultError<R>
     >;
   }
 

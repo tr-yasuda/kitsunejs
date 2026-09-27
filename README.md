@@ -213,11 +213,12 @@ const result = await Result.sequenceAsync(async function* () {
 });
 ```
 
-Early return closes the generator and waits for `finally` cleanup. Cleanup
-that uses Result steps belongs in an optional second `cleanup` generator;
-do not yield from native `finally` blocks. A cleanup Err preserves a body Err
-or exception and replaces a body Ok. Cleanup throws and rejections take
-precedence and propagate unchanged. Existing Result iteration is unchanged.
+Early return closes the generator and waits for ordinary `finally` cleanup.
+Put operations whose failures should be returned, such as flush or commit,
+in the body as Result steps. Use `finally` for resource release without
+`yield` or `yield*`; steps inside `finally` are unsupported. Cleanup throws
+and rejections take precedence over an early Err and propagate unchanged.
+Existing Result iteration is unchanged.
 See [the API reference](./docs/api-reference.md#sequential-processing) for the
 full cleanup and type inference rules.
 

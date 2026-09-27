@@ -310,32 +310,28 @@ function loadAndRelease(
 
 On early Err, cleanup completes before the sequence settles. A cleanup throw
 or rejection propagates unchanged instead of returning that Err. Do not yield
-Result steps inside native `finally` blocks. For cleanup operations that return
-a Result, use the separate cleanup argument:
+Result steps inside `finally` blocks. Put operations whose failures should be
+returned, such as flush or commit, in the body as ordinary Result steps:
 
 ```typescript
-function loadAndReleaseWithResult(
-  id: number,
-  release: () => Promise<Result<void, ReleaseError>>,
-): Promise<Result<Profile, ApiError | ReleaseError>> {
-  return Result.sequenceAsync(
-    async function* () {
-      const user = yield* Result.stepAsync(fetchUser(id));
-      const profile = yield* Result.stepAsync(fetchProfile(user));
-      return Result.ok(profile);
-    },
-    async function* () {
-      yield* Result.stepAsync(release());
-      return Result.ok(undefined);
-    },
-  );
+function readAndFlush(): Promise<Result<string, ResourceError>> {
+  return Result.sequenceAsync(async function* () {
+    const resource = yield* Result.stepAsync(openResource());
+    try {
+      const value = yield* Result.stepAsync(resource.read());
+      yield* Result.stepAsync(resource.flush());
+      return Result.ok(value);
+    } finally {
+      await resource.dispose();
+    }
+  });
 }
 ```
 
-The cleanup generator runs even if the body throws or rejects. Its first Err
-skips later ordinary statements and closes its native finally blocks. That Err
-preserves a body Err or exception, and replaces a body Ok. A cleanup throw or
-rejection takes precedence over the body outcome.
+If reading fails, flushing is skipped and the resource is still disposed.
+If flushing fails, its Err is returned after disposal. Avoid `return`, `break`,
+and `continue` in finally blocks so they do not interfere with pending control
+flow.
 
 ### 3.4 Converting an Existing Promise to Result
 

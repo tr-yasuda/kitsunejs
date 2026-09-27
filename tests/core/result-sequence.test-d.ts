@@ -17,40 +17,29 @@ declare function finishAsync(
   user: User,
   count: number,
 ): Promise<Result<{ user: User; count: number }, FinalError>>;
-type CleanupError = { kind: "cleanup" };
-declare function releaseUser(user: User): Result<boolean, CleanupError>;
 
-test("infers cleanup errors without changing the body success type", () => {
-  const result = Result.sequence(
-    function* () {
-      yield* Result.step(findUser());
-      return Result.ok(42);
-    },
-    function* () {
-      const user = yield* Result.step(findUser());
-      const released = yield* Result.step(releaseUser(user));
-      expectTypeOf(released).toEqualTypeOf<boolean>();
-      return Result.err({ kind: "final" as const });
-    },
-  );
-  expectTypeOf(result).toEqualTypeOf<
-    Result<number, LookupError | CleanupError | FinalError>
-  >();
+test("accepts only a sequence body without a cleanup argument", () => {
+  function* body() {
+    yield* Result.step(Result.ok(1));
+    return Result.ok(42);
+  }
+  function* cleanup() {
+    yield* Result.step(Result.ok(true));
+    return Result.ok(undefined);
+  }
+  // @ts-expect-error Result.sequence has no cleanup argument.
+  Result.sequence(body, cleanup);
 
-  const asyncResult = Result.sequenceAsync(
-    async function* () {
-      yield* Result.stepAsync(findUserAsync());
-      return Result.ok(42);
-    },
-    async function* () {
-      const user = yield* Result.stepAsync(findUserAsync());
-      yield* Result.stepAsync(Promise.resolve(releaseUser(user)));
-      return Result.err({ kind: "final" as const });
-    },
-  );
-  expectTypeOf(asyncResult).toEqualTypeOf<
-    Promise<Result<number, LookupError | CleanupError | FinalError>>
-  >();
+  async function* asyncBody() {
+    yield* Result.stepAsync(Result.ok(1));
+    return Result.ok(42);
+  }
+  async function* asyncCleanup() {
+    yield* Result.stepAsync(Result.ok(true));
+    return Result.ok(undefined);
+  }
+  // @ts-expect-error Result.sequenceAsync has no cleanup argument.
+  Result.sequenceAsync(asyncBody, asyncCleanup);
 });
 
 test("infers every success value and all step and return errors", () => {
@@ -100,28 +89,6 @@ test("requires an explicit Result return", () => {
     yield* Result.stepAsync(Result.ok(1));
     return 42;
   });
-  Result.sequence(
-    function* () {
-      yield* Result.step(Result.ok(1));
-      return Result.ok(42);
-    },
-    // @ts-expect-error Cleanup generators must explicitly return a Result.
-    function* () {
-      yield* Result.step(Result.ok(1));
-      return undefined;
-    },
-  );
-  Result.sequenceAsync(
-    async function* () {
-      yield* Result.stepAsync(Result.ok(1));
-      return Result.ok(42);
-    },
-    // @ts-expect-error Async cleanup must explicitly return a Result.
-    async function* () {
-      yield* Result.stepAsync(Result.ok(1));
-      return undefined;
-    },
-  );
 });
 
 test("matches async generator awaiting of a Promise success value", () => {
@@ -147,18 +114,6 @@ test("infers errors from explicit final branches and never for only Ok", () => {
     return Result.ok(value);
   });
   expectTypeOf(allOk).toEqualTypeOf<Result<number, never>>();
-
-  const allOkWithCleanup = Result.sequence(
-    function* () {
-      yield* Result.step(Result.ok(1));
-      return Result.ok(42);
-    },
-    function* () {
-      yield* Result.step(Result.ok(true));
-      return Result.ok("ignored cleanup value");
-    },
-  );
-  expectTypeOf(allOkWithCleanup).toEqualTypeOf<Result<number, never>>();
 });
 
 test("types async delegation with the awaited success value", () => {

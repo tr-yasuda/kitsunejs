@@ -269,8 +269,9 @@ operations that have already started or aggregate multiple errors.
 The `yield*` helper for `Result.sequenceAsync`. Accepts a Result or a
 promise-like Result, so an explicit await is not needed at each step. Synchronous
 steps can also use `Result.step` inside the asynchronous body.
-Unions of input Results are inferred in the same way as `Result.step`, including
-when they arrive through a promise.
+Success and error unions are inferred without type annotations, including
+promises of Result unions, unions of promises, and inputs that mix synchronous
+Results with promise-like Results.
 
 Async generator delegation awaits thenable success values as well. For
 example, extracting `Result.ok(Promise.resolve(42))` produces a `number`.

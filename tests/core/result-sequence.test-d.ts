@@ -197,3 +197,39 @@ test("infers success and error unions from inferred producer branches", () => {
     Promise<Result<number | string, LookupError | SettingsError>>
   >();
 });
+
+test("infers async success and error unions from the entire input", () => {
+  function promised(branch: number) {
+    if (branch === 0) return Promise.resolve(Result.ok(1));
+    if (branch === 1) return Promise.resolve(Result.ok("one"));
+    if (branch === 2) {
+      return Promise.resolve(Result.err({ kind: "lookup" as const }));
+    }
+    return Promise.resolve(Result.err({ kind: "settings" as const }));
+  }
+
+  const promisedResult = Result.sequenceAsync(async function* () {
+    const value = yield* Result.stepAsync(promised(0));
+    expectTypeOf(value).toEqualTypeOf<number | string>();
+    return Result.ok(value);
+  });
+  expectTypeOf(promisedResult).toEqualTypeOf<
+    Promise<Result<number | string, LookupError | SettingsError>>
+  >();
+
+  function mixed(branch: number) {
+    if (branch === 0) return Result.ok(1);
+    if (branch === 1) return Result.err({ kind: "lookup" as const });
+    if (branch === 2) return Promise.resolve(Result.ok("one"));
+    return Promise.resolve(Result.err({ kind: "settings" as const }));
+  }
+
+  const mixedResult = Result.sequenceAsync(async function* () {
+    const value = yield* Result.stepAsync(mixed(0));
+    expectTypeOf(value).toEqualTypeOf<number | string>();
+    return Result.ok(value);
+  });
+  expectTypeOf(mixedResult).toEqualTypeOf<
+    Promise<Result<number | string, LookupError | SettingsError>>
+  >();
+});

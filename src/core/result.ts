@@ -694,13 +694,17 @@ export abstract class Result<T, E> {
    * Extracts a success value with `yield*` inside Result.sequenceAsync.
    * Accepts a Result or a promise-like Result without an explicit await at
    * the call site. Rejected values propagate unchanged.
+   * Infers success and error unions from the entire input, including mixtures
+   * of synchronous and promise-like Results.
    * Async generator delegation also awaits thenable success values.
    */
-  static async *stepAsync<R extends Result<unknown, unknown>>(
-    result: R | PromiseLike<R>,
+  static async *stepAsync<
+    R extends Result<unknown, unknown> | PromiseLike<Result<unknown, unknown>>,
+  >(
+    result: R,
   ): AsyncGenerator<
-    Err<never, ResultError<R>>,
-    Awaited<ResultValue<R>>,
+    Err<never, ResultError<Awaited<R>>>,
+    Awaited<ResultValue<Awaited<R>>>,
     unknown
   > {
     return yield* Result.step(await result);

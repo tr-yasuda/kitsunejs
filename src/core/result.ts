@@ -2,6 +2,8 @@ import { UnwrapError } from "./errors.js";
 import type { Option as OptionType } from "./option.js";
 import { Option } from "./option.js";
 
+const MAX_FINALLY_UNWIND_ATTEMPTS = 64;
+
 const EMPTY_ITERATOR: IterableIterator<never> = Object.freeze({
   next: (): IteratorResult<never> => ({ done: true, value: undefined }),
   [Symbol.iterator](): IterableIterator<never> {
@@ -633,6 +635,151 @@ export abstract class Result<T, E> {
    */
   static fromPromise<T, E = Error>(promise: Promise<T>): Promise<Result<T, E>> {
     return Result.tryAsync<T, E>(() => promise);
+  }
+
+  /**
+   * Extracts an Ok value with `yield*` inside a Result sequence.
+   * An Err is yielded unchanged so the sequence can exit early.
+   * This is separate from the value-enumerating Symbol.iterator protocol.
+   *
+   * @example
+   * ```typescript
+   * const result = Result.sequence(function* () {
+   *   const a = yield* Result.step(Result.ok(2));
+   *   const b = yield* Result.step(Result.ok(3));
+   *   return Result.ok(a + b);
+   * });
+   * ```
+   */
+  static *step<R extends Result<unknown, unknown>>(
+    result: R,
+  ): Generator<Err<never, ResultError<R>>, ResultValue<R>, unknown> {
+    if (result.isErr()) {
+      yield result as unknown as Err<never, ResultError<R>>;
+      throw new TypeError("Cannot resume a failed Result.step");
+    }
+    return result.unwrap() as ResultValue<R>;
+  }
+
+  /**
+   * Runs a generator that explicitly returns a Result.
+   * Returns the first Err yielded by a step, or the final returned Result.
+   * Infers the success type from the return and unions all step/return errors.
+   *
+   * On an Err, closes the generator and runs its finally blocks before
+   * returning the original Err. A thrown value propagates unchanged instead.
+   *
+   * Do not yield from native finally blocks: a pending exception is opaque to
+   * the runner. Put operations whose Err should be returned in the body.
+   * Yields detected during closure trigger at most 64 throw() attempts to
+   * unwind reachable outer finally blocks, then a TypeError. A delegate that
+   * keeps yielding can prevent outer cleanup. This does not time out user
+   * code or pending promises. No exceptions are converted to Err automatically.
+   */
+  static sequence<
+    Y extends Err<never, unknown>,
+    R extends Result<unknown, unknown>,
+  >(
+    body: () => Generator<Y, R, unknown>,
+  ): Result<ResultValue<R>, ResultError<Y> | ResultError<R>> {
+    const generator = body();
+    const first = generator.next();
+    if (!first.done) {
+      const exitValue = first.value as unknown as R;
+      let closing = generator.return(exitValue);
+      if (!closing.done) {
+        const closureError = new TypeError(
+          "Cannot yield from finally; put fallible Result steps in the body",
+        );
+        // Throwing also unwinds delegates that never finish on return().
+        for (
+          let attempt = 0;
+          !closing.done && attempt < MAX_FINALLY_UNWIND_ATTEMPTS;
+          attempt++
+        ) {
+          closing = generator.throw(closureError);
+        }
+        throw closureError;
+      }
+    }
+    return first.value as Result<
+      ResultValue<R>,
+      ResultError<Y> | ResultError<R>
+    >;
+  }
+
+  /**
+   * Extracts a success value with `yield*` inside Result.sequenceAsync.
+   * Accepts a Result or a promise-like Result without an explicit await at
+   * the call site. Rejected values propagate unchanged.
+   * Infers success and error unions from the entire input, including mixtures
+   * of synchronous and promise-like Results.
+   * Async generator delegation also awaits thenable success values.
+   */
+  static async *stepAsync<
+    R extends Result<unknown, unknown> | PromiseLike<Result<unknown, unknown>>,
+  >(
+    result: R,
+  ): AsyncGenerator<
+    Err<never, ResultError<Awaited<R>>>,
+    Awaited<ResultValue<Awaited<R>>>,
+    unknown
+  > {
+    return yield* Result.step(await result);
+  }
+
+  /**
+   * Runs an async generator that explicitly returns a Result.
+   * The generator may return a Result or a promise resolving to a Result.
+   * Infers success and error types in the same way as Result.sequence.
+   *
+   * On an Err, waits for generator closure and all remaining finally blocks
+   * before returning the original Err. A cleanup throw or rejection propagates
+   * unchanged instead, as with Result.sequence.
+   * Throws and rejections propagate without automatic conversion to Err.
+   * Do not yield from native finally blocks; put fallible steps in the body.
+   * Unsupported yields use the same bounded unwinding as Result.sequence;
+   * each attempt awaits throw(), without a timeout on cleanup promises.
+   *
+   * @example
+   * ```typescript
+   * const result = await Result.sequenceAsync(async function* () {
+   *   const user = yield* Result.stepAsync(fetchUser(id));
+   *   const profile = yield* Result.stepAsync(fetchProfile(user));
+   *   return Result.ok({ user, profile });
+   * });
+   * ```
+   */
+  static async sequenceAsync<
+    Y extends Err<never, unknown>,
+    R extends Result<unknown, unknown>,
+  >(
+    body: () => AsyncGenerator<Y, R, unknown>,
+  ): Promise<Result<ResultValue<R>, ResultError<Y> | ResultError<R>>> {
+    const generator = body();
+    const first = await generator.next();
+    if (!first.done) {
+      const exitValue = first.value as unknown as R;
+      let closing = await generator.return(exitValue);
+      if (!closing.done) {
+        const closureError = new TypeError(
+          "Cannot yield from finally; put fallible Result steps in the body",
+        );
+        // Throwing also unwinds delegates that never finish on return().
+        for (
+          let attempt = 0;
+          !closing.done && attempt < MAX_FINALLY_UNWIND_ATTEMPTS;
+          attempt++
+        ) {
+          closing = await generator.throw(closureError);
+        }
+        throw closureError;
+      }
+    }
+    return first.value as Result<
+      ResultValue<R>,
+      ResultError<Y> | ResultError<R>
+    >;
   }
 
   /**

@@ -197,6 +197,40 @@ covered by `E`. Custom `Result` subclasses must expose both overloads in their
 chaining overrides to support the full API; see the
 [API reference](docs/api-reference.md).
 
+#### Sequential Processing with Early Return
+
+Use `yield* Result.step(...)` to keep success values in local variables and
+stop at the first Err. The body must explicitly return a Result.
+
+```typescript
+const result = Result.sequence(function* () {
+  const user = yield* Result.step(findUser(1));
+  const age = yield* Result.step(getAge(user));
+  return Result.ok({ user, age });
+});
+```
+
+For asynchronous operations, use `Result.sequenceAsync` with `async function*`
+and `yield* Result.stepAsync(...)`. The helper accepts both a Result and a
+promise resolving to a Result, without an `await` at each step.
+
+```typescript
+const result = await Result.sequenceAsync(async function* () {
+  const user = yield* Result.stepAsync(fetchUser(1));
+  const displayName = user.name.toUpperCase();
+  return Result.ok({ user, displayName });
+});
+```
+
+Early return closes the generator and waits for ordinary `finally` cleanup.
+Put operations whose failures should be returned, such as flush or commit,
+in the body as Result steps. Use `finally` for resource release without
+`yield` or `yield*`; steps inside `finally` are unsupported. Cleanup throws
+and rejections take precedence over an early Err and propagate unchanged.
+Existing Result iteration is unchanged.
+See [the API reference](./docs/api-reference.md#sequential-processing) for the
+full cleanup and type inference rules.
+
 #### Combining Multiple Results
 
 ```typescript

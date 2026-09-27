@@ -34,6 +34,7 @@ kitsunejs faithfully reproduces Rust's Result/Option API as much as possible, bu
 | `and(res)`           | `and(res)`                          |                                                                                    |
 | `or(res)`            | `or(res)`                           |                                                                                    |
 | `and_then(fn)`       | `andThen(fn)`                       | Also known as flatMap. kitsunejs infers the union of both error types.              |
+| `result?`            | `yield* Result.step(result)` inside `Result.sequence` | Returns the first Err early; async operations use `sequenceAsync` and `stepAsync` |
 | `or_else(fn)`        | `orElse(fn)`                        |                                                                                    |
 | `transpose()`        | `transpose()`                       | `Result<Option<T>, E>` ↔ `Option<Result<T, E>>`                                   |
 | `flatten()`          | `flatten()`                         | Flattens one level of nested `Result`                                              |
@@ -44,6 +45,27 @@ kitsunejs faithfully reproduces Rust's Result/Option API as much as possible, bu
 | -                    | `Result.tryAsync(fn)`               | kitsunejs-specific. Integration with Promises                                      |
 | -                    | `Result.all(results)`               | kitsunejs-specific. Not in Rust std, but common in ecosystem (e.g., itertools)     |
 | -                    | `Result.any(results)`               | kitsunejs-specific. Not in Rust std, but common fallback pattern in ecosystem      |
+
+### Question-mark propagation and resource release
+
+`Result.sequence` and `Result.step` follow Rust's Result `?` control flow:
+extract an Ok value, or return early on Err. Each sequence explicitly returns
+a Result. The async variants provide the same behavior for Promise-returning
+operations.
+
+In Rust, `Drop::drop` returns `()` rather than a Result. Keep resource release
+separate from fallible operations in kitsunejs as well: use ordinary `finally`
+for release, and put flush or commit operations that should return Err in the
+body as Result steps. Do not yield from finally blocks. See the
+[Rust Drop documentation](https://doc.rust-lang.org/std/ops/trait.Drop.html).
+
+kitsunejs does not provide Rust ownership or automatic RAII. Its asynchronous
+runner waits for awaited finally cleanup, and cleanup throws/rejections
+propagate instead of an early Err; this does not reproduce Rust panic behavior.
+Rust's `?` converts errors through `From`, whereas kitsunejs infers an error
+union and preserves the original Err. Use `mapErr` explicitly to normalize
+errors when needed. See the
+[Rust propagation rules](https://doc.rust-lang.org/reference/expressions/operator-expr.html#the-try-propagation-expression).
 
 ## Option<T> Correspondence Table
 

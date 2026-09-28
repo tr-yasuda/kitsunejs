@@ -375,61 +375,18 @@ import kitsune from "kitsunejs";
 
 ## Comments and Documentation
 
-### JSDoc for Public APIs
+Keep public API doc comments short enough to read alongside a declaration.
+Describe behavior that the signature alone cannot show: which branch runs,
+whether a callback runs, what is returned, and how failures propagate.
+Put worked examples and usage guidance in the
+[API reference](./docs/api-reference.md) or [recipes](./docs/recipes.md).
 
-**Rule**: All public APIs must include JSDoc comments.
-
-#### ✅ Good
-
-```typescript
-/**
- * Maps a Result<T, E> to Result<U, E> by applying a function to the contained Ok value.
- *
- * @template T - The type of the Ok value
- * @template U - The type of the transformed Ok value
- * @template E - The type of the Err value
- * @param fn - The function to apply to the Ok value
- * @returns A new Result with the transformed value, or the original Err
- *
- * @example
- * ```typescript
- * const result = Result.ok(5);
- * const doubled = result.map(x => x * 2);
- * console.log(doubled.unwrap()); // 10
- * ```
- */
-map<U>(fn: (value: T) => U): Result<U, E> {
-  // Implementation
-}
-```
-
-### Inline Comments
-
-**Rule**: Use inline comments to explain **why**, not **what**.
-
-#### ❌ Bad
-
-```typescript
-// Increment counter by 1
-counter++;
-```
-
-#### ✅ Good
-
-```typescript
-// Retry mechanism requires at least one attempt
-counter++;
-```
-
-### Complex Logic
-
-**Rule**: Add comments for complex or non-obvious logic.
-
-```typescript
-// Using bitwise OR to ensure at least one bit is set
-// This prevents all-zero edge cases in the hash function
-const hash = (value | 0) >>> 0;
-```
+Inline comments belong next to facts that cannot be inferred from the code:
+external API constraints, compatibility requirements, invariants, measured
+performance limits, or known failure conditions. State when the constraint
+applies and what breaks if it is ignored. Do not narrate the next statement or
+add a comment merely because the code is complex; make the code's structure
+clear first.
 
 ---
 

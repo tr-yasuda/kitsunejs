@@ -119,14 +119,8 @@ const budgetReplacer = createBudgetReplacer(
 );
 
 /**
- * Safely stringifies a value for use in an error message.
- * Functions are rendered as "[Function]", BigInt values as "[BigInt]",
- * and Error-like objects (including those from other realms) are serialized
- * via String(error) with their own enumerable properties appended.
- * JSON.stringify output is bounded by depth, array length, and string length
- * to avoid huge intermediate output. Falls back to String() when serialization
- * returns undefined or throws (e.g. undefined, symbols, or circular references).
- * Output is truncated to the supplied maxLength to avoid unbounded messages.
+ * Bounds error messages even when the thrown value contains large or circular
+ * data. Falls back to String(value) when JSON produces no usable text.
  */
 function safeStringify(
   value: unknown,
@@ -160,7 +154,7 @@ function safeStringify(
       serialized = JSON.stringify(value, budgetReplacer);
     }
   } catch {
-    // fall through to the fallback below
+    serialized = undefined;
   }
 
   if (serialized !== undefined) {
@@ -197,18 +191,6 @@ export abstract class Result<T, E> {
    * Returns true if the result is Ok and the predicate returns true.
    *
    * This is a type guard that narrows the type to Ok<T, E> when true.
-   *
-   * @param predicate - Predicate applied to the Ok value
-   * @returns True if Ok and predicate returns true, otherwise false
-   *
-   * @example
-   * ```typescript
-   * const result: Result<number, string> = Result.ok(42);
-   *
-   * if (result.isOkAnd((v) => v > 0)) {
-   *   console.log(result.unwrap()); // 42
-   * }
-   * ```
    */
   abstract isOkAnd(predicate: (value: T) => boolean): this is Ok<T, E>;
 
@@ -216,18 +198,6 @@ export abstract class Result<T, E> {
    * Returns true if the result is Err and the predicate returns true.
    *
    * This is a type guard that narrows the type to Err<T, E> when true.
-   *
-   * @param predicate - Predicate applied to the Err value
-   * @returns True if Err and predicate returns true, otherwise false
-   *
-   * @example
-   * ```typescript
-   * const result: Result<number, string> = Result.err("error");
-   *
-   * if (result.isErrAnd((e) => e.length > 0)) {
-   *   console.log(result.unwrapErr()); // "error"
-   * }
-   * ```
    */
   abstract isErrAnd(predicate: (error: E) => boolean): this is Err<T, E>;
 
@@ -270,18 +240,6 @@ export abstract class Result<T, E> {
    * Returns the contained Err value with a custom error message.
    * Throws an UnwrapError with the provided message if the value is Ok. The
    * thrown error may include an optional `cause` property containing the Ok value.
-   *
-   * @param message - Message to display on error
-   * @returns Err value if Err
-   *
-   * @example
-   * ```typescript
-   * const err = Result.err<number, string>("error message");
-   * console.log(err.expectErr("should be err")); // "error message"
-   *
-   * const ok = Result.ok<number, string>(42);
-   * // ok.expectErr("should be err"); // UnwrapError: should be err
-   * ```
    */
   abstract expectErr(message: string): E;
 
@@ -302,58 +260,16 @@ export abstract class Result<T, E> {
 
   /**
    * Maps the Ok value to U by applying a function, or returns the provided default if Err.
-   *
-   * @template U - The type of the mapped value
-   * @param defaultValue - Value to return if Err
-   * @param fn - Function to map the Ok value
-   * @returns Mapped value if Ok, otherwise defaultValue
-   *
-   * @example
-   * ```typescript
-   * const ok = Result.ok<number, string>(21);
-   * console.log(ok.mapOr(0, (n) => n * 2)); // 42
-   *
-   * const err = Result.err<number, string>("error");
-   * console.log(err.mapOr(0, (n) => n * 2)); // 0
-   * ```
    */
   abstract mapOr<U>(defaultValue: U, fn: (value: T) => U): U;
 
   /**
    * Maps the Ok value to U by applying a function, or computes a default value from the Err.
-   *
-   * @template U - The type of the mapped value
-   * @param defaultFn - Function to compute the default value from the Err value
-   * @param fn - Function to map the Ok value
-   * @returns Mapped value if Ok, otherwise the result of defaultFn
-   *
-   * @example
-   * ```typescript
-   * const ok = Result.ok<number, string>(21);
-   * console.log(ok.mapOrElse((e) => e.length, (n) => n * 2)); // 42
-   *
-   * const err = Result.err<number, string>("error");
-   * console.log(err.mapOrElse((e) => e.length, (n) => n * 2)); // 5
-   * ```
    */
   abstract mapOrElse<U>(defaultFn: (error: E) => U, fn: (value: T) => U): U;
 
   /**
    * Pattern matches over the Result, applying one of two functions depending on the variant.
-   *
-   * @template U - The type of the returned value
-   * @param onOk - Function applied to the Ok value
-   * @param onErr - Function applied to the Err value
-   * @returns The result of applying the appropriate function
-   *
-   * @example
-   * ```typescript
-   * const ok = Result.ok<number, string>(42);
-   * console.log(ok.match((v) => v * 2, (e) => e.length)); // 84
-   *
-   * const err = Result.err<number, string>("error");
-   * console.log(err.match((v) => v * 2, (e) => e.length)); // 5
-   * ```
    */
   match<U>(onOk: (value: T) => U, onErr: (error: E) => U): U {
     return this.mapOrElse(onErr, onOk);
@@ -366,18 +282,6 @@ export abstract class Result<T, E> {
 
   /**
    * Calls a function with the Ok value (if Ok), then returns self unchanged.
-   *
-   * @param fn - Function to call with the Ok value
-   * @returns Self, unchanged
-   *
-   * @example
-   * ```typescript
-   * const result = Result.ok(42)
-   *   .inspect((v) => console.log("ok:", v))
-   *   .map((v) => v + 1);
-   *
-   * console.log(result.unwrap()); // 43
-   * ```
    */
   inspect(fn: (value: T) => void): this {
     if (this.isOk()) {
@@ -388,18 +292,6 @@ export abstract class Result<T, E> {
 
   /**
    * Calls a function with the Err value (if Err), then returns self unchanged.
-   *
-   * @param fn - Function to call with the Err value
-   * @returns Self, unchanged
-   *
-   * @example
-   * ```typescript
-   * const result = Result.err<number, string>("error")
-   *   .inspectErr((e) => console.error("err:", e))
-   *   .unwrapOr(0);
-   *
-   * console.log(result); // 0
-   * ```
    */
   inspectErr(fn: (error: E) => void): this {
     if (this.isErr()) {
@@ -411,18 +303,6 @@ export abstract class Result<T, E> {
   /**
    * Calls a function with self regardless of whether the result is Ok or Err,
    * then returns self unchanged.
-   *
-   * @param fn - Function to call with the Result
-   * @returns Self, unchanged
-   *
-   * @example
-   * ```typescript
-   * const result = Result.ok<number, string>(42)
-   *   .tap((r) => console.log("result:", r.tag))
-   *   .map((v) => v + 1);
-   *
-   * console.log(result.unwrap()); // 43
-   * ```
    */
   tap(fn: (result: Result<T, E>) => void): this {
     fn(this);
@@ -507,17 +387,6 @@ export abstract class Result<T, E> {
   /**
    * Converts from Result<T, E> to Option<E>.
    * Converts self into an Option<E>, discarding the Ok value, if any.
-   *
-   * @returns Some(error) if Err, otherwise None
-   *
-   * @example
-   * ```typescript
-   * const err = Result.err<number, string>("error");
-   * console.log(err.err().unwrap()); // "error"
-   *
-   * const ok = Result.ok<number, string>(42);
-   * console.log(ok.err().isNone()); // true
-   * ```
    */
   abstract err(): OptionType<E>;
 
@@ -528,19 +397,6 @@ export abstract class Result<T, E> {
    * Result, including missing or non-callable `unwrap`/`unwrapErr` methods or
    * an invalid variant tag. If the other object's `unwrap` or `unwrapErr`
    * throws, the comparison returns false.
-   *
-   * @param other - Result (or Result-like object) to compare with
-   * @returns true if both results are equal, otherwise false
-   *
-   * @example
-   * ```typescript
-   * const ok1 = Result.ok(42);
-   * const ok2 = Result.ok(42);
-   * console.log(ok1.equals(ok2)); // true
-   *
-   * const err = Result.err<number, string>("error");
-   * console.log(ok1.equals(err)); // false
-   * ```
    */
   equals(other: Result<unknown, unknown>): boolean {
     if (!isResult(other)) {
@@ -641,15 +497,6 @@ export abstract class Result<T, E> {
    * Extracts an Ok value with `yield*` inside a Result sequence.
    * An Err is yielded unchanged so the sequence can exit early.
    * This is separate from the value-enumerating Symbol.iterator protocol.
-   *
-   * @example
-   * ```typescript
-   * const result = Result.sequence(function* () {
-   *   const a = yield* Result.step(Result.ok(2));
-   *   const b = yield* Result.step(Result.ok(3));
-   *   return Result.ok(a + b);
-   * });
-   * ```
    */
   static *step<R extends Result<unknown, unknown>>(
     result: R,
@@ -662,19 +509,10 @@ export abstract class Result<T, E> {
   }
 
   /**
-   * Runs a generator that explicitly returns a Result.
-   * Returns the first Err yielded by a step, or the final returned Result.
-   * Infers the success type from the return and unions all step/return errors.
-   *
-   * On an Err, closes the generator and runs its finally blocks before
-   * returning the original Err. A thrown value propagates unchanged instead.
-   *
-   * Do not yield from native finally blocks: a pending exception is opaque to
-   * the runner. Put operations whose Err should be returned in the body.
-   * Yields detected during closure trigger at most 64 throw() attempts to
-   * unwind reachable outer finally blocks, then a TypeError. A delegate that
-   * keeps yielding can prevent outer cleanup. This does not time out user
-   * code or pending promises. No exceptions are converted to Err automatically.
+   * Returns the first Err yielded by a step, or the generator's final Result.
+   * On Err, closes the generator before returning; cleanup throws propagate.
+   * Do not yield from finally blocks: their pending exception is hidden from
+   * the runner, and a detected yield causes a TypeError during closure.
    */
   static sequence<
     Y extends Err<never, unknown>,
@@ -729,26 +567,10 @@ export abstract class Result<T, E> {
   }
 
   /**
-   * Runs an async generator that explicitly returns a Result.
-   * The generator may return a Result or a promise resolving to a Result.
-   * Infers success and error types in the same way as Result.sequence.
-   *
-   * On an Err, waits for generator closure and all remaining finally blocks
-   * before returning the original Err. A cleanup throw or rejection propagates
-   * unchanged instead, as with Result.sequence.
-   * Throws and rejections propagate without automatic conversion to Err.
-   * Do not yield from native finally blocks; put fallible steps in the body.
-   * Unsupported yields use the same bounded unwinding as Result.sequence;
-   * each attempt awaits throw(), without a timeout on cleanup promises.
-   *
-   * @example
-   * ```typescript
-   * const result = await Result.sequenceAsync(async function* () {
-   *   const user = yield* Result.stepAsync(fetchUser(id));
-   *   const profile = yield* Result.stepAsync(fetchProfile(user));
-   *   return Result.ok({ user, profile });
-   * });
-   * ```
+   * Returns the first Err yielded by a step, or the async generator's final
+   * Result. On Err, waits for generator closure before returning; cleanup
+   * throws and rejections propagate. Finally blocks must not yield, as with
+   * Result.sequence.
    */
   static async sequenceAsync<
     Y extends Err<never, unknown>,
@@ -823,15 +645,10 @@ export abstract class Result<T, E> {
 
     for (const r of results) {
       if (r.isOk()) {
-        // The type parameter E becomes E[] in the array variant, but the Ok instance can be reused as-is.
+        // Ok contains no E, so it can also represent Result<T, E[]>.
         return r as unknown as Result<T, E[]>;
       }
-      // r is known to be Err here, so unwrap the error and accumulate it.
-      // The return value of unwrapOrElse is unused because we only care about the side effect.
-      r.unwrapOrElse((e) => {
-        errors.push(e);
-        return undefined as never;
-      });
+      errors.push(r.unwrapErr());
     }
 
     return Result.err<T, E[]>(errors);

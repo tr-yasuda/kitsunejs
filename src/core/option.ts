@@ -110,20 +110,6 @@ export abstract class Option<T> {
 
   /**
    * Pattern matches over the Option, applying one of two functions depending on the variant.
-   *
-   * @template U - The type of the returned value
-   * @param onSome - Function applied to the Some value
-   * @param onNone - Function called when None
-   * @returns The result of applying the appropriate function
-   *
-   * @example
-   * ```typescript
-   * const some = Option.some<number>(42);
-   * console.log(some.match((v) => v * 2, () => 0)); // 84
-   *
-   * const none = Option.none<number>();
-   * console.log(none.match((v) => v * 2, () => 0)); // 0
-   * ```
    */
   match<U>(onSome: (value: T) => U, onNone: () => U): U {
     return this.mapOrElse(onNone, onSome);
@@ -142,18 +128,6 @@ export abstract class Option<T> {
   /**
    * Calls a function with self regardless of whether the option is Some or None,
    * then returns self unchanged.
-   *
-   * @param fn - Function to call with the Option
-   * @returns Self, unchanged
-   *
-   * @example
-   * ```typescript
-   * const option = Option.some(42)
-   *   .tap((o) => console.log("option:", o.tag))
-   *   .map((value) => value + 1);
-   *
-   * console.log(option.unwrap()); // 43
-   * ```
    */
   tap(fn: (option: Option<T>) => void): this {
     fn(this);
@@ -288,19 +262,6 @@ export abstract class Option<T> {
    * must be `None`. Returns false for arguments that do not look like an
    * Option, including missing or non-callable `unwrap` or an invalid variant
    * tag. If the other object's `unwrap` throws, the comparison returns false.
-   *
-   * @param other - Option (or Option-like object) to compare with
-   * @returns true if both options are equal, otherwise false
-   *
-   * @example
-   * ```typescript
-   * const some1 = Option.some(42);
-   * const some2 = Option.some(42);
-   * console.log(some1.equals(some2)); // true
-   *
-   * const none = Option.none<number>();
-   * console.log(some1.equals(none)); // false
-   * ```
    */
   equals(other: Option<unknown>): boolean {
     if (!isOption(other)) {

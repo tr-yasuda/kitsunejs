@@ -55,7 +55,7 @@ There are many ways to contribute to kitsunejs:
 - **mise**: Install it to use the project's development tool versions
 - **Node.js**: Version 22.x for local development (the library supports
   version 22 or higher)
-- **pnpm**: Version 10.20.0, matching `package.json`
+- **pnpm**: Version 12.5.1, matching `package.json`
 
 ### Setup Steps
 

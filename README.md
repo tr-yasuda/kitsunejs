@@ -5,25 +5,21 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-blue.svg)](https://www.typescriptlang.org/)
 
-Rust-inspired `Result` and `Option` types for TypeScript, enabling type-safe error handling and null safety.
+Rust-inspired `Result` and `Option` types for TypeScript. Use `Result<T, E>`
+when an operation can fail and `Option<T>` when a value may be absent.
 
 ## Installation
 
 ```bash
-# npm
 npm install kitsunejs
-
-# pnpm
-pnpm add kitsunejs
-
-# yarn
-yarn add kitsunejs
+# or: pnpm add kitsunejs
+# or: yarn add kitsunejs
 ```
 
-## Quick Start
+## Start with Result
 
-If you currently wrap `JSON.parse` in `try/catch`, return a `Result` from the
-parsing function. The caller can then handle both outcomes with `match`:
+`Result.try` turns a thrown value into `Err` and a returned value into `Ok`.
+The caller handles both cases with `match`:
 
 ```javascript
 import { Result } from 'kitsunejs';
@@ -35,409 +31,64 @@ function parseSettings(json) {
 for (const input of ['{"theme":"dark"}', '{broken']) {
   parseSettings(input).match(
     (settings) => console.log('Parsed settings:', settings),
-    (error) => console.error('Invalid settings:', error.message),
+    (error) => console.error('Invalid settings:', error),
   );
 }
 ```
 
-Save this as `example.mjs` and run `node example.mjs`. The first input succeeds;
-the second produces an error that the caller handles without throwing.
+Save this as `example.mjs` and run `node example.mjs`. The second input
+produces an `Err` that the caller handles without throwing. JavaScript can
+throw any value, so check or normalize the error before relying on its type.
 
-## Features
-
-- 🦀 **Rust-like API**: Familiar `Result<T, E>` and `Option<T>` types with methods like `map`, `andThen`, `unwrap`, etc.
-- 🔒 **Type-safe**: Full TypeScript support with proper type inference and narrowing
-- 🌳 **Tree-shakeable**: Fully ESM-ready with optional CJS support
-- 📦 **Zero dependencies**: Lightweight and self-contained
-- ⚡ **Async-ready**: Built-in support for `Promise` with `Result.tryAsync`
-
-## Usage
-
-### Result Type
-
-The `Result<T, E>` type represents either success (`Ok<T>`) or failure (`Err<E>`).
-
-#### Basic Usage
+`map` transforms an `Ok` value. `andThen` chains functions that return another
+`Result`; the first `Err` passes through unchanged.
 
 ```typescript
 import { Result } from 'kitsunejs';
 
-// Creating Results
-const success = Result.ok(42);
-const failure = Result.err('Something went wrong');
-
-// Checking variants
-if (success.isOk()) {
-  console.log(success.unwrap()); // 42
+function parsePort(input: string): Result<number, string> {
+  const port = Number(input);
+  return Number.isInteger(port) && port > 0
+    ? Result.ok(port)
+    : Result.err('Invalid port');
 }
 
-if (failure.isErr()) {
-  console.log(failure.unwrapOr(0)); // 0 (default value)
-}
-```
-
-#### Additional Helpers
-
-```typescript
-import { Result } from 'kitsunejs';
-
-const result: Result<number, string> = Result.ok(42);
-
-// Type guard + predicate
-if (result.isOkAnd((v) => v > 0)) {
-  console.log(result.unwrap()); // 42
-}
-
-// Map with defaults
-const value = Result.err<number, string>('error').mapOrElse(
-  (e) => e.length,
-  (v) => v * 2,
-);
-console.log(value); // 5
-
-// Inspect without changing the Result
-Result.err('error')
-  .inspectErr((e) => console.error(e))
-  .unwrapOr(0);
-
-// Extract Err as Option
-const maybeError = Result.err('error').err();
-console.log(maybeError.unwrap()); // 'error'
-
-// Extract Err value with custom message if Ok
-const error = Result.err('error').expectErr('Expected Err');
-console.log(error); // 'error'
-```
-
-#### Error Handling with try/tryAsync
-
-```typescript
-import { Result } from 'kitsunejs';
-
-// Sync: Convert exceptions to Result
-const result = Result.try(() => {
-  return JSON.parse('{"name": "Alice"}');
-});
-
-// Async: Handle Promise rejections
-type User = {
-  id: number;
-  name: string;
-}
-
-async function fetchUser(id: number): Promise<Result<User, Error>> {
-  return Result.tryAsync(async () => {
-    const response = await fetch(`https://api.example.com/users/${id}`);
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    return (await response.json()) as User;
-  });
-}
-
-async function main() {
-  const userResult = await fetchUser(1);
-
-  if (userResult.isOk()) {
-    console.log('User:', userResult.unwrap());
-  } else {
-    console.error('Failed to fetch user:', userResult.unwrapErr());
-    // Provide fallback value
-    const defaultUser = { id: 0, name: 'Unknown' };
-    console.log('Using default user:', defaultUser);
-  }
-}
-
-main();
-```
-
-#### Chaining Operations
-
-```typescript
-import { Result } from 'kitsunejs';
-
-type User = {
-  name: string;
-  age: number;
-}
-
-function findUser(id: number): Result<User, string> {
-  if (id === 1) {
-    return Result.ok({ name: 'Alice', age: 30 });
-  }
-  return Result.err('User not found');
-}
-
-// Transform success values with map
-const userName = findUser(1)
-  .map((user) => user.name)
-  .unwrapOr('Unknown');
-
-console.log(userName); // 'Alice'
-
-// Chain multiple Result-returning operations
-function getAge(user: User): Result<number, string> {
-  if (user.age < 0) {
-    return Result.err('Invalid age');
-  }
-  return Result.ok(user.age);
-}
-
-const age = findUser(1)
-  .andThen((user) => getAge(user))
-  .unwrapOr(0);
-```
-
-`andThen` and `andThenAsync` also compose operations with different error
-types, inferring their union as `E | F`. Use `mapErr` to explicitly convert
-errors to a common type. Calls specifying only the output type use `F = E`;
-omit type arguments or specify both to compose different error types.
-Compatibility overloads preserve branch callbacks whose errors are already
-covered by `E`. Custom `Result` subclasses must expose both overloads in their
-chaining overrides to support the full API; see the
-[API reference](docs/api-reference.md).
-
-#### Sequential Processing with Early Return
-
-Use `yield* Result.step(...)` to keep success values in local variables and
-stop at the first Err. The body must explicitly return a Result.
-
-```typescript
-const result = Result.sequence(function* () {
-  const user = yield* Result.step(findUser(1));
-  const age = yield* Result.step(getAge(user));
-  return Result.ok({ user, age });
-});
-```
-
-For asynchronous operations, use `Result.sequenceAsync` with `async function*`
-and `yield* Result.stepAsync(...)`. The helper accepts both a Result and a
-promise resolving to a Result, without an `await` at each step.
-
-```typescript
-const result = await Result.sequenceAsync(async function* () {
-  const user = yield* Result.stepAsync(fetchUser(1));
-  const displayName = user.name.toUpperCase();
-  return Result.ok({ user, displayName });
-});
-```
-
-Early return closes the generator and waits for ordinary `finally` cleanup.
-Put operations whose failures should be returned, such as flush or commit,
-in the body as Result steps. Use `finally` for resource release without
-`yield` or `yield*`; steps inside `finally` are unsupported. Cleanup throws
-and rejections take precedence over an early Err and propagate unchanged.
-Existing Result iteration is unchanged.
-See [the API reference](./docs/api-reference.md#sequential-processing) for the
-full cleanup and type inference rules.
-
-#### Combining Multiple Results
-
-```typescript
-import { Result } from 'kitsunejs';
-
-const results = [
-  Result.ok(1),
-  Result.ok(2),
-  Result.ok(3),
-];
-
-// All must be Ok to get Ok<T[]>
-const allOk = Result.all(results);
-console.log(allOk.unwrap()); // [1, 2, 3]
-
-// Get the first Ok, or Err<E[]> if all fail
-const firstOk = Result.any([
-  Result.err('error1'),
-  Result.ok(42),
-  Result.err('error2'),
-]);
-console.log(firstOk.unwrap()); // 42
-
-// All Err case returns Err<E[]>
-const allErr = Result.any([
-  Result.err('error1'),
-  Result.err('error2'),
-  Result.err('error3'),
-]);
-if (allErr.isErr()) {
-  console.log(allErr.unwrapErr()); // ['error1', 'error2', 'error3']
+function configuredPort(input: string | undefined): number {
+  return Result.fromNullable(input, 'Missing port')
+    .andThen(parsePort)
+    .unwrapOr(8080);
 }
 ```
 
-### Option Type
+## Use Option for missing values
 
-The `Option<T>` type represents an optional value: either `Some<T>` or `None`.
-
-#### Basic Usage
+`Option.fromNullable` creates `None` from `null` or `undefined`. Use a type
+guard, `match`, or a fallback to handle the missing case.
 
 ```typescript
 import { Option } from 'kitsunejs';
 
-// Creating Options
-const some = Option.some(42);
-const none = Option.none();
-
-// Checking variants
-if (some.isSome()) {
-  console.log(some.unwrap()); // 42
+function displayName(name: string | undefined): string {
+  return Option.fromNullable(name)
+    .map((value) => value.trim())
+    .unwrapOr('Guest');
 }
-
-if (none.isNone()) {
-  console.log('No value');
-}
-
-// Safe handling of null/undefined
-function getConfig(key: string): string | null {
-  // Simulated config lookup
-  return null;
-}
-
-const config = Option.fromNullable(getConfig('api_key'))
-  .unwrapOr('default-api-key');
-
-console.log(config); // 'default-api-key'
 ```
 
-#### Chaining Operations
-
-```typescript
-import { Option } from 'kitsunejs';
-
-// Transform values with map
-const doubled = Option.some(10)
-  .map((n) => n * 2)
-  .unwrapOr(0);
-
-console.log(doubled); // 20
-
-// Filter values based on predicates
-const filtered = Option.some(10)
-  .filter((n) => n > 15)
-  .unwrapOr(0);
-
-console.log(filtered); // 0 (filtered out)
-
-// Chain Option-returning operations
-function parseNumber(str: string): Option<number> {
-  const num = Number.parseFloat(str);
-  if (Number.isNaN(num)) {
-    return Option.none();
-  }
-  return Option.some(num);
-}
-
-const result = Option.some('42.5')
-  .andThen((str) => parseNumber(str))
-  .map((num) => num * 2)
-  .unwrapOr(0);
-
-console.log(result); // 85
-```
-
-#### Converting Between Result and Option
-
-```typescript
-import { Result, Option } from 'kitsunejs';
-
-// Option to Result
-const option = Option.some(42);
-const result = option.toResult('No value provided');
-console.log(result.unwrap()); // 42
-
-// Result to Option
-const okResult = Result.ok(42);
-const optionFromResult = okResult.toOption();
-console.log(optionFromResult.unwrap()); // 42
-
-const errResult = Result.err('error');
-const noneFromErr = errResult.toOption();
-console.log(noneFromErr.isNone()); // true
-```
-
-#### Combining Multiple Options
-
-```typescript
-import { Option } from 'kitsunejs';
-
-const options = [
-  Option.some(1),
-  Option.some(2),
-  Option.some(3),
-];
-
-// All must be Some to get Some<T[]>
-const allSome = Option.all(options);
-console.log(allSome.unwrap()); // [1, 2, 3]
-
-// Get the first Some, or None if all are None
-const firstSome = Option.any([
-  Option.none(),
-  Option.some(42),
-  Option.none(),
-]);
-console.log(firstSome.unwrap()); // 42
-```
+For asynchronous work, `Result.tryAsync` converts rejections to `Err`.
+`Result.sequence` and `Result.sequenceAsync` let you keep intermediate success
+values while returning the first failure. See the [API reference](./docs/api-reference.md#sequential-processing)
+for their cleanup and type inference rules.
 
 ## Documentation
 
-For more detailed information, please refer to the following documentation:
-
-- **[API Reference](./docs/api-reference.md)** - Complete list of all methods with detailed explanations and examples
-- **[Rust Comparison](./docs/rust-comparison.md)** - Comparison table between Rust's `Result`/`Option` and kitsune
-- **[Recipes](./docs/recipes.md)** - Practical usage patterns and best practices for common scenarios
-
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guide](./CONTRIBUTING.md) for details on:
-
-- How to set up your development environment
-- Our coding standards and [Style Guide](./STYLE_GUIDE.md)
-- How to submit pull requests
-- Our commit message conventions
-
-## Quick API Reference
-
-Below is a quick reference of available methods. For detailed documentation with examples, see [API Reference](./docs/api-reference.md).
-
-### Result<T, E> Methods
-
-- `isOk()`, `isErr()` - Type guards
-- `unwrap()`, `expect(message)` - Extract values (throws on error)
-- `unwrapErr()` - Extract error value (throws on Ok)
-- `unwrapOr(defaultValue)`, `unwrapOrElse(fn)` - Safe extraction with fallback
-- `map(fn)`, `mapErr(fn)` - Transform values
-- `and(other)`, `or(other)` - Combine Results
-- `andThen(fn)`, `orElse(fn)` - Chain operations
-- `equals(other)` - Value equality comparison using strict equality
-- `toOption()` - Convert to Option
-
-### Result Static Methods
-
-- `Result.ok(value)`, `Result.err(error)` - Constructors
-- `Result.fromNullable(value, error)` - Convert nullable to Result
-- `Result.try(fn)`, `Result.tryAsync(fn)` - Exception handling
-- `Result.all(results)` - All must be `Ok` to return `Ok<T[]>`, otherwise returns the first `Err`
-- `Result.any(results)` - Returns the first `Ok`, or `Err<E[]>` containing all errors if none succeed
-
-### Option<T> Methods
-
-- `isSome()`, `isNone()`, `isSomeAnd(predicate)`, `isNoneOr(predicate)` - Type guards / conditional checks
-- `unwrap()`, `expect(message)` - Extract values (throws on None)
-- `unwrapOr(defaultValue)`, `unwrapOrElse(fn)` - Safe extraction with fallback
-- `map(fn)`, `mapOr(defaultValue, fn)`, `mapOrElse(defaultFn, fn)` - Transform values
-- `and(other)`, `or(other)` - Combine Options
-- `andThen(fn)` - Chain operations
-- `filter(predicate)` - Filter values
-- `equals(other)` - Value equality comparison using strict equality
-- `toResult(error)`, `toResultElse(fn)` - Convert to Result
-
-### Option Static Methods
-
-- `Option.some(value)`, `Option.none()` - Constructors
-- `Option.fromNullable(value)` - Convert nullable to Option
-- `Option.all(options)` - All must be `Some` to return `Some<T[]>`, otherwise returns `None`
-- `Option.any(options)` - Returns the first `Some`, or `None` if all are `None`
+| Guide | Use it for |
+| --- | --- |
+| [API reference](./docs/api-reference.md) | Method signatures, return values, and error behavior |
+| [Recipes](./docs/recipes.md) | Validation, async work, and combining operations |
+| [Rust comparison](./docs/rust-comparison.md) | Differences from Rust's `Result` and `Option` |
+| [Contributing](./CONTRIBUTING.md) | Development setup, tests, and pull requests |
+| [Style guide](./STYLE_GUIDE.md) | Code and documentation conventions |
 
 ## License
 

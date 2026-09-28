@@ -2,14 +2,15 @@
 
 ## Table of Contents
 
-1. Error Handling
-2. Null Safety
-3. Asynchronous Operations
-4. Data Validation
-5. Combining Multiple Operations
-6. Integration with Other Libraries
-7. Pattern Matching
-8. Side Effects and Logging
+1. [Error Handling](#1-error-handling)
+2. [Null Safety](#2-null-safety)
+3. [Asynchronous Operations](#3-asynchronous-operations)
+4. [Data Validation](#4-data-validation)
+5. [Combining Multiple Operations](#5-combining-multiple-operations)
+6. [Integration with Other Libraries](#6-integration-with-other-libraries)
+7. [Pattern Matching](#7-pattern-matching)
+8. [Side Effects and Logging](#8-side-effects-and-logging)
+9. [Best Practices](#best-practices)
 
 ---
 
@@ -800,132 +801,6 @@ app.listen(3000);
 
 ---
 
-## Best Practices
-
-### 1. Avoid Early Returns
-
-By using Result/Option, you can avoid early returns and nested if statements.
-
-**Bad example**:
-```typescript
-function processUser(userId: number): string | null {
-  const user = findUser(userId);
-  if (!user) return null;
-
-  const profile = getUserProfile(user);
-  if (!profile) return null;
-
-  const name = profile.name;
-  if (!name) return null;
-
-  return name.toUpperCase();
-}
-```
-
-**Good example**:
-```typescript
-function processUser(userId: number): Option<string> {
-  return Option.fromNullable(findUser(userId))
-    .andThen((user) => Option.fromNullable(getUserProfile(user)))
-    .andThen((profile) => Option.fromNullable(profile.name))
-    .map((name) => name.toUpperCase());
-}
-```
-
-### 2. Minimize unwrap() Usage
-
-`unwrap()` can cause panics, so prefer `unwrapOr()` or `unwrapOrElse()`.
-
-**Bad example**:
-```typescript
-const result = await fetchUser(123);
-const user = result.unwrap(); // UnwrapError if Err
-```
-
-**Good example**:
-```typescript
-// Use default value
-const user = result.unwrapOr({ id: 0, name: 'Unknown' });
-
-// Or handle error explicitly
-if (result.isOk()) {
-  const user = result.unwrap();
-  // ...
-} else {
-  console.error('Failed to fetch user');
-}
-```
-
-**When it's okay to use unwrap()**:
-- Test code
-- Sample code / demo code
-- When Ok/Some is guaranteed (e.g., `Result.ok(42).unwrap()`)
-
-See the unwrap section in [API Reference](./api-reference.md) for details.
-
-### 3. Specify Types Explicitly
-
-Especially for complex chains, specifying types improves readability.
-
-**Good example**:
-```typescript
-// Reuse AppError from section 1.2 to include validation failures.
-const result: Result<void, AppError> = (await fetchUser(123))
-  .mapErr((error): AppError => error)
-  .andThen((user) => validateUser(user).mapErr((error): AppError => error))
-  .andThen((user) => saveUser(user).mapErr((error): AppError => error));
-
-const option: Option<string> = Option.fromNullable(getValue())
-  .filter((v) => v.length > 0)
-  .map((v) => v.toUpperCase());
-```
-
-### 4. Use Specific Error Types
-
-Prefer specific error types when you can guarantee their shape at runtime.
-For caught exceptions or Promise rejections, start with `unknown` and narrow or
-normalize the value before exposing a specific error type. Specifying an error
-type parameter or using a type assertion alone does not provide that guarantee.
-Keeping `unknown` is appropriate when callers will perform the narrowing.
-
-**Bad example**:
-```typescript
-type ParseError = { type: 'parse'; cause: unknown };
-
-function parseJson(input: string): Result<unknown, ParseError> {
-  // Unsafe: JSON.parse throws SyntaxError, not ParseError.
-  return Result.try<unknown, ParseError>(() => JSON.parse(input));
-}
-```
-
-**Good example**:
-```typescript
-type ParseError = { type: 'parse'; cause: unknown };
-
-function parseJson(input: string): Result<unknown, ParseError> {
-  return Result.try<unknown, unknown>(() => JSON.parse(input))
-    .mapErr((cause): ParseError => ({ type: 'parse', cause }));
-}
-```
-
-See section 1.1 for a normalized union that distinguishes HTTP errors from
-unexpected failures without inventing an HTTP status for other failures.
-
-### 5. Distinguishing Between andThen and map
-
-- `map`: When the function returns a regular value
-- `andThen`: When the function returns Result/Option (to avoid nesting)
-
-```typescript
-// map: T => U
-const doubled = Result.ok(21).map((n) => n * 2);
-
-// andThen: T => Result<U, E>
-const result = Result.ok(10).andThen((n) => divide(n, 2));
-```
-
----
-
 ## 7. Pattern Matching
 
 ### 7.1 Exhaustive Handling with Result.match
@@ -1071,4 +946,129 @@ const noneOption = Option.none<string>().tap((o) => {
 });
 
 console.log(noneOption.unwrapOr('off')); // off
+```
+---
+
+## Best Practices
+
+### 1. Avoid Early Returns
+
+By using Result/Option, you can avoid early returns and nested if statements.
+
+**Bad example**:
+```typescript
+function processUser(userId: number): string | null {
+  const user = findUser(userId);
+  if (!user) return null;
+
+  const profile = getUserProfile(user);
+  if (!profile) return null;
+
+  const name = profile.name;
+  if (!name) return null;
+
+  return name.toUpperCase();
+}
+```
+
+**Good example**:
+```typescript
+function processUser(userId: number): Option<string> {
+  return Option.fromNullable(findUser(userId))
+    .andThen((user) => Option.fromNullable(getUserProfile(user)))
+    .andThen((profile) => Option.fromNullable(profile.name))
+    .map((name) => name.toUpperCase());
+}
+```
+
+### 2. Minimize unwrap() Usage
+
+`unwrap()` can cause panics, so prefer `unwrapOr()` or `unwrapOrElse()`.
+
+**Bad example**:
+```typescript
+const result = await fetchUser(123);
+const user = result.unwrap(); // UnwrapError if Err
+```
+
+**Good example**:
+```typescript
+// Use default value
+const user = result.unwrapOr({ id: 0, name: 'Unknown' });
+
+// Or handle error explicitly
+if (result.isOk()) {
+  const user = result.unwrap();
+  // ...
+} else {
+  console.error('Failed to fetch user');
+}
+```
+
+**When it's okay to use unwrap()**:
+- Test code
+- Sample code / demo code
+- When Ok/Some is guaranteed (e.g., `Result.ok(42).unwrap()`)
+
+See the unwrap section in [API Reference](./api-reference.md) for details.
+
+### 3. Specify Types Explicitly
+
+Especially for complex chains, specifying types improves readability.
+
+**Good example**:
+```typescript
+// Reuse AppError from section 1.2 to include validation failures.
+const result: Result<void, AppError> = (await fetchUser(123))
+  .mapErr((error): AppError => error)
+  .andThen((user) => validateUser(user).mapErr((error): AppError => error))
+  .andThen((user) => saveUser(user).mapErr((error): AppError => error));
+
+const option: Option<string> = Option.fromNullable(getValue())
+  .filter((v) => v.length > 0)
+  .map((v) => v.toUpperCase());
+```
+
+### 4. Use Specific Error Types
+
+Prefer specific error types when you can guarantee their shape at runtime.
+For caught exceptions or Promise rejections, start with `unknown` and narrow or
+normalize the value before exposing a specific error type. Specifying an error
+type parameter or using a type assertion alone does not provide that guarantee.
+Keeping `unknown` is appropriate when callers will perform the narrowing.
+
+**Bad example**:
+```typescript
+type ParseError = { type: 'parse'; cause: unknown };
+
+function parseJson(input: string): Result<unknown, ParseError> {
+  // Unsafe: JSON.parse throws SyntaxError, not ParseError.
+  return Result.try<unknown, ParseError>(() => JSON.parse(input));
+}
+```
+
+**Good example**:
+```typescript
+type ParseError = { type: 'parse'; cause: unknown };
+
+function parseJson(input: string): Result<unknown, ParseError> {
+  return Result.try<unknown, unknown>(() => JSON.parse(input))
+    .mapErr((cause): ParseError => ({ type: 'parse', cause }));
+}
+```
+
+See section 1.1 for a normalized union that distinguishes HTTP errors from
+unexpected failures without inventing an HTTP status for other failures.
+
+### 5. Distinguishing Between andThen and map
+
+- `map`: When the function returns a regular value
+- `andThen`: When the function returns Result/Option (to avoid nesting)
+
+```typescript
+// map: T => U
+const doubled = Result.ok(21).map((n) => n * 2);
+
+// andThen: T => Result<U, E>
+const result = Result.ok(10).andThen((n) => divide(n, 2));
 ```

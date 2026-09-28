@@ -33,7 +33,7 @@
   "bugs": {
     "url": "https://github.com/tr-yasuda/kitsunejs/issues"
   },
-  "packageManager": "pnpm@10.20.0",
+  "packageManager": "pnpm@12.5.1",
   "engines": {
     "node": ">=22"
   },

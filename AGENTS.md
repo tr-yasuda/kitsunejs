@@ -11,7 +11,7 @@ and should never be edited by hand.
 
 ## Build, Test, and Development Commands
 
-- `pnpm install`: install dependencies with the pinned `pnpm@10.20.0`.
+- `pnpm install`: install dependencies with the pinned `pnpm@12.5.1`.
 - `pnpm type-check`: run `tsc --noEmit`.
 - `pnpm lint`: run Biome checks for formatting and lint rules.
 - `pnpm format`: apply Biome fixes and import organization.
